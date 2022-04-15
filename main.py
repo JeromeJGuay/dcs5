@@ -27,6 +27,10 @@ DEFAULT_SETTLING_DELAY = 1  # from 0 to 20
 DEFAULT_MAX_DEVIATION = 6  # from 1 to 100
 DEFAULT_NUMBER_OF_READING = 5
 
+DEFAULT_BACKLIGHTING_LEVEL = 0
+DEFAULT_BACKLIGHTING_AUTO_MODE = False
+DEFAULT_BACKLIGHTING_SENSITIVITY = 0
+
 UNSOLICITED_MESSAGES = {
     "%t": r"%t,(d+)#",
     "%l": r"%l,(d+)#",
@@ -73,7 +77,7 @@ XT_KEY_MAP = {
 
 class Dcs5Client:
     def __init__(self):
-        self._socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
+        self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
         self.dcs5_address: str = None
         self.port: int = None
         self.msg: str = None
@@ -81,19 +85,19 @@ class Dcs5Client:
     def connect(self, address: str, port: int):
         self.dcs5_address = address
         self.port = port
-        self._socket.connect((self.dcs5_address, self.port))
+        self.socket.connect((self.dcs5_address, self.port))
         print(f'Connected to: {self.dcs5_address}.')
         print(f'Socket is connected to port: {self.port}')
 
     def send(self, command: str):
-        self._socket.send(bytes(command, ENCODING))
+        self.socket.send(bytes(command, ENCODING))
 
     def receive(self):
-        self.msg = str(self._socket.recv(BUFFER_SIZE).decode(ENCODING))
+        self.msg = str(self.socket.recv(BUFFER_SIZE).decode(ENCODING))
         return self.msg
 
     def close(self):
-        self._socket.close()
+        self.socket.close()
 
 
 class Dcs5Board:
@@ -118,6 +122,10 @@ class Dcs5Board:
         self.calibrated: bool = None
         self.cal_pt_1: int = None
         self.cal_pt_2: int = None
+
+        self.backlighting_level: int = None
+        self.backlighting_auto_mode: bool = None
+        self.backlighting_sensitivity: int = None
 
     def start_client(self, address: str, port: int):
         self.client.connect(address, port)
@@ -169,6 +177,34 @@ class Dcs5Board:
         else:
             print('Return Error', self.client.msg)
 
+    def restore_cal_data(self):
+        self.ask("&cr,m1,m2,raw1,raw2#")
+        print(self.client.msg) # TODO
+        # self.calibrated = True
+
+    def clear_cal_data(self):
+        self.ask("&ca#")
+        print(self.client.msg)  # TODO
+        self.calibrated = False
+
+    def set_backlighting_level(self, value: int):
+        """0-95"""
+        self.ask(f'&o,{value}#')
+        print(self.client.msg) # TODO
+        self.backlighting_level = value
+
+    def set_backlighting_auto_mode(self, value: bool):
+        self.ask(f"&oa,{int(value)}")
+        print(self.client.msg) # TODO
+        self.backlighting_auto_mode = value
+
+    def set_backlighting_sensitivity(self, value: int):
+        "0-7"
+        self.ask(f"&os,{int(value)}")
+        print(self.client.msg)
+        self.backlighting_sensitivity = {True: 'auto', False: 'manual'}
+
+
     def set_interface(self, value: int):
         self.ask(f"&fm,{value}#")
         if self.client.msg == "DCSLinkstream Interface Active":
@@ -183,8 +219,6 @@ class Dcs5Board:
     def set_stylus_detection_message(self, value: bool):
         """
         When disabled (false): %t,(\d+)# are not sent
-        :param value:
-        :return:
         """
         self.ask(f'&sn,{int(value)}')
         if self.client.msg == fr'%sn,{int(value)}\r':
@@ -250,7 +284,7 @@ class Dcs5Board:
             print('Calibration for point {pt}. Touch Stylus ...')
             self.ask("&{pt}r#")
             if self.client.msg == rf'&Xr#: X={pt}\r CalPt {pt}: touch stylus \r':
-                self.client._socket.settimeout(10)
+                self.client.socket.settimeout(10)
                 self.client.receive()
                 print(self.client.msg)  # TODO
 
