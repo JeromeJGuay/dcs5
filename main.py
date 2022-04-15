@@ -297,5 +297,5 @@ class Dcs5Board:
 
 
 if __name__ == "__main__":
-    c = Dcs5Client()
-    c.connect(DCS5_ADRESS, PORT)
+    b = Dcs5Board()
+    b.start_client(DCS5_ADRESS, PORT)
