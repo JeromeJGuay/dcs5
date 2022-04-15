@@ -6,6 +6,10 @@ bigfin adress: 00:06:66:89:E5:FE
 
 %t means that the stylus has touch the board.
 
+
+Notes
+-----
+    Big Fin docs: https://bigfinllc.com/wp-content/uploads/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf?fbclid=IwAR0tJMwvN7jkqxgEhRQABS0W3HLLntpOflg12bMEwM5YrDOwcHStznJJNQM
 """
 
 import socket
@@ -23,7 +27,48 @@ DEFAULT_SETTLING_DELAY = 1  # from 0 to 20
 DEFAULT_MAX_DEVIATION = 6  # from 1 to 100
 DEFAULT_NUMBER_OF_READING = 5
 
+UNSOLICITED_MESSAGES = {
+    "%t": r"%t,(d+)#",
+    "%l": r"%l,(d+)#",
+    "%s": r"%s,(d+)#",
+    "%d": r"%d,(d+)#",
+}
 
+XT_KEY_MAP = {
+    "00": "",
+    "01": "",
+    "02": "",
+    "03": "",
+    "04": "",
+    "05": "",
+    "06": "",
+    "07": "",
+    "08": "",
+    "09": "",
+    "10": "",
+    "11": "",
+    "12": "",
+    "13": "",
+    "14": "",
+    "15": "",
+    "16": "",
+    "17": "",
+    "18": "",
+    "19": "",
+    "20": "",
+    "21": "",
+    "22": "",
+    "23": "",
+    "24": "",
+    "25": "",
+    "26": "",
+    "27": "",
+    "28": "",
+    "29": "",
+    "30": "",
+    "31": "",
+    "32": "",
+}
 # soclket.settimeout(2)
 
 class Dcs5Client:
@@ -52,10 +97,19 @@ class Dcs5Client:
 
 
 class Dcs5Board:
+    """
+    Notes
+    -----
+    Firmware update command could be added:
+        %h,VER,BR#
+        see documentations
+    """
     def __init__(self):
         self.client: Dcs5Client = Dcs5Client()
 
         self.sensor_mode: str = None
+        self.interface: str = None
+
         self.stylus_status_msg: str = None
         self.stylus_settling_delay: int = None
         self.stylus_max_deviation: int = None
@@ -81,11 +135,21 @@ class Dcs5Board:
         self.ask('b#')
         print(self.client.msg)
 
+    def board_initialization(self):
+        self.ask('&init#')
+        if self.client.msg == "Rebooting in 2 seconds...":
+            print(self.client.msg)
+
     def battery(self):
         self.client.send('&q#')
         self.client.receive()
         battery = '/'.join(re.findall(r"%q:(-*)(\d*),(\d*)#", self.client.msg)[0])
         print(f"Battery: {battery}%")
+
+    def reboot(self):
+        self.ask('&rr#')
+        if self.client.msg == "%rebooting":
+            print(self.client.msg)
 
     def lmm(self):
         'length_measure_mode'
@@ -105,7 +169,23 @@ class Dcs5Board:
         else:
             print('Return Error', self.client.msg)
 
-    def set_stylus_detection(self, value: bool):
+    def set_interface(self, value: int):
+        self.ask(f"&fm,{value}#")
+        if self.client.msg == "DCSLinkstream Interface Active":
+            print(self.client.msg)
+            self.interface = "DCSLinkstream"
+        elif self.client.msg == "FEED Interface Active":
+            print(self.client.msg)
+            self.interface = "FEED"
+        else:
+            print('Return Error', self.client.msg)
+
+    def set_stylus_detection_message(self, value: bool):
+        """
+        When disabled (false): %t,(\d+)# are not sent
+        :param value:
+        :return:
+        """
         self.ask(f'&sn,{int(value)}')
         if self.client.msg == fr'%sn,{int(value)}\r':
             if value is True:
@@ -175,6 +255,11 @@ class Dcs5Board:
                 print(self.client.msg)  # TODO
 
             self.calibrated = True
+
+    def _decode_stylus_status(self):
+
+    def _decode_faceplate_key_pushes(self):
+
 
 
 if __name__ == "__main__":
