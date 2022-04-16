@@ -15,10 +15,13 @@ Notes
 import socket
 import bluetooth
 import re
+import subprocess
 from typing import *
 
 DEVICE_NAME = "BigFinDCS5-E5FE"
 PORT = 1
+PASSKEY = "1111"  # passkey of the device you want to connect
+
 DCS5_ADRESS = "00:06:66:89:E5:FE"
 EXIT_COMMAND = "stop"
 
@@ -131,6 +134,37 @@ class Dcs5Client:
         self.socket.close()
 
 
+class Dcs5ClientV2:
+    def __init__(self):
+        self.socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+        self.dcs5_address: str = None
+        self.port: int = None
+        self.msg: str = None
+
+      #  subprocess.call("kill -9 `pid bluetooth-agent`", shell=True)
+      # status = subprocess.call("bluetooth-agent " + PASSKEY + " &", shell=True)
+
+    def connect(self, address: str, port: int):
+        if address is not None:
+            self.dcs5_address = address
+        if port is not None:
+            self.port = port
+        try:
+            self.socket.connect((self.dcs5_address, self.port))
+        except bluetooth.BluetoothError as err:
+            print(err)
+            pass
+
+    def send(self, command: str):
+        self.socket.send(bytes(command, ENCODING))
+
+    def receive(self):
+        self.msg = str(self.socket.recv(BUFFER_SIZE).decode(ENCODING))
+
+    def close(self):
+        self.socket.close()
+
+
 class Dcs5Interface:
     """
     Notes
@@ -140,7 +174,7 @@ class Dcs5Interface:
         see documentations
     """
     def __init__(self):
-        self.client: Dcs5Client = Dcs5Client()
+        self.client: Dcs5Client = Dcs5ClientV2()
 
         self.sensor_mode: str = None
         self.stylus_status_msg: str = None
@@ -212,8 +246,9 @@ class Dcs5Interface:
         3 -> numeric 'numeric mode activated\r'
         """
 
-        self.client.send(f'&m,{value}#')
+        self.client.send(f'&m,{int(value)}#')
         self.client.receive()
+        print(self.client.msg)
         if self.client.msg == 'length mode activated\r':
             self.sensor_mode = 'length'
         elif self.client.msg == 'alpha mode activated\r':
@@ -223,6 +258,7 @@ class Dcs5Interface:
         elif self.client.msg == 'numeric mode activated\r':
             self.sensor_mode = 'numeric'
         else:
+
             print('Return Error', self.client.msg)
 
     def set_interface(self, value: int):
@@ -249,20 +285,6 @@ class Dcs5Interface:
         """0-95"""
         self.query(f'&o,{value}#', listen=False)
         self.backlighting_level = value
-
-    def change_backlighting(self, value: int):
-        if value == 1 and self.backlighting_level < MAX_BACKLIGHTING_LEVEL:
-            self.backlighting_level += 15
-            if self.backlighting_level > MAX_BACKLIGHTING_LEVEL:
-                self.backlighting_level = MIN_BACKLIGHTING_LEVEL
-            self.set_backlighting_level(self.backlighting_level)
-            print('BackLighting increased')
-        if value == -1 and self.backlighting_level > MIN_BACKLIGHTING_LEVEL:
-            self.backlighting_level += -15
-            if self.backlighting_level < MIN_BACKLIGHTING_LEVEL:
-                self.backlighting_level = MIN_BACKLIGHTING_LEVEL
-            self.set_backlighting_level(self.backlighting_level)
-            print('BackLighting decreased')
 
     def set_backlighting_auto_mode(self, value: bool): # NOT WORKING
         self.query(f"&oa,{int(value)}", listen=False)
@@ -362,12 +384,15 @@ class Dcs5Controller(Dcs5Interface):
         self.listening: bool = False
 
         self.wait_for_numpad: bool = False
-        self.mode_setting: bool = False
+        self.current_command: str = None
+        self.mode_setting: bool = False      
         self.board_command: bool = False
-        self.meta_commnand: bool = False
+        self.meta_command: bool = False
 
         self.buffer = ''
         self.numpad_memory: float = 0
+
+        self.previous_command: str = ''
 
         self.out = None
 
@@ -386,8 +411,12 @@ class Dcs5Controller(Dcs5Interface):
         print('listening...')
         while self.listening is True:
             self.client.receive()
-            values = self.client.msg.split('#')
+
+            values = self.client.msg.replace('\r', '').split('#')
+
             for value in values:
+                if value == "":
+                    continue
                 out = self.decode(value)
                 if out is None:
                     continue
@@ -395,65 +424,100 @@ class Dcs5Controller(Dcs5Interface):
                 self.check_for_board_command(out)
                 if self.board_command is True:
                     self.board_command = False
-
                 elif isinstance(out, tuple):
                     print(out)
-
-                elif self.mode_setting is True:
-                    self.set_mode()
+                elif self.current_command == 'mode':
+                    self.set_mode(out)
                 else:
                     self.check_for_meta_command(out)
 
-    def listen_to_numpad(self, value: str):
-        if value in '.0123456789':
-            self.buffer += value
-            print('numpad buffer: ',self.buffer)
-        elif value in ['enter', 'c1']: # FIXME cancel not working
-            if value == 'enter':
-                print('enter')
-                self.numpad_memory = float(self.buffer)
-                print('numpad memory: ',self.numpad_memory)
-            self.wait_for_numpad = False
-            self.clear_buffer()
+            self.previous_command = self.client.msg # DEBUG HELP
 
     def check_for_board_command(self, key):
+        self.board_command = True
         if key == 'a6':
             self.listening = False
         elif key == 'a1':
             self.change_backlighting(1)
         elif key == 'b1':
             self.change_backlighting(-1)
+        elif key == 'a2':
+            print('Sensor Mode: ', self.sensor_mode)
+        elif key == 'a3':
+            print(self.previous_command)
+        else:
+            self.board_command = False
 
     def check_for_meta_command(self, key):
-        if key == 'mode':
-            self.mode_setting = True
+        if key == 'c1':
+            print('[Cancel]')
+            self.cancel_command()
+        elif key == 'mode':
+            print('[mode]')
+            self.current_command = 'mode'
             self.wait_for_numpad = True
+            print('mode setting: Enter a value between 0 and 3.')
+        else:
+            print('command not used: ', key)
+
+    def cancel_command(self):
+        print('Command Cancelled.')
+        self.current_command = None
+        self.buffer = ""
+        self.wait_for_numpad = False
+        self.numpad_memory = 0
 
     def set_mode(self, value):
-        print('mode setting: Enter a value between 0 and 3.', end='\r')
         self.listen_to_numpad(value)
         if self.wait_for_numpad is False:
             if self.numpad_memory in [0, 1, 2, 3]:
-                self.set_sensor_mode(value)
+                self.set_sensor_mode(self.numpad_memory)
                 self.mode_setting = False
             else:
-                print('Mode value must be between 0 and 3.', end='\r')
-                self.wait_for_numpad = True
+                print('Error: Mode value must be between 0 and 3.')
+              
+    def listen_to_numpad(self, value: str):
+        if value in '.0123456789':
+            self.buffer += value
+            print(self.buffer)
+
+        elif value == 'enter' and value != "":
+            print('[enter]')
+            self.numpad_memory = float(self.buffer)
+            self.clear_buffer()
+            self.wait_for_numpad = False
+            self.mode_setting = False
 
     def decode(self, value: str):
         if '%t' in value:
             return None
         elif '%l' in value:
-            return ('l', self.get_length(value))
+            return 'l', self.get_length(value)
         elif '%s' in value:
-            return ('s', self.get_swipe(value))
+            return 's', self.get_swipe(value)
         elif 'F' in value:
             return XT_KEY_MAP[value[2:]]
+
+    def change_backlighting(self, value: int):
+        if value == 1 and self.backlighting_level < MAX_BACKLIGHTING_LEVEL:
+            self.backlighting_level += 15
+            if self.backlighting_level > MAX_BACKLIGHTING_LEVEL:
+                self.backlighting_level = MAX_BACKLIGHTING_LEVEL
+            self.set_backlighting_level(self.backlighting_level)
+            print('BackLighting increased')
+        if value == -1 and self.backlighting_level > MIN_BACKLIGHTING_LEVEL:
+            self.backlighting_level += -15
+            if self.backlighting_level < MIN_BACKLIGHTING_LEVEL:
+                self.backlighting_level = MIN_BACKLIGHTING_LEVEL
+            self.set_backlighting_level(self.backlighting_level)
+            print('BackLighting decreased')
+
 
     @staticmethod
     def get_length(value: str):
         return re.findall(r"%l,(\d+)", value)[0]
 
+    @staticmethod
     def get_swipe(value: str):
         return int(re.findall(r"%s,(-*\d+)", value)[0])
 
@@ -476,15 +540,17 @@ def scan_test():
 
 def test():
 
+    #c.start_client(DCS5_ADRESS, PORT)
+    #address = search_for_dcs5board()
+    #if address is not None:
     c = Dcs5Controller()
-
+#    c.start_client(address, PORT)
     c.start_client(DCS5_ADRESS, PORT)
-
     c.set_sensor_mode(1)
     c.set_interface(1)
     c.set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
     c.set_stylus_detection_message(False)
-    c.set_stylus_settling_delay(DEFAULT_SETTLING_DELAY)
+    c.set_stylus_settling_delay(10)#DEFAULT_SETTLING_DELAY)
     c.set_stylus_max_deviation(DEFAULT_MAX_DEVIATION)
     c.set_number_of_reading(DEFAULT_NUMBER_OF_READING)
 
