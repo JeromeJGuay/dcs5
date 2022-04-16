@@ -15,6 +15,8 @@ Notes
 import socket
 import bluetooth
 import re
+from typing import *
+
 DEVICE_NAME = "BigFinDCS5-E5FE"
 PORT = 1
 DCS5_ADRESS = "00:06:66:89:E5:FE"
@@ -129,7 +131,7 @@ class Dcs5Client:
         self.socket.close()
 
 
-class Dcs5Board:
+class Dcs5Interface:
     """
     Notes
     -----
@@ -141,7 +143,6 @@ class Dcs5Board:
         self.client: Dcs5Client = Dcs5Client()
 
         self.sensor_mode: str = None
-        self.interface: str = None
         self.stylus_status_msg: str = None
         self.stylus_settling_delay: int = None
         self.stylus_max_deviation: int = None
@@ -155,6 +156,7 @@ class Dcs5Board:
         self.backlighting_auto_mode: bool = None
         self.backlighting_sensitivity: int = None
 
+
     def start_client(self, address: str = None, port: int = None):
         print('\n')
         try:
@@ -163,7 +165,9 @@ class Dcs5Board:
             print('Connection Successful.')
         except OSError as error:
             if '[Errno 112]' in str(error):
-                print('Connection Failed.')
+                print('Connection Failed. Device Not Detected')
+            if '[Errno 107]' in str(error):
+                print('Bluetooth not turn on.')
             else:
                 print(error)
 
@@ -172,7 +176,6 @@ class Dcs5Board:
 
     def query(self, value: str, listen: bool = True):
         self.client.send(value)
-        #self.client.socket.settimeout(5) #FIXME
         if listen is True:
             self.client.receive()
 
@@ -193,7 +196,7 @@ class Dcs5Board:
     def battery(self):
         self.client.send('&q#')
         self.client.receive()
-        battery = '/'.join(re.findall(r"%q:(-*)(\d*),(\d*)#", self.client.msg)[0])
+        battery = re.findall(r"%q:(-*\d*,\d*)#", self.client.msg)[0]
         print(f"Battery: {battery}%")
 
     def reboot(self): # NOT WORKING
@@ -201,34 +204,31 @@ class Dcs5Board:
         if self.client.msg == "%rebooting":
             print(self.client.msg)
 
-    def lmm(self):
-        'length_measure_mode'
-        self.client.send('&m,0#')
-        self.client.receive()
-        print(self.client.msg)
-        if self.client.msg == 'length mode activated\r':
-            self.sensor_mode = 'lmm'
+    def set_sensor_mode(self, value):
+        """
+        0 -> length (length measure mode)
+        1 -> alpha (keyboard)
+        2 -> shortcut 'shortcut mode activated\r'
+        3 -> numeric 'numeric mode activated\r'
+        """
 
-    def kbm(self):
-        """
-        FOUR MOD TOTAL:
-        2: shortcut mode activated\r
-        3: numeric mode activated\r
-        """
-        'keyboard_mode' #
-        self.client.send('&m,1#')
+        self.client.send(f'&m,{value}#')
         self.client.receive()
-        print(self.client.msg)
-        if self.client.msg == 'alpha mode activated\r':
-            self.sensor_mode = 'kbm'
+        if self.client.msg == 'length mode activated\r':
+            self.sensor_mode = 'length'
+        elif self.client.msg == 'alpha mode activated\r':
+            self.sensor_mode = 'alpha'
+        elif self.client.msg == 'shortcut mode activated\r':
+            self.sensor_mode = 'shortcut'
+        elif self.client.msg == 'numeric mode activated\r':
+            self.sensor_mode = 'numeric'
         else:
             print('Return Error', self.client.msg)
 
-    def set_mode(self, value:int):
-        self.client.send(f'&m,{int}#')
-        print(self.client.msg)
-
     def set_interface(self, value: int):
+        '''
+        FEED seems to enable box key strokes.
+        '''
         self.query(f"&fm,{value}#", listen=False)
         if value == 0:
             self.interface = "DCSLinkstream"
@@ -354,65 +354,150 @@ class Dcs5Board:
 
             print('Calibration done.')
 
-    def listen(self):
-        self.client.receive()
-        cond = True
-        while cond:
+
+class Dcs5Controller(Dcs5Interface):
+    def __init__(self):
+        Dcs5Interface.__init__(self)
+
+        self.listening: bool = False
+
+        self.wait_for_numpad: bool = False
+        self.mode_setting: bool = False
+        self.board_command: bool = False
+        self.meta_commnand: bool = False
+
+        self.buffer = ''
+        self.numpad_memory: float = 0
+
+        self.out = None
+
+    def clear_buffer(self):
+        self.buffer = ''
+
+    def reset_numpad_memory(self):
+        self.numpad_memory = 0
+
+    def start_listening(self):
+        self.client.receive() # FIX TO EMPTY SOCKET BUFFER. First stroke is not gonna come in.
+        self.listening = True
+        self.listen_to_all()
+
+    def listen_to_all(self):
+        print('listening...')
+        while self.listening is True:
             self.client.receive()
-            msg_list = self.client.msg.split('#')
-            for raw_msg in msg_list:
-                msg = raw_msg
-                if '%l' in raw_msg:
-                    if self.sensor_mode == 'lmm':
-                        print(re.findall(r"%l,(\d+)", raw_msg)[0])
-                    elif self.sensor_mode == 'kbm':
-                        print(raw_msg)
+            values = self.client.msg.split('#')
+            for value in values:
+                out = self.decode(value)
+                if out is None:
+                    continue
 
-                elif '%s' in raw_msg:
-                    print('swipe ' + raw_msg) # FIXME
-                elif 'F' in raw_msg:
-                    msg = XT_KEY_MAP[raw_msg[2:]]
-                    entry = msg
-                    if msg == 'a1':
-                        self.change_backlighting(1)
-                    elif entry == 'b1':
-                        self.change_backlighting(-1)
-                    elif entry == 'mode':
-                        if self.sensor_mode == 'kbm':
-                            self.lmm()
-                        else:
-                            self.kbm()
+                self.check_for_board_command(out)
+                if self.board_command is True:
+                    self.board_command = False
 
-                    elif entry == 'a6':
-                        cond = False
+                elif isinstance(out, tuple):
+                    print(out)
 
-                    else:
-                        print(entry)
+                elif self.mode_setting is True:
+                    self.set_mode()
+                else:
+                    self.check_for_meta_command(out)
+
+    def listen_to_numpad(self, value: str):
+        if value in '.0123456789':
+            self.buffer += value
+            print('numpad buffer: ',self.buffer)
+        elif value in ['enter', 'c1']: # FIXME cancel not working
+            if value == 'enter':
+                print('enter')
+                self.numpad_memory = float(self.buffer)
+                print('numpad memory: ',self.numpad_memory)
+            self.wait_for_numpad = False
+            self.clear_buffer()
+
+    def check_for_board_command(self, key):
+        if key == 'a6':
+            self.listening = False
+        elif key == 'a1':
+            self.change_backlighting(1)
+        elif key == 'b1':
+            self.change_backlighting(-1)
+
+    def check_for_meta_command(self, key):
+        if key == 'mode':
+            self.mode_setting = True
+            self.wait_for_numpad = True
+
+    def set_mode(self, value):
+        print('mode setting: Enter a value between 0 and 3.', end='\r')
+        self.listen_to_numpad(value)
+        if self.wait_for_numpad is False:
+            if self.numpad_memory in [0, 1, 2, 3]:
+                self.set_sensor_mode(value)
+                self.mode_setting = False
+            else:
+                print('Mode value must be between 0 and 3.', end='\r')
+                self.wait_for_numpad = True
+
+    def decode(self, value: str):
+        if '%t' in value:
+            return None
+        elif '%l' in value:
+            return ('l', self.get_length(value))
+        elif '%s' in value:
+            return ('s', self.get_swipe(value))
+        elif 'F' in value:
+            return XT_KEY_MAP[value[2:]]
+
+    @staticmethod
+    def get_length(value: str):
+        return re.findall(r"%l,(\d+)", value)[0]
+
+    def get_swipe(value: str):
+        return int(re.findall(r"%s,(-*\d+)", value)[0])
+
+
+
+
+
+
+
+
 
 def scan_test():
     address = search_for_dcs5board()
     if address is not None:
-        b = Dcs5Board()
+        b = Dcs5Interface()
         b.start_client(address, PORT)
 
     return b
 
 
 def test():
-    b = Dcs5Board()
-    b.start_client(DCS5_ADRESS, PORT)
-    b.kbm()
-    b.set_interface(1)
-    b.set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
-    b.set_stylus_detection_message(False)
-    b.set_stylus_settling_delay(DEFAULT_SETTLING_DELAY)
-    b.set_stylus_max_deviation(DEFAULT_MAX_DEVIATION)
-    b.set_number_of_reading(DEFAULT_NUMBER_OF_READING)
-    b.listen()
+
+    c = Dcs5Controller()
+
+    c.start_client(DCS5_ADRESS, PORT)
+
+    c.set_sensor_mode(1)
+    c.set_interface(1)
+    c.set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
+    c.set_stylus_detection_message(False)
+    c.set_stylus_settling_delay(DEFAULT_SETTLING_DELAY)
+    c.set_stylus_max_deviation(DEFAULT_MAX_DEVIATION)
+    c.set_number_of_reading(DEFAULT_NUMBER_OF_READING)
+
+    c.start_listening()
+
+
+
+    #b.listen()
     #b.set_calibration_points_mm(0, 600)
     #b.calibrate(1)
     #b.calibrate(2)
-    return b
+
+
 
 if __name__ == "__main__":
     b=test()
