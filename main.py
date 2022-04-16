@@ -206,7 +206,7 @@ class Dcs5Board:
         self.client.send('&m,0#')
         self.client.receive()
         print(self.client.msg)
-        if self.client.msg == 'length mode activated':
+        if self.client.msg == 'length mode activated\r':
             self.sensor_mode = 'lmm'
 
     def kbm(self):
@@ -256,11 +256,13 @@ class Dcs5Board:
             if self.backlighting_level > MAX_BACKLIGHTING_LEVEL:
                 self.backlighting_level = MIN_BACKLIGHTING_LEVEL
             self.set_backlighting_level(self.backlighting_level)
+            print('BackLighting increased')
         if value == -1 and self.backlighting_level > MIN_BACKLIGHTING_LEVEL:
             self.backlighting_level += -15
             if self.backlighting_level < MIN_BACKLIGHTING_LEVEL:
                 self.backlighting_level = MIN_BACKLIGHTING_LEVEL
             self.set_backlighting_level(self.backlighting_level)
+            print('BackLighting decreased')
 
     def set_backlighting_auto_mode(self, value: bool): # NOT WORKING
         self.query(f"&oa,{int(value)}", listen=False)
@@ -354,19 +356,20 @@ class Dcs5Board:
 
     def listen(self):
         self.client.receive()
-        while 1:
+        cond = True
+        while cond:
             self.client.receive()
             msg_list = self.client.msg.split('#')
             for raw_msg in msg_list:
                 msg = raw_msg
                 if '%l' in raw_msg:
                     if self.sensor_mode == 'lmm':
-                        msg = re.findall(r"%l,(\d+)", raw_msg)[0]
+                        print(re.findall(r"%l,(\d+)", raw_msg)[0])
                     elif self.sensor_mode == 'kbm':
                         print(raw_msg)
 
                 elif '%s' in raw_msg:
-                    msg = 'swipe ' + raw_msg #FIXME
+                    print('swipe ' + raw_msg) # FIXME
                 elif 'F' in raw_msg:
                     msg = XT_KEY_MAP[raw_msg[2:]]
                     entry = msg
@@ -380,14 +383,11 @@ class Dcs5Board:
                         else:
                             self.kbm()
 
-                    elif msg == 'a6':
-                        break
+                    elif entry == 'a6':
+                        cond = False
 
-
-
-
-                print(msg)
-
+                    else:
+                        print(entry)
 
 def scan_test():
     address = search_for_dcs5board()
