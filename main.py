@@ -421,7 +421,7 @@ class Dcs5Controller(Dcs5Interface):
                 if out is None:
                     continue
 
-                self.check_for_board_command(out)
+                self.check_for_prior_command(out)
                 if self.board_command is True:
                     self.board_command = False
                 elif isinstance(out, tuple):
@@ -433,7 +433,7 @@ class Dcs5Controller(Dcs5Interface):
 
             self.previous_command = self.client.msg # DEBUG HELP
 
-    def check_for_board_command(self, key):
+    def check_for_prior_command(self, key):
         self.board_command = True
         if key == 'a6':
             self.listening = False
