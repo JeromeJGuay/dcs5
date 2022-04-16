@@ -142,7 +142,6 @@ class Dcs5Board:
 
         self.sensor_mode: str = None
         self.interface: str = None
-
         self.stylus_status_msg: str = None
         self.stylus_settling_delay: int = None
         self.stylus_max_deviation: int = None
@@ -253,12 +252,12 @@ class Dcs5Board:
 
     def change_backlighting(self, value: int):
         if value == 1 and self.backlighting_level < MAX_BACKLIGHTING_LEVEL:
-            self.backlighting_level += 5
+            self.backlighting_level += 15
             if self.backlighting_level > MAX_BACKLIGHTING_LEVEL:
                 self.backlighting_level = MIN_BACKLIGHTING_LEVEL
             self.set_backlighting_level(self.backlighting_level)
         if value == -1 and self.backlighting_level > MIN_BACKLIGHTING_LEVEL:
-            self.backlighting_level += -5
+            self.backlighting_level += -15
             if self.backlighting_level < MIN_BACKLIGHTING_LEVEL:
                 self.backlighting_level = MIN_BACKLIGHTING_LEVEL
             self.set_backlighting_level(self.backlighting_level)
@@ -354,17 +353,38 @@ class Dcs5Board:
             print('Calibration done.')
 
     def listen(self):
+        self.client.receive()
         while 1:
             self.client.receive()
             msg_list = self.client.msg.split('#')
             for raw_msg in msg_list:
                 msg = raw_msg
                 if '%l' in raw_msg:
-                    msg = re.findall(r"%l,(\d+)", raw_msg)[0]
+                    if self.sensor_mode == 'lmm':
+                        msg = re.findall(r"%l,(\d+)", raw_msg)[0]
+                    elif self.sensor_mode == 'kbm':
+                        print(raw_msg)
+
                 elif '%s' in raw_msg:
                     msg = 'swipe ' + raw_msg #FIXME
                 elif 'F' in raw_msg:
                     msg = XT_KEY_MAP[raw_msg[2:]]
+                    entry = msg
+                    if msg == 'a1':
+                        self.change_backlighting(1)
+                    elif entry == 'b1':
+                        self.change_backlighting(-1)
+                    elif entry == 'mode':
+                        if self.sensor_mode == 'kbm':
+                            self.lmm()
+                        else:
+                            self.kbm()
+
+                    elif msg == 'a6':
+                        break
+
+
+
 
                 print(msg)
 
@@ -388,6 +408,7 @@ def test():
     b.set_stylus_settling_delay(DEFAULT_SETTLING_DELAY)
     b.set_stylus_max_deviation(DEFAULT_MAX_DEVIATION)
     b.set_number_of_reading(DEFAULT_NUMBER_OF_READING)
+    b.listen()
     #b.set_calibration_points_mm(0, 600)
     #b.calibrate(1)
     #b.calibrate(2)
