@@ -445,14 +445,15 @@ class Dcs5Controller(Dcs5Interface):
             print('Sensor Mode: ', self.sensor_mode)
         elif key == 'a3':
             print(self.previous_command)
+        if key == 'c1':
+            print('[Cancel]')
+            self.cancel_command()
         else:
             self.board_command = False
 
     def check_for_meta_command(self, key):
-        if key == 'c1':
-            print('[Cancel]')
-            self.cancel_command()
-        elif key == 'mode':
+
+        if key == 'mode':
             print('[mode]')
             self.current_command = 'mode'
             self.wait_for_numpad = True
@@ -550,7 +551,7 @@ def test():
     c.set_interface(1)
     c.set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
     c.set_stylus_detection_message(False)
-    c.set_stylus_settling_delay(10)#DEFAULT_SETTLING_DELAY)
+    c.set_stylus_settling_delay(50)#DEFAULT_SETTLING_DELAY)
     c.set_stylus_max_deviation(DEFAULT_MAX_DEVIATION)
     c.set_number_of_reading(DEFAULT_NUMBER_OF_READING)
 
