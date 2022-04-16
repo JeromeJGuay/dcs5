@@ -7,20 +7,49 @@ bigfin adress: 00:06:66:89:E5:FE
 %t means that the stylus has touch the board.
 
 
+TODO
+----
+    -Use a1 - a2 to map andes F1-F6 action.
+    -numpad, arrows, del enter should be always seeding entry to andes except when mode key is used.
+    - mode + key b1 - b6 to change parameters. Change the numpad+arrows+enter+del action mode.
+    - add a measured function that can be called from andes.
+    - class key into categories.
+    - swipe to change from length to character or number or option. The position of the swipe could indicate the mode.
+
+    - make print
+
+
+
+       Mac Address :
+       Port :
+       Device Status : [Awake/Asleep]
+
+       ///------------------------------------------------------------------------------------
+       | BACKLIGHT : | Level [50]          | Mode [manual/auto] | Sensitivity [0]            |
+       | STYLUS    : | Mode [alpha/length] | Type [finger/pen]  |  Offset [0]                |
+       |             | Entry [top/mid/bot] |                    |                            |
+       |             | Setting Delay [ 1]  | Max deviation [06] | Number Of Reading [20]     |
+       | META      : | Status [ON/]        | Parameter []       | Values [x/#RequiredValued] |
+       | NUMPAD    : | Mode [lock/unlock]  | Buffer [xxxxxxxxx] | Memory [         0]        |
+       ------------------------------------------------------------------------------------///
+       [Last key stroke]
+
+
 Notes
 -----
     Big Fin docs: https://bigfinllc.com/wp-content/uploads/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf?fbclid=IwAR0tJMwvN7jkqxgEhRQABS0W3HLLntpOflg12bMEwM5YrDOwcHStznJJNQM
+
 """
 
 import socket
 import bluetooth
 import re
-import subprocess
+#import subprocess
 from typing import *
 
 DEVICE_NAME = "BigFinDCS5-E5FE"
 PORT = 1
-PASSKEY = "1111"  # passkey of the device you want to connect
+#PASSKEY = "1111"  # passkey of the device you want to connect
 
 DCS5_ADRESS = "00:06:66:89:E5:FE"
 EXIT_COMMAND = "stop"
@@ -464,9 +493,9 @@ class Dcs5Controller(Dcs5Interface):
     def cancel_command(self):
         print('Command Cancelled.')
         self.current_command = None
-        self.buffer = ""
+        self.clear_buffer()
         self.wait_for_numpad = False
-        self.numpad_memory = 0
+        self.reset_numpad_memory()
 
     def set_mode(self, value):
         self.listen_to_numpad(value)
