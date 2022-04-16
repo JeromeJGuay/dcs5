@@ -28,6 +28,8 @@ DEFAULT_MAX_DEVIATION = 6  # from 1 to 100
 DEFAULT_NUMBER_OF_READING = 5
 
 DEFAULT_BACKLIGHTING_LEVEL = 0
+MIN_BACKLIGHTING_LEVEL = 0
+MAX_BACKLIGHTING_LEVEL = 95
 DEFAULT_BACKLIGHTING_AUTO_MODE = False
 DEFAULT_BACKLIGHTING_SENSITIVITY = 0
 
@@ -39,39 +41,38 @@ UNSOLICITED_MESSAGES = {
 }
 
 XT_KEY_MAP = {
-    "00": "",
-    "01": "",
-    "02": "",
-    "03": "",
-    "04": "",
-    "05": "",
-    "06": "",
-    "07": "",
-    "08": "",
-    "09": "",
-    "10": "",
-    "11": "",
-    "12": "",
-    "13": "",
-    "14": "",
-    "15": "",
-    "16": "",
-    "17": "",
-    "18": "",
-    "19": "",
-    "20": "",
-    "21": "",
-    "22": "",
-    "23": "",
-    "24": "",
-    "25": "",
-    "26": "",
-    "27": "",
-    "28": "",
-    "29": "",
-    "30": "",
-    "31": "",
-    "32": "",
+    "01": "a1",
+    "02": "a2",
+    "03": "a3",
+    "04": "a4",
+    "05": "a5",
+    "06": "a6",
+    "07": "b1",
+    "08": "b2",
+    "09": "b3",
+    "10": "b4",
+    "11": "b5",
+    "12": "b6",
+    "13": "1",
+    "14": "2",
+    "15": "3",
+    "16": "4",
+    "17": "5",
+    "18": "6",
+    "19": "7",
+    "20": "8",
+    "21": "9",
+    "22": ".",
+    "23": "0",
+    "24": "skip",
+    "25": "enter",
+    "26": "c1",
+    "27": "up",
+    "28": "left",
+    "29": "right",
+    "30": "down",
+    "31": "del",
+    "32": "mode",
 }
 # soclket.settimeout(2)
 
@@ -170,10 +171,11 @@ class Dcs5Board:
     def close_client(self):
         self.client.close()
 
-    def query(self, value: str):
+    def query(self, value: str, listen: bool = True):
         self.client.send(value)
-        self.client.socket.settimeout(5) #FIXME
-        self.client.receive()
+        #self.client.socket.settimeout(5) #FIXME
+        if listen is True:
+            self.client.receive()
 
     def ping(self):
         self.query('a#')
@@ -223,16 +225,16 @@ class Dcs5Board:
         else:
             print('Return Error', self.client.msg)
 
-    def set_interface(self, value: int): # NOT WORKING
-        self.query(f"&fm,{value}#")
-        if self.client.msg == "DCSLinkstream Interface Active":
-            print(self.client.msg)
+    def set_mode(self, value:int):
+        self.client.send(f'&m,{int}#')
+        print(self.client.msg)
+
+    def set_interface(self, value: int):
+        self.query(f"&fm,{value}#", listen=False)
+        if value == 0:
             self.interface = "DCSLinkstream"
-        elif self.client.msg == "FEED Interface Active":
-            print(self.client.msg)
+        elif value == 1:
             self.interface = "FEED"
-        else:
-            print('Return Error', self.client.msg)
 
     def restore_cal_data(self):
         self.query("&cr,m1,m2,raw1,raw2#")
@@ -246,19 +248,28 @@ class Dcs5Board:
 
     def set_backlighting_level(self, value: int): # NOT WORKING
         """0-95"""
-        self.query(f'&o,{value}#')
-        print(self.client.msg) # TODO
+        self.query(f'&o,{value}#', listen=False)
         self.backlighting_level = value
 
+    def change_backlighting(self, value: int):
+        if value == 1 and self.backlighting_level < MAX_BACKLIGHTING_LEVEL:
+            self.backlighting_level += 5
+            if self.backlighting_level > MAX_BACKLIGHTING_LEVEL:
+                self.backlighting_level = MIN_BACKLIGHTING_LEVEL
+            self.set_backlighting_level(self.backlighting_level)
+        if value == -1 and self.backlighting_level > MIN_BACKLIGHTING_LEVEL:
+            self.backlighting_level += -5
+            if self.backlighting_level < MIN_BACKLIGHTING_LEVEL:
+                self.backlighting_level = MIN_BACKLIGHTING_LEVEL
+            self.set_backlighting_level(self.backlighting_level)
+
     def set_backlighting_auto_mode(self, value: bool): # NOT WORKING
-        self.query(f"&oa,{int(value)}")
-        print(self.client.msg) # TODO No message
+        self.query(f"&oa,{int(value)}", listen=False)
         self.backlighting_auto_mode = value
 
     def set_backlighting_sensitivity(self, value: int): # NOT WORKING
         "0-7"
-        self.query(f"&os,{int(value)}")
-        print(self.client.msg)
+        self.query(f"&os,{int(value)}", listen=False)
         self.backlighting_sensitivity = {True: 'auto', False: 'manual'}
 
     def set_stylus_detection_message(self, value: bool):
@@ -300,14 +311,14 @@ class Dcs5Board:
         else:
             print('Return Error', self.client.msg)
 
-    def check_cal_state(self):
+    def check_cal_state(self): # TODO, to be tested
         self.query('&u#')
-        if self.client.msg == '%u:0#\r': # NOT WOKRING
-            print('Board not calibrated.')
-            self.calibrated = True
-        elif self.client.msg == '%u:1#\r':
-            print('Board not calibrated.')
+        if self.client.msg == '%u:0#\r':
+            print('Board is not calibrated.')
             self.calibrated = False
+        elif self.client.msg == '%u:1#\r':
+            print('Board is calibrated.')
+            self.calibrated = True
         else:
             print('Return Error', self.client.msg)
 
@@ -328,27 +339,34 @@ class Dcs5Board:
                 print('Return Error', self.client.msg)
 
     def calibrate(self, pt: int):
+        pos = {1:self.cal_pt_1, 2:self.cal_pt_2}
         if pt in [1, 2] and self.cal_pt_1 is not None and self.cal_pt_1 is not None:
-            print(f'Calibration for point {pt}. Touch Stylus ...')
+            print(f'Calibration for point {pt}: {pos[pt]} mm. Touch Stylus ...')
             self.query(f"&{pt}r#")
             if self.client.msg == f'&Xr#: X={pt}\r':
-                self.client.socket.settimeout(20)
-                try:
+                msg = ""
+                while 'c' not in msg:
                     self.client.receive()
-                    #CalPt {pt}: touch stylus\r'
-                    print(self.client.msg)  # TODO
-                except socket.timeout:
-                    print('Nothing received')
+                    msg += self.client.msg  # FIXME
 
             self.calibrated = True
 
-    def listen(self):
-        self.client.socket.settimeout(10)
+            print('Calibration done.')
 
+    def listen(self):
         while 1:
             self.client.receive()
-            #print(re.findall(r"%l,(\d+)#", self.client.msg))
-            print(self.client.msg)
+            msg_list = self.client.msg.split('#')
+            for raw_msg in msg_list:
+                msg = raw_msg
+                if '%l' in raw_msg:
+                    msg = re.findall(r"%l,(\d+)", raw_msg)[0]
+                elif '%s' in raw_msg:
+                    msg = 'swipe ' + raw_msg #FIXME
+                elif 'F' in raw_msg:
+                    msg = XT_KEY_MAP[raw_msg[2:]]
+
+                print(msg)
 
 
 def scan_test():
@@ -363,12 +381,14 @@ def scan_test():
 def test():
     b = Dcs5Board()
     b.start_client(DCS5_ADRESS, PORT)
-    #b.lmm()
-    #b.set_stylus_detection_message(True)
-    #b.set_stylus_settling_delay(DEFAULT_SETTLING_DELAY)
-    #b.set_stylus_max_deviation(DEFAULT_MAX_DEVIATION)
-    #b.set_number_of_reading(1)
-    #b.set_calibration_points_mm(0, 60)
+    b.kbm()
+    b.set_interface(1)
+    b.set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
+    b.set_stylus_detection_message(False)
+    b.set_stylus_settling_delay(DEFAULT_SETTLING_DELAY)
+    b.set_stylus_max_deviation(DEFAULT_MAX_DEVIATION)
+    b.set_number_of_reading(DEFAULT_NUMBER_OF_READING)
+    #b.set_calibration_points_mm(0, 600)
     #b.calibrate(1)
     #b.calibrate(2)
     return b
