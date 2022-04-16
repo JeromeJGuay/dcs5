@@ -111,8 +111,11 @@ class Dcs5Client:
         self.msg: str = None
 
     def connect(self, address: str, port: int):
-        self.dcs5_address = address
-        self.port = port
+        if address is not None:
+            self.dcs5_address = address
+        if port is not None:
+            self.port = port
+
         self.socket.connect((self.dcs5_address, self.port))
 
     def send(self, command: str):
@@ -152,7 +155,7 @@ class Dcs5Board:
         self.backlighting_auto_mode: bool = None
         self.backlighting_sensitivity: int = None
 
-    def start_client(self, address: str, port: int):
+    def start_client(self, address: str = None, port: int = None):
         print('\n')
         try:
             print(f'Attempting to connect to board via port {port}.')
@@ -163,6 +166,9 @@ class Dcs5Board:
                 print('Connection Failed.')
             else:
                 print(error)
+
+    def close_client(self):
+        self.client.close()
 
     def query(self, value: str):
         self.client.send(value)
@@ -203,12 +209,28 @@ class Dcs5Board:
             self.sensor_mode = 'lmm'
 
     def kbm(self):
-        'keyboard_mode'
+        """
+        FOUR MOD TOTAL:
+        2: shortcut mode activated\r
+        3: numeric mode activated\r
+        """
+        'keyboard_mode' #
         self.client.send('&m,1#')
         self.client.receive()
         print(self.client.msg)
         if self.client.msg == 'alpha mode activated\r':
             self.sensor_mode = 'kbm'
+        else:
+            print('Return Error', self.client.msg)
+
+    def set_interface(self, value: int): # NOT WORKING
+        self.query(f"&fm,{value}#")
+        if self.client.msg == "DCSLinkstream Interface Active":
+            print(self.client.msg)
+            self.interface = "DCSLinkstream"
+        elif self.client.msg == "FEED Interface Active":
+            print(self.client.msg)
+            self.interface = "FEED"
         else:
             print('Return Error', self.client.msg)
 
@@ -238,17 +260,6 @@ class Dcs5Board:
         self.query(f"&os,{int(value)}")
         print(self.client.msg)
         self.backlighting_sensitivity = {True: 'auto', False: 'manual'}
-
-    def set_interface(self, value: int): # NOT WORKING
-        self.query(f"&fm,{value}#")
-        if self.client.msg == "DCSLinkstream Interface Active":
-            print(self.client.msg)
-            self.interface = "DCSLinkstream"
-        elif self.client.msg == "FEED Interface Active":
-            print(self.client.msg)
-            self.interface = "FEED"
-        else:
-            print('Return Error', self.client.msg)
 
     def set_stylus_detection_message(self, value: bool):
         """
@@ -336,7 +347,8 @@ class Dcs5Board:
 
         while 1:
             self.client.receive()
-            print(re.findall(r"%l,(\d+)#", self.client.msg))
+            #print(re.findall(r"%l,(\d+)#", self.client.msg))
+            print(self.client.msg)
 
 
 def scan_test():
@@ -351,14 +363,14 @@ def scan_test():
 def test():
     b = Dcs5Board()
     b.start_client(DCS5_ADRESS, PORT)
-    b.lmm()
-    b.set_stylus_detection_message(True)
-    b.set_stylus_settling_delay(DEFAULT_SETTLING_DELAY)
-    b.set_stylus_max_deviation(DEFAULT_MAX_DEVIATION)
-    b.set_number_of_reading(1)
-    b.set_calibration_points_mm(0, 60)
-    b.calibrate(1)
-    b.calibrate(2)
+    #b.lmm()
+    #b.set_stylus_detection_message(True)
+    #b.set_stylus_settling_delay(DEFAULT_SETTLING_DELAY)
+    #b.set_stylus_max_deviation(DEFAULT_MAX_DEVIATION)
+    #b.set_number_of_reading(1)
+    #b.set_calibration_points_mm(0, 60)
+    #b.calibrate(1)
+    #b.calibrate(2)
     return b
 
 if __name__ == "__main__":
