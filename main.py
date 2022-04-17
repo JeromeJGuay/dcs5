@@ -436,7 +436,7 @@ class Dcs5Controller(Dcs5Interface):
         self.numpad_store_mode: bool = False
         self.board_setting_mode: bool = False
         self.number_of_numpad_entry: int = None
-        self.setting_selected: str = None
+        self.selected_setting: str = None
 
         self.numpad_buffer: str = ''
         self.numpad_memory: list = []
@@ -470,6 +470,7 @@ class Dcs5Controller(Dcs5Interface):
 
             if out == 'mode':
                 self.trigger_board_setting_mode()
+                # DO something with the arrow for lights.
 
             if out in KEYS_TYPE['function']:
                 print('Function out: ', out)
@@ -483,6 +484,8 @@ class Dcs5Controller(Dcs5Interface):
                 if self.numpad_store_mode is True:
                     self.process_numpad_entry(out)
                     print('Numpad out: ', out)
+                    if self.number_of_numpad_entry == 0:
+                        self.set_board_setting()
 
             if isinstance(out, tuple):
                 if out[0] == 's':
@@ -512,7 +515,14 @@ class Dcs5Controller(Dcs5Interface):
         self.numpad_store_mode = True
         if value == 'a1':
             self.number_of_numpad_entry = 2
+            self.selected_setting = 'test_setting'
 
+    def set_board_setting(self):
+        if self.selected_setting == 'test_setting':
+            print(self.numpad_memory)
+        self.clear_numpad_memory()
+        self.board_setting_mode = False
+        self.numpad_store_mode = False
 
     def process_numpad_entry(self, value):
         if value == 'enter':
@@ -527,6 +537,7 @@ class Dcs5Controller(Dcs5Interface):
     def load_numpad_buffer_to_memory(self):
         self.numpad_memory.append(float(self.numpad_buffer))
         self.clear_numpad_buffer()
+        self.number_of_numpad_entry -= 1
 
     def check_for_board_entry_swipe(self, value):
         #TODO
