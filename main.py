@@ -7,32 +7,6 @@ bigfin adress: 00:06:66:89:E5:FE
 %t means that the stylus has touch the board.
 
 
-TODO
-----
-    -Use a1 - a2 to map andes F1-F6 action.
-    -numpad, arrows, del enter should be always seeding entry to andes except when mode key is used.
-    - mode + key b1 - b6 to change parameters. Change the numpad+arrows+enter+del action mode.
-    - add a measured function that can be called from andes.
-    - class key into categories.
-    - swipe to change from length to character or number or option. The position of the swipe could indicate the mode.
-
-    - make print
-
-
-
-       Mac Address :
-       Port :
-       Device Status : [Awake/Asleep]
-
-       ///------------------------------------------------------------------------------------
-       | BACKLIGHT : | Level [50]          | Mode [manual/auto] | Sensitivity [0]            |
-       | STYLUS    : | Mode [alpha/length] | Type [finger/pen]  |  Offset [0]                |
-       |             | Entry [top/mid/bot] |                    |                            |
-       |             | Setting Delay [ 1]  | Max deviation [06] | Number Of Reading [20]     |
-       | META      : | Status [ON/]        | Parameter []       | Values [x/#RequiredValued] |
-       | NUMPAD    : | Mode [lock/unlock]  | Buffer [xxxxxxxxx] | Memory [         0]        |
-       ------------------------------------------------------------------------------------///
-       [Last key stroke]
 
 
 Notes
@@ -108,7 +82,11 @@ XT_KEY_MAP = {
     "31": "del",
     "32": "mode",
 }
-# soclket.settimeout(2)
+
+KEYS_TYPE = {'function': tuple(f'a{i}' for i in range(1, 7)),
+             'setting': tuple(f'b{i}' for i in range(1, 7)),
+             'numpad': tuple(f'{i}' for i in range(1, 9)) + tuple('.', 'enter', 'del', 'skip'),
+}
 
 
 def scan():
@@ -218,7 +196,6 @@ class Dcs5Interface:
         self.backlighting_level: int = None
         self.backlighting_auto_mode: bool = None
         self.backlighting_sensitivity: int = None
-
 
     def start_client(self, address: str = None, port: int = None):
         print('\n')
@@ -407,6 +384,35 @@ class Dcs5Interface:
 
 
 class Dcs5Controller(Dcs5Interface):
+    """
+    TODO
+    ----
+        -Use a1 - a2 to map andes F1-F6 action.
+        -numpad, arrows, del enter should be always seeding entry to andes except when mode key is used.
+        - mode + key b1 - b6 to change parameters. Change the numpad+arrows+enter+del action mode.
+        - add a measured function that can be called from andes.
+        - class key into categories.
+        - swipe to change from length to character or number or option. The position of the swipe could indicate the mode.
+
+        - make print
+
+
+
+           Mac Address :
+           Port :
+           Device Status : [Awake/Asleep]
+
+           ///------------------------------------------------------------------------------------
+           | BACKLIGHT : | Level [50]          | Mode [manual/auto] | Sensitivity [0]            |
+           | STYLUS    : | Mode [alpha/length] | Type [finger/pen]  |  Offset [0]                |
+           |             | Entry [top/mid/bot] |                    |                            |
+           |             | Setting Delay [ 1]  | Max deviation [06] | Number Of Reading [20]     |
+           | META      : | Status [ON/]        | Parameter []       | Values [x/#RequiredValued] |
+           | NUMPAD    : | Mode [lock/unlock]  | Buffer [xxxxxxxxx] | Memory [         0]        |
+           ------------------------------------------------------------------------------------///
+           [Last key stroke]
+
+    """
     def __init__(self):
         Dcs5Interface.__init__(self)
 
@@ -541,6 +547,8 @@ class Dcs5Controller(Dcs5Interface):
                 self.backlighting_level = MIN_BACKLIGHTING_LEVEL
             self.set_backlighting_level(self.backlighting_level)
             print('BackLighting decreased')
+
+
 
 
     @staticmethod
