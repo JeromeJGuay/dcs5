@@ -430,9 +430,13 @@ class Dcs5Controller(Dcs5Interface):
         self.stylus_offset: str = 0
 
         self.board_entry: str = 'top' # [top, length, bot]
+        self.swipe_triggered: bool = False
+        self.swipe_value: str = ''
 
         self.numpad_store_mode: bool = False
         self.board_setting_mode: bool = False
+        self.number_of_numpad_entry: int = None
+        self.setting_selected: str = None
 
         self.numpad_buffer: str = ''
         self.numpad_memory: list = []
@@ -477,8 +481,22 @@ class Dcs5Controller(Dcs5Interface):
 
             if out in KEYS_TYPE['numpad']:
                 if self.numpad_store_mode is True:
-                    self.store_numpad_entry(out)
+                    self.process_numpad_entry(out)
                     print('Numpad out: ', out)
+
+            if isinstance(out, tuple):
+                if out[0] == 's':
+                    self.swipe_value = out[1]
+                    if out[1] > 0:
+                        self.swipe_triggered = True
+                if out[0] == 'l':
+                    if self.swipe_triggered is True:
+                        self.check_for_board_entry_swipe(out[1])
+                    else:
+                        if self.board_entry == 'length':
+                            print('Board entry', out[1])
+                        else:
+                            self.map_board_entry(out[1])
 
     def trigger_board_setting_mode(self):
         if self.board_setting_mode is True:
@@ -488,14 +506,19 @@ class Dcs5Controller(Dcs5Interface):
             self.board_setting_mode = True
 
     def select_board_setting(self, value):
+        # TODO
         self.clear_numpad_buffer()
         self.clear_numpad_memory()
         self.numpad_store_mode = True
+        if value == 'a1':
+            self.number_of_numpad_entry = 2
+
 
     def process_numpad_entry(self, value):
         if value == 'enter':
-            if len(self.numpad_buffer) > '':
-                self.load_numpad_buffer_to_memory()
+            if len(self.numpad_buffer) == 0:
+                self.numpad_buffer = '0'
+            self.load_numpad_buffer_to_memory()
         if value == 'del' and len(self.numpad_buffer) > '':
             self.numpad_buffer = self.numpad_memory[:-1]
         if value in '.0123456789':
@@ -505,6 +528,14 @@ class Dcs5Controller(Dcs5Interface):
         self.numpad_memory.append(float(self.numpad_buffer))
         self.clear_numpad_buffer()
 
+    def check_for_board_entry_swipe(self, value):
+        #TODO
+        print('Board Setting Swipe Check', value)
+        self.board_entry = 'length'
+
+    def map_board_entry(self):
+        #TODO
+        pass
 
     def decode(self, value: str):
         if '%t' in value:
