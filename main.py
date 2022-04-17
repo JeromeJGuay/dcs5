@@ -137,6 +137,13 @@ class Dcs5Client:
     def receive(self):
         self.msg = str(self.socket.recv(BUFFER_SIZE).decode(ENCODING))
 
+    def empty_buffer(self):
+        self.socket.settimeout(.1)
+        try:
+            self.socket.recv()  # FIX TO EMPTY SOCKET BUFFER. First stroke is not gonna come in.
+        except socket.SO_ERROR:
+            pass
+
     def close(self):
         self.socket.close()
 
@@ -406,123 +413,98 @@ class Dcs5Controller(Dcs5Interface):
            | BACKLIGHT : | Level [50]          | Mode [manual/auto] | Sensitivity [0]            |
            | STYLUS    : | Mode [alpha/length] | Type [finger/pen]  |  Offset [0]                |
            |             | Entry [top/mid/bot] |                    |                            |
-           |             | Setting Delay [ 1]  | Max deviation [06] | Number Of Reading [20]     |
+           |             | Setting Delay [ 1]  | Max Deviation [06] | Number Of Reading [20]     |
            | META      : | Status [ON/]        | Parameter []       | Values [x/#RequiredValued] |
            | NUMPAD    : | Mode [lock/unlock]  | Buffer [xxxxxxxxx] | Memory [         0]        |
            ------------------------------------------------------------------------------------///
-           [Last key stroke]
+           [Last key stroke], [Board Setting Instruction]
+
 
     """
     def __init__(self):
         Dcs5Interface.__init__(self)
 
-        self.listening: bool = False
+        self.active: bool = False
 
-        self.wait_for_numpad: bool = False
-        self.current_command: str = None
-        self.mode_setting: bool = False      
-        self.board_command: bool = False
-        self.meta_command: bool = False
+        self.stylus: str = 'pen' # [finger/pen]
+        self.stylus_offset: str = 0
 
-        self.buffer = ''
-        self.numpad_memory: float = 0
+        self.board_entry: str = 'top' # [top, length, bot]
+
+        self.numpad_store_mode: bool = False
+        self.board_setting_mode: bool = False
+
+        self.numpad_buffer: str = ''
+        self.numpad_memory: list = []
 
         self.previous_command: str = ''
 
         self.out = None
 
-    def clear_buffer(self):
-        self.buffer = ''
+    def clear_numpad_buffer(self):
+        self.numpad_buffer = ''
 
-    def reset_numpad_memory(self):
-        self.numpad_memory = 0
+    def clear_numpad_memory(self):
+        self.numpad_memory = []
 
-    def start_listening(self):
-        self.client.receive() # FIX TO EMPTY SOCKET BUFFER. First stroke is not gonna come in.
-        self.listening = True
-        self.listen_to_all()
-
-    def listen_to_all(self):
-        print('listening...')
-        while self.listening is True:
+    def activate_board(self):
+        self.client.empty_buffer()
+        self.active = True
+        print('The Board is Active')
+        while self.active is True:
             self.client.receive()
-
-            values = self.client.msg.replace('\r', '').split('#')
-
-            for value in values:
-                if value == "":
-                    continue
-                out = self.decode(value)
-                if out is None:
-                    continue
-
-                self.check_for_prior_command(out)
-                if self.board_command is True:
-                    self.board_command = False
-                elif isinstance(out, tuple):
-                    print(out)
-                elif self.current_command == 'mode':
-                    self.set_mode(out)
-                else:
-                    self.check_for_meta_command(out)
-
+            self.process_board_output()
             self.previous_command = self.client.msg # DEBUG HELP
 
-    def check_for_prior_command(self, key):
-        self.board_command = True
-        if key == 'a6':
-            self.listening = False
-        elif key == 'a1':
-            self.change_backlighting(1)
-        elif key == 'b1':
-            self.change_backlighting(-1)
-        elif key == 'a2':
-            print('Sensor Mode: ', self.sensor_mode)
-        elif key == 'a3':
-            print(self.previous_command)
-        if key == 'c1':
-            print('[Cancel]')
-            self.cancel_command()
+    def process_board_output(self):
+        for msg in self.client.msg.replace('\r', '').split('#'):
+            if msg == "":
+                continue
+            out = self.decode(msg)
+            if out is None:
+                continue
+
+            if out == 'mode':
+                self.trigger_board_setting_mode()
+
+            if out in KEYS_TYPE['function']:
+                print('Function out: ', out)
+
+            if out in KEYS_TYPE['setting']:
+                if self.board_setting_mode is True:
+                    self.select_board_setting(out)
+                    print('Board setting', out)
+
+            if out in KEYS_TYPE['numpad']:
+                if self.numpad_store_mode is True:
+                    self.store_numpad_entry(out)
+                    print('Numpad out: ', out)
+
+    def trigger_board_setting_mode(self):
+        if self.board_setting_mode is True:
+            self.board_setting_mode = False
+            self.numpad_store_mode = False
         else:
-            self.board_command = False
+            self.board_setting_mode = True
 
-    def check_for_meta_command(self, key):
+    def select_board_setting(self, value):
+        self.clear_numpad_buffer()
+        self.clear_numpad_memory()
+        self.numpad_store_mode = True
 
-        if key == 'mode':
-            print('[mode]')
-            self.current_command = 'mode'
-            self.wait_for_numpad = True
-            print('mode setting: Enter a value between 0 and 3.')
-        else:
-            print('command not used: ', key)
-
-    def cancel_command(self):
-        print('Command Cancelled.')
-        self.current_command = None
-        self.clear_buffer()
-        self.wait_for_numpad = False
-        self.reset_numpad_memory()
-
-    def set_mode(self, value):
-        self.listen_to_numpad(value)
-        if self.wait_for_numpad is False:
-            if self.numpad_memory in [0, 1, 2, 3]:
-                self.set_sensor_mode(self.numpad_memory)
-                self.mode_setting = False
-            else:
-                print('Error: Mode value must be between 0 and 3.')
-              
-    def listen_to_numpad(self, value: str):
+    def process_numpad_entry(self, value):
+        if value == 'enter':
+            if len(self.numpad_buffer) > '':
+                self.load_numpad_buffer_to_memory()
+        if value == 'del' and len(self.numpad_buffer) > '':
+            self.numpad_buffer = self.numpad_memory[:-1]
         if value in '.0123456789':
-            self.buffer += value
-            print(self.buffer)
+            self.numpad_buffer += value
 
-        elif value == 'enter' and value != "":
-            print('[enter]')
-            self.numpad_memory = float(self.buffer)
-            self.clear_buffer()
-            self.wait_for_numpad = False
-            self.mode_setting = False
+    def load_numpad_buffer_to_memory(self):
+        self.numpad_memory.append(float(self.numpad_buffer))
+        self.clear_numpad_buffer()
+
 
     def decode(self, value: str):
         if '%t' in value:
