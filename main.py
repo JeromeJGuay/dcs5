@@ -488,7 +488,7 @@ class Dcs5Controller(Dcs5Interface):
                     if self.number_of_numpad_entry == 0:
                         self.set_board_setting()
                 else:
-                    print('numpad out, value')
+                    print('numpad out ', out)
             elif isinstance(out, tuple):
                 if out[0] == 's':
                     print('Swipe value', out[1])
