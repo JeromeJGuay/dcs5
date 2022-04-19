@@ -1,17 +1,17 @@
 """
-
-bigfin adress: 00:06:66:89:E5:FE
-
-
-
-%t means that the stylus has touch the board.
-
+TODO
+----
+Class to handle interfacing error.
 
 
 
 Notes
 -----
-    Big Fin docs: https://bigfinllc.com/wp-content/uploads/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf?fbclid=IwAR0tJMwvN7jkqxgEhRQABS0W3HLLntpOflg12bMEwM5YrDOwcHStznJJNQM
+
+
+References
+----------
+    https://bigfinllc.com/wp-content/uploads/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf?fbclid=IwAR0tJMwvN7jkqxgEhRQABS0W3HLLntpOflg12bMEwM5YrDOwcHStznJJNQM
 
 """
 
@@ -25,7 +25,7 @@ SOCKET_METHOD = ['socket', 'bluetooth'][0]
 DEVICE_NAME = "BigFinDCS5-E5FE"
 PORT = 1
 
-DCS5_ADRESS = "00:06:66:89:E5:FE"
+DCS5_ADDRESS = "00:06:66:89:E5:FE"
 EXIT_COMMAND = "stop"
 
 ENCODING = 'UTF-8'
@@ -40,6 +40,8 @@ MIN_BACKLIGHTING_LEVEL = 0
 MAX_BACKLIGHTING_LEVEL = 95
 DEFAULT_BACKLIGHTING_AUTO_MODE = False
 DEFAULT_BACKLIGHTING_SENSITIVITY = 0
+MIN_BACKLIGHTING_SENSITIVITY = 0
+MAX_BACKLIGHTING_SENSITIVITY = 7
 
 UNSOLICITED_MESSAGES = {
     "%t": r"%t,(d+)#",
@@ -89,12 +91,12 @@ KEY_TYPES = {'function': tuple(f'a{i}' for i in range(1, 7)),
              }
 
 
-def scan():
+def scan_bluetooth_device():
     devices = {}
     print("Scanning for bluetooth devices ...")
-    _devices = bluetooth.discover_devices(lookup_names = True, lookup_class = True)
+    _devices = bluetooth.discover_devices(lookup_names=True, lookup_class=True)
     number_of_devices = len(_devices)
-    print(number_of_devices," devices found")
+    print(number_of_devices, " devices found")
     for addr, name, device_class in _devices:
         devices[name] = {'address': addr, 'class': device_class}
         print('\n')
@@ -106,8 +108,8 @@ def scan():
     return devices
 
 
-def search_for_dcs5board()->str:
-    devices = scan()
+def search_for_dcs5board() -> str:
+    devices = scan_bluetooth_device()
     if DEVICE_NAME in devices:
         print(f'{DEVICE_NAME}, found.')
         return devices[DEVICE_NAME]['address']
@@ -117,11 +119,12 @@ def search_for_dcs5board()->str:
 
 
 class Dcs5Client:
-    '''
+    """
     Notes
     -----
     Both socket and bluetooth methods(socket package) seems to be equivalent.
-    '''
+    """
+
     def __init__(self, method: str = 'socket'):
 
         self.dcs5_address: str = None
@@ -148,7 +151,7 @@ class Dcs5Client:
         self.socket.send(bytes(command, ENCODING))
 
     def receive(self):
-        self.buffer = str(self.socket.recv(BUFFER_SIZE).decode(ENCODING))
+        self.buffer = str(self.socket.recv(BUFFER_SIZE).decode_buffer(ENCODING))
 
     def clear_socket_buffer(self):
         self.socket.settimeout(.01)
@@ -170,6 +173,7 @@ class Dcs5Interface:
         %h,VER,BR#
         see documentations
     """
+
     def __init__(self):
         self.client: Dcs5Client = Dcs5Client(method=SOCKET_METHOD)
 
@@ -218,7 +222,7 @@ class Dcs5Interface:
         if self.client.buffer == "Rebooting in 2 seconds...":
             print(self.client.buffer)
 
-    def reboot(self): # FIXME NOT WORKING
+    def reboot(self):  # FIXME NOT WORKING
         self.query('&rr#')
         if self.client.buffer == "%rebooting":
             print(self.client.buffer)
@@ -233,13 +237,13 @@ class Dcs5Interface:
     def get_board_stats(self):
         self.query('b#')
         self.board_stats = self.client.buffer
-        print(self.client.buffer) # TODO remove
+        print(self.client.buffer)  # TODO remove
 
     def get_battery_level(self):
         self.client.send('&q#')
         self.client.receive()
-        self.battery_level = re.findall(r"%q:(-*\d*,\d*)#", self.client.buffer)[0]
-        print(f"Battery: {self.battery_level}%") # TODO remove
+        self.battery_level = re.findall(r'%q:(-*\d*,\d*)#', self.client.buffer)[0]
+        print(f"Battery: {self.battery_level}%")  # TODO remove
 
     def set_sensor_mode(self, value):
         """
@@ -265,9 +269,9 @@ class Dcs5Interface:
             print('Return Error', self.client.buffer)
 
     def set_interface(self, value: int):
-        '''
+        """
         FEED seems to enable box key strokes.
-        '''
+        """
         self.query(f"&fm,{value}#", listen=False)
         if value == 0:
             self.board_interface = "DCSLinkstream"
@@ -276,7 +280,7 @@ class Dcs5Interface:
 
     def restore_cal_data(self):
         self.query("&cr,m1,m2,raw1,raw2#")
-        print(self.client.buffer) # TODO received %a:e#
+        print(self.client.buffer)  # TODO received %a:e#
         # self.calibrated = True
 
     def clear_cal_data(self):
@@ -284,26 +288,26 @@ class Dcs5Interface:
         print(self.client.buffer)  # TODO
         self.calibrated = False
 
-    def set_backlighting_level(self, value: int): # NOT WORKING
+    def set_backlighting_level(self, value: int):  # NOT WORKING
         """0-95"""
         self.query(f'&o,{value}#', listen=False)
         self.backlighting_level = value
 
-    def set_backlighting_auto_mode(self, value: bool): # NOT WORKING
+    def set_backlighting_auto_mode(self, value: bool):  # NOT WORKING
         self.query(f"&oa,{int(value)}", listen=False)
         self.backlighting_auto_mode = value
 
-    def set_backlighting_sensitivity(self, value: int): # NOT WORKING
-        "0-7"
+    def set_backlighting_sensitivity(self, value: int):  # NOT WORKING
+        """0-7"""
         self.query(f"&os,{int(value)}", listen=False)
         self.backlighting_sensitivity = {True: 'auto', False: 'manual'}
 
     def set_stylus_detection_message(self, value: bool):
         """
-        When disabled (false): %t,(\d+)# are not sent
+        When disabled (false): %t0 %t1 are not sent
         """
         self.query(f'&sn,{int(value)}')
-        if self.client.buffer == f'%sn:{int(value)}#\r': # NOT WORKING
+        if self.client.buffer == f'%sn:{int(value)}#\r':  # NOT WORKING
             if value is True:
                 print('Stylus Status Message Enable')
                 self.stylus_status_msg = 'Enable'
@@ -337,7 +341,7 @@ class Dcs5Interface:
         else:
             print('Return Error', self.client.buffer)
 
-    def check_calibration_state(self): # TODO, to be tested
+    def check_calibration_state(self):  # TODO, to be tested
         self.query('&u#')
         if self.client.buffer == '%u:0#\r':
             print('Board is not calibrated.')
@@ -348,17 +352,17 @@ class Dcs5Interface:
         else:
             print('Return Error', self.client.buffer)
 
-    def set_calibration_points_mm(self, pt: int, pos: int, cal_pt_1: int = None, cal_pt_2: int = None):
+    def set_calibration_points_mm(self, pt: int, pos: int):
         if self.client.buffer == f'Cal Pt {pt + 1} set to: {pos}\r':
             self.cal_pt[pt] = pos
-            print(f'Calibration point {pt+1} set to {pos} mm')
+            print(f'Calibration point {pt + 1} set to {pos} mm')
         else:
             print('Return Error', self.client.buffer)
 
     def calibrate(self, pt: int):
         if self.cal_pt[pt] is not None:
-            print(f'Calibration for point {pt+1}: {self.cal_pt[pt]} mm. Touch Stylus ...')
-            self.query(f"&{pt+1}r#")
+            print(f'Calibration for point {pt + 1}: {self.cal_pt[pt]} mm. Touch Stylus ...')
+            self.query(f"&{pt + 1}r#")
             if self.client.buffer == f'&Xr#: X={pt + 1}\r':
                 msg = ""
                 while 'c' not in msg:
@@ -399,19 +403,20 @@ class Dcs5Controller(Dcs5Interface):
 
 
     """
+
     def __init__(self):
         Dcs5Interface.__init__(self)
 
         self.active: bool = False
 
-        self.stylus: str = 'pen' # [finger/pen]
+        self.stylus: str = 'pen'  # [finger/pen]
         self.stylus_offset: str = 0
 
-        self.board_entry: str = 'length' # [top, length, bot]
+        self.board_entry_mode: str = 'length'  # [top, length, bot]
         self.swipe_triggered: bool = False
         self.swipe_value: str = ''
 
-        self.numpad_store_mode: bool = False
+        self.numpad_storing_mode: bool = False
         self.board_setting_mode: bool = False
         self.number_of_numpad_entry: int = None
         self.selected_setting: str = None
@@ -436,13 +441,13 @@ class Dcs5Controller(Dcs5Interface):
         while self.active is True:
             self.client.receive()
             self.process_board_output()
-            self.previous_command = self.client.buffer # DEBUG HELP
+            self.previous_command = self.client.buffer  # DEBUG HELP
 
     def process_board_output(self):
         for msg in self.client.buffer.replace('\r', '').split('#'):
             if msg == "":
                 continue
-            out = self.decode(msg)
+            out = self.decode_buffer(msg)
             if out is None:
                 continue
 
@@ -459,7 +464,7 @@ class Dcs5Controller(Dcs5Interface):
                     print('Board setting', out)
 
             elif out in KEY_TYPES['numpad']:
-                if self.numpad_store_mode is True:
+                if self.numpad_storing_mode is True:
                     self.process_numpad_entry(out)
                     print('Numpad entry: ', out)
                     if self.number_of_numpad_entry == 0:
@@ -476,7 +481,7 @@ class Dcs5Controller(Dcs5Interface):
                     if self.swipe_triggered is True:
                         self.check_for_board_entry_swipe(out[1])
                     else:
-                        if self.board_entry == 'length':
+                        if self.board_entry_mode == 'length':
                             print('Board entry', out[1])
                         else:
                             self.map_board_entry(out[1])
@@ -487,7 +492,7 @@ class Dcs5Controller(Dcs5Interface):
     def trigger_board_setting_mode(self):
         if self.board_setting_mode is True:
             self.board_setting_mode = False
-            self.numpad_store_mode = False
+            self.numpad_storing_mode = False
         else:
             self.board_setting_mode = True
 
@@ -495,7 +500,7 @@ class Dcs5Controller(Dcs5Interface):
         # TODO
         self.clear_numpad_buffer()
         self.clear_numpad_memory()
-        self.numpad_store_mode = True
+        self.numpad_storing_mode = True
         if value == 'b1':
             self.number_of_numpad_entry = 2
             self.selected_setting = 'test_setting'
@@ -505,7 +510,7 @@ class Dcs5Controller(Dcs5Interface):
             print(self.numpad_memory)
         self.clear_numpad_memory()
         self.board_setting_mode = False
-        self.numpad_store_mode = False
+        self.numpad_storing_mode = False
 
     def process_numpad_entry(self, value):
         if value == 'enter':
@@ -523,16 +528,16 @@ class Dcs5Controller(Dcs5Interface):
         self.number_of_numpad_entry -= 1
 
     def check_for_board_entry_swipe(self, value):
-        #TODO
+        # TODO
         self.swipe_triggered = False
         print('Swipe position: ', value)
-        self.board_entry = 'length' # TODO
+        self.board_entry_mode = 'length'  # TODO
 
     def map_board_entry(self, value):
-        #TODO
+        # TODO
         pass
 
-    def decode(self, value: str):
+    def decode_buffer(self, value: str):
         if '%t' in value:
             return None
         elif '%l' in value:
@@ -565,36 +570,17 @@ class Dcs5Controller(Dcs5Interface):
         return int(re.findall(r"%s,(-*\d+)", value)[0])
 
 
-
-
-
-
-
-
-
-def scan_test():
-    address = search_for_dcs5board()
-    if address is not None:
-        b = Dcs5Interface()
-        b.start_client(address, PORT)
-
-    return b
-
-
-def test(scan: bool=False):
-
+def test(scan: bool = False):
     c = Dcs5Controller()
-    if scan is True:
-        address = search_for_dcs5board()
-    else:
-        adress = DCS5_ADRESS
+
+    address = search_for_dcs5board() if scan is True else DCS5_ADDRESS
 
     c.start_client(address, PORT)
     c.set_sensor_mode(1)
     c.set_interface(1)
     c.set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
     c.set_stylus_detection_message(True)
-    c.set_stylus_settling_delay(50)#DEFAULT_SETTLING_DELAY)
+    c.set_stylus_settling_delay(50)  # DEFAULT_SETTLING_DELAY)
     c.set_stylus_max_deviation(DEFAULT_MAX_DEVIATION)
     c.set_number_of_reading(DEFAULT_NUMBER_OF_READING)
 
@@ -602,15 +588,12 @@ def test(scan: bool=False):
 
     return c
 
-
-
-    #b.listen()
-    #b.set_calibration_points_mm(0, 0)
-    #b.set_calibration_points_mm(1, 600)
-    #b.calibrate(0)
-    #b.calibrate(1)
-
+    # b.listen()
+    # b.set_calibration_points_mm(0, 0)
+    # b.set_calibration_points_mm(1, 600)
+    # b.calibrate(0)
+    # b.calibrate(1)
 
 
 if __name__ == "__main__":
-    b=test()
+    c = test()
