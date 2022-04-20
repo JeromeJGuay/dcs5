@@ -19,7 +19,7 @@ import socket
 import bluetooth
 import re
 from typing import *
-import time
+import curses  # Terminal Dynamic Printing
 
 SOCKET_METHOD = ['socket', 'bluetooth'][0]
 DEVICE_NAME = "BigFinDCS5-E5FE"
@@ -90,6 +90,8 @@ KEY_TYPES = {'function': tuple(f'a{i}' for i in range(1, 7)),
              'numpad': tuple(f'{i}' for i in range(1, 9)) + ('.', 'enter', 'del', 'skip'),
              }
 
+SWIPE_THRESHOLD = 30
+
 
 def scan_bluetooth_device():
     devices = {}
@@ -151,7 +153,7 @@ class Dcs5Client:
         self.socket.send(bytes(command, ENCODING))
 
     def receive(self):
-        self.buffer = str(self.socket.recv(BUFFER_SIZE).decode_buffer(ENCODING))
+        self.buffer = str(self.socket.recv(BUFFER_SIZE).decode(ENCODING))
 
     def clear_socket_buffer(self):
         self.socket.settimeout(.01)
@@ -184,6 +186,8 @@ class Dcs5Interface:
         self.number_of_reading: int = None
 
         self.battery_level: str = None
+        self.humidity: int = None
+        self.temperature: int = None
         self.board_stats: str = None
         self.board_interface: str = None
 
@@ -210,6 +214,15 @@ class Dcs5Interface:
 
     def close_client(self):
         self.client.close()
+
+    def set_default_parameters(self):
+        self.set_sensor_mode(0)  # length measuring mode
+        self.set_interface(1)  # FEED
+        self.set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
+        self.set_stylus_detection_message(False)
+        self.set_stylus_settling_delay(DEFAULT_SETTLING_DELAY)
+        self.set_stylus_max_deviation(DEFAULT_MAX_DEVIATION)
+        self.set_number_of_reading(DEFAULT_NUMBER_OF_READING)
 
     def query(self, value: str, listen: bool = True):
         """Receive message are locatedin self.client.msg"""
@@ -255,7 +268,6 @@ class Dcs5Interface:
 
         self.client.send(f'&m,{int(value)}#')
         self.client.receive()
-        print(self.client.buffer)
         if self.client.buffer == 'length mode activated\r':
             self.sensor_mode = 'length'
         elif self.client.buffer == 'alpha mode activated\r':
@@ -288,16 +300,16 @@ class Dcs5Interface:
         print(self.client.buffer)  # TODO
         self.calibrated = False
 
-    def set_backlighting_level(self, value: int):  # NOT WORKING
+    def set_backlighting_level(self, value: int):
         """0-95"""
-        self.query(f'&o,{value}#', listen=False)
+        self.query(f'&o,{int(value)}#', listen=False)
         self.backlighting_level = value
 
-    def set_backlighting_auto_mode(self, value: bool):  # NOT WORKING
+    def set_backlighting_auto_mode(self, value: bool):
         self.query(f"&oa,{int(value)}", listen=False)
         self.backlighting_auto_mode = value
 
-    def set_backlighting_sensitivity(self, value: int):  # NOT WORKING
+    def set_backlighting_sensitivity(self, value: int):
         """0-7"""
         self.query(f"&os,{int(value)}", listen=False)
         self.backlighting_sensitivity = {True: 'auto', False: 'manual'}
@@ -384,24 +396,6 @@ class Dcs5Controller(Dcs5Interface):
         - add a measured function that can be called from andes.
         - class key into categories.
         - swipe to change from length to character or number or option. The position of the swipe could indicate the mode.
-
-        - make print
-
-           Mac Address :
-           Port :
-           Device Status : [Awake/Asleep]
-
-           ///------------------------------------------------------------------------------------
-           | BACKLIGHT : | Level [50]          | Mode [manual/auto] | Sensitivity [0]            |
-           | STYLUS    : | Mode [alpha/length] | Type [finger/pen]  |  Offset [0]                |
-           |             | Entry [top/mid/bot] |                    |                            |
-           |             | Setting Delay [ 1]  | Max Deviation [06] | Number Of Reading [20]     |
-           | META      : | Status [ON/]        | Parameter []       | Values [x/#RequiredValued] |
-           | NUMPAD    : | Mode [lock/unlock]  | Buffer [xxxxxxxxx] | Memory [         0]        |
-           ------------------------------------------------------------------------------------///
-           [Last key stroke], [Board Setting Instruction]
-
-
     """
 
     def __init__(self):
@@ -416,15 +410,16 @@ class Dcs5Controller(Dcs5Interface):
         self.swipe_triggered: bool = False
         self.swipe_value: str = ''
 
+        self.mode_key_activated: bool = False
+
         self.numpad_storing_mode: bool = False
-        self.board_setting_mode: bool = False
         self.number_of_numpad_entry: int = None
         self.selected_setting: str = None
 
         self.numpad_buffer: str = ''
         self.numpad_memory: list = []
 
-        self.previous_command: str = ''
+        self.last_entry: str = ''
 
         self.out = None
 
@@ -434,82 +429,106 @@ class Dcs5Controller(Dcs5Interface):
     def clear_numpad_memory(self):
         self.numpad_memory = []
 
-    def activate_board(self):
+    def activate_board(self, interactive: bool = True):
         self.client.clear_socket_buffer()
         self.active = True
-        print('The Board is Active')
+        self.set_backlighting_level(95)
+        self.set_backlighting_auto_mode(False)
+        stdscr: curses.window = None
+        if interactive is True:
+            stdscr = curses.initscr()
         while self.active is True:
+            if interactive is True:
+                stdscr.addstr(0, 0, status_info(self))
+                stdscr.refresh()
             self.client.receive()
             self.process_board_output()
-            self.previous_command = self.client.buffer  # DEBUG HELP
+        if interactive is True:
+            curses.endwin()
+
+    def deactivate_board(self):
+        self.active = False
+        self.set_backlighting_level(0)
+        # print('The Board is inactive.')
 
     def process_board_output(self):
         for msg in self.client.buffer.replace('\r', '').split('#'):
             if msg == "":
                 continue
             out = self.decode_buffer(msg)
+            self.last_entry = out
             if out is None:
                 continue
 
             if out == 'mode':
-                self.trigger_board_setting_mode()
+                self.trigger_mode_key()
                 # DO something with the arrow for lights.
 
             elif out in KEY_TYPES['function']:
-                print('Function out: ', out)
+                #    print('Function out: ', out)
+                continue
 
-            elif out in KEY_TYPES['setting']:
-                if self.board_setting_mode is True:
+            elif self.mode_key_activated is True:
+                if out in KEY_TYPES['setting']:
                     self.select_board_setting(out)
-                    print('Board setting', out)
+                #        print('Board setting', out)
+                if out == 'a6':
+                    self.deactivate_board()
 
-            elif out in KEY_TYPES['numpad']:
+            if out in KEY_TYPES['numpad']:
                 if self.numpad_storing_mode is True:
                     self.process_numpad_entry(out)
-                    print('Numpad entry: ', out)
+                    #        print('Numpad entry: ', out)
                     if self.number_of_numpad_entry == 0:
                         self.set_board_setting()
                 else:
-                    print('numpad out ', out)
+                    #        print('numpad out ', out)
+                    continue
+
             elif isinstance(out, tuple):
                 if out[0] == 's':
-                    print('Swipe value', out[1])
                     self.swipe_value = out[1]
-                    if out[1] > 0:
+                    if out[1] > SWIPE_THRESHOLD:
                         self.swipe_triggered = True
                 if out[0] == 'l':
                     if self.swipe_triggered is True:
                         self.check_for_board_entry_swipe(out[1])
                     else:
                         if self.board_entry_mode == 'length':
-                            print('Board entry', out[1])
+                            pass
+                        #                print('Board entry', out[1])
                         else:
                             self.map_board_entry(out[1])
 
             else:
-                print('simple out', out)
+                continue
+            #    print('simple out', out)
 
-    def trigger_board_setting_mode(self):
-        if self.board_setting_mode is True:
-            self.board_setting_mode = False
+    def trigger_mode_key(self):
+        # print('key mode active')
+        if self.mode_key_activated is True:
+            self.mode_key_activated = False
             self.numpad_storing_mode = False
+            self.selected_setting = None
         else:
-            self.board_setting_mode = True
+            self.mode_key_activated = True
 
     def select_board_setting(self, value):
         # TODO
         self.clear_numpad_buffer()
         self.clear_numpad_memory()
         self.numpad_storing_mode = True
+
         if value == 'b1':
             self.number_of_numpad_entry = 2
             self.selected_setting = 'test_setting'
 
     def set_board_setting(self):
         if self.selected_setting == 'test_setting':
-            print(self.numpad_memory)
+            pass
+        #   print(self.numpad_memory)
         self.clear_numpad_memory()
-        self.board_setting_mode = False
+        self.mode_key_activated = False
         self.numpad_storing_mode = False
 
     def process_numpad_entry(self, value):
@@ -528,10 +547,13 @@ class Dcs5Controller(Dcs5Interface):
         self.number_of_numpad_entry -= 1
 
     def check_for_board_entry_swipe(self, value):
-        # TODO
         self.swipe_triggered = False
-        print('Swipe position: ', value)
-        self.board_entry_mode = 'length'  # TODO
+        if int(value) > 630:
+            self.board_entry_mode = 'length'
+        elif int(value) > 430:
+            self.board_entry_mode = 'bot'
+        elif int(value) > 230:
+            self.board_entry_mode = 'top'
 
     def map_board_entry(self, value):
         # TODO
@@ -553,13 +575,12 @@ class Dcs5Controller(Dcs5Interface):
             if self.backlighting_level > MAX_BACKLIGHTING_LEVEL:
                 self.backlighting_level = MAX_BACKLIGHTING_LEVEL
             self.set_backlighting_level(self.backlighting_level)
-            print('BackLighting increased')
+
         if value == -1 and self.backlighting_level > MIN_BACKLIGHTING_LEVEL:
             self.backlighting_level += -15
             if self.backlighting_level < MIN_BACKLIGHTING_LEVEL:
                 self.backlighting_level = MIN_BACKLIGHTING_LEVEL
             self.set_backlighting_level(self.backlighting_level)
-            print('BackLighting decreased')
 
     @staticmethod
     def get_length(value: str):
@@ -569,31 +590,57 @@ class Dcs5Controller(Dcs5Interface):
     def get_swipe(value: str):
         return int(re.findall(r"%s,(-*\d+)", value)[0])
 
+    def raw_output_test(self):
+        self.active = True
+        while self.active is True:
+            self.client.receive()
+            if self.client.buffer == 'F,06#\r':
+                self.active = False
+            print(self.client.buffer)
+
+
+def status_info(dcs5_controller: Dcs5Controller):
+    sections = ['BACKLIGHT', 'STYLUS', '', '', 'META', 'NUMPAD']
+    cols_width = [18, 25, 40]
+    lines = [
+    [('Level', dcs5_controller.backlighting_level), ('Auto', dcs5_controller.backlighting_auto_mode),
+     ("Sensitivity", dcs5_controller.backlighting_sensitivity)],
+    [('Mode', dcs5_controller.sensor_mode), ('Type', dcs5_controller.stylus), ('Offset', dcs5_controller.stylus_offset)],
+    [('Entry', dcs5_controller.board_entry_mode), ('', ''), ('', '')],
+    [('Setting Delay', dcs5_controller.stylus_settling_delay), ('Max Deviation', dcs5_controller.stylus_max_deviation),
+     ('Number of reading', dcs5_controller.number_of_reading)],
+    [('Status', dcs5_controller.mode_key_activated), ('Command', dcs5_controller.selected_setting),
+     ('# values', dcs5_controller.number_of_numpad_entry)],
+    [('Storing', dcs5_controller.numpad_storing_mode), ('Buffer', dcs5_controller.numpad_buffer), ('Memory', dcs5_controller.numpad_memory)]
+        ]
+
+    state_print = f"Mac Address: {dcs5_controller.client.dcs5_address}\n" \
+                  + f"Port: {dcs5_controller.client.port}\n" \
+                  + f"Device active: {dcs5_controller.active}\n"
+
+    for s, line in zip(sections, lines):
+        out = ""
+        for col, w in zip(line, cols_width):
+            if col[0] == '':
+                out += (w + 4) * '-' + " | "
+            else:
+                out += col[0] + ": [" + (str(col[1])).rjust(w - len(col[0])) + "] | "
+        state_print += s.ljust(10) + "| " + out + '\n'
+    state_print += f'[Last entry: {dcs5_controller.last_entry}]'.ljust(78) + '\n'
+
+    return state_print
+
 
 def test(scan: bool = False):
     c = Dcs5Controller()
 
     address = search_for_dcs5board() if scan is True else DCS5_ADDRESS
-
     c.start_client(address, PORT)
-    c.set_sensor_mode(1)
-    c.set_interface(1)
-    c.set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
-    c.set_stylus_detection_message(True)
-    c.set_stylus_settling_delay(50)  # DEFAULT_SETTLING_DELAY)
-    c.set_stylus_max_deviation(DEFAULT_MAX_DEVIATION)
-    c.set_number_of_reading(DEFAULT_NUMBER_OF_READING)
-
-    c.activate_board()
-
+    c.set_default_parameters()
     return c
-
-    # b.listen()
-    # b.set_calibration_points_mm(0, 0)
-    # b.set_calibration_points_mm(1, 600)
-    # b.calibrate(0)
-    # b.calibrate(1)
 
 
 if __name__ == "__main__":
     c = test()
+
+    c.activate_board()
