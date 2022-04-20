@@ -86,7 +86,7 @@ XT_KEY_MAP = {
 }
 
 KEY_TYPES = {'function': tuple(f'a{i}' for i in range(1, 7)),
-             'setting': tuple(f'b{i}' for i in range(1, 7)),
+             'mode_function': tuple(f'b{i}' for i in range(1, 7)),
              'numpad': tuple(f'{i}' for i in range(1, 9)) + ('.', 'enter', 'del', 'skip'),
              }
 
@@ -198,17 +198,18 @@ class Dcs5Interface:
         self.backlighting_auto_mode: bool = None
         self.backlighting_sensitivity: int = None
 
+        self.feedback_msg: str = None
+
     def start_client(self, address: str = None, port: int = None):
-        print('\n')
         try:
-            print(f'Attempting to connect to board via port {port}.')
+            print(f'\nAttempting to connect to board via port {port}.')
             self.client.connect(address, port)
             print('Connection Successful.')
         except OSError as error:
             if '[Errno 112]' in str(error):
-                print('Connection Failed. Device Not Detected')
+                print('\nConnection Failed. Device Not Detected')
             if '[Errno 107]' in str(error):
-                print('Bluetooth not turn on.')
+                print('\nBluetooth not turn on.')
             else:
                 print(error)
 
@@ -233,30 +234,30 @@ class Dcs5Interface:
     def board_initialization(self):
         self.query('&init#')
         if self.client.buffer == "Rebooting in 2 seconds...":
-            print(self.client.buffer)
+            self.feedback_msg = self.client.buffer
 
     def reboot(self):  # FIXME NOT WORKING
         self.query('&rr#')
         if self.client.buffer == "%rebooting":
-            print(self.client.buffer)
+            self.feedback_msg = self.client.buffer
 
     def ping(self):
         """This could use for something more useful. Like checking at regular interval if the board is still active:
         """
         self.query('a#')
         if self.client.buffer == '%a:e#':
-            print('pong')
+            self.feedback_msg = 'pong'
 
     def get_board_stats(self):
         self.query('b#')
         self.board_stats = self.client.buffer
-        print(self.client.buffer)  # TODO remove
+        self.feedback_msg = self.client.buffer  # TODO remove
 
     def get_battery_level(self):
         self.client.send('&q#')
         self.client.receive()
         self.battery_level = re.findall(r'%q:(-*\d*,\d*)#', self.client.buffer)[0]
-        print(f"Battery: {self.battery_level}%")  # TODO remove
+        self.feedback_msg = f"Battery: {self.battery_level}%"  # TODO remove
 
     def set_sensor_mode(self, value):
         """
@@ -277,8 +278,7 @@ class Dcs5Interface:
         elif self.client.buffer == 'numeric mode activated\r':
             self.sensor_mode = 'numeric'
         else:
-
-            print('Return Error', self.client.buffer)
+            self.feedback_msg = f'Return Error,  {self.client.buffer}'
 
     def set_interface(self, value: int):
         """
@@ -292,12 +292,12 @@ class Dcs5Interface:
 
     def restore_cal_data(self):
         self.query("&cr,m1,m2,raw1,raw2#")
-        print(self.client.buffer)  # TODO received %a:e#
+        self.feedback_msg = self.client.buffer  # TODO received %a:e#
         # self.calibrated = True
 
     def clear_cal_data(self):
         self.query("&ca#")
-        print(self.client.buffer)  # TODO
+        self.feedback_msg = self.client.buffer  # TODO
         self.calibrated = False
 
     def set_backlighting_level(self, value: int):
@@ -321,59 +321,59 @@ class Dcs5Interface:
         self.query(f'&sn,{int(value)}')
         if self.client.buffer == f'%sn:{int(value)}#\r':  # NOT WORKING
             if value is True:
-                print('Stylus Status Message Enable')
+                self.feedback_msg = 'Stylus Status Message Enable'
                 self.stylus_status_msg = 'Enable'
             else:
-                print('Stylus Status Message Disable')
+                self.feedback_msg = 'Stylus Status Message Disable'
                 self.stylus_status_msg = 'Disable'
         else:
-            print('Return Error', self.client.buffer)
+            self.feedback_msg = f'Return Error,  {self.client.buffer}'
 
     def set_stylus_settling_delay(self, value: int = 1):
         self.query(f"&di,{value}#")
         if self.client.buffer == f"%di:{value}#\r":
             self.stylus_settling_delay = value
-            print(f"Stylus settling delay set to {value}")
+            self.feedback_msg = f"Stylus settling delay set to {value}"
         else:
-            print('Return Error', self.client.buffer)
+            self.feedback_msg = f'Return Error,  {self.client.buffer}'
 
     def set_stylus_max_deviation(self, value: int):
         self.query(f"&dm,{value}#")
         if self.client.buffer == f"%dm:{value}#\r":
             self.stylus_max_deviation = value
-            print(f"Stylus max deviation set to {value}")
+            self.feedback_msg = f"Stylus max deviation set to {value}"
         else:
-            print('Return Error', self.client.buffer)
+            self.feedback_msg = f'Return Error,  {self.client.buffer}'
 
     def set_number_of_reading(self, value: int = 5):
         self.query(f"&dn,{value}#")
         if self.client.buffer == f"%dn:{value}#\r":
             self.number_of_reading = value
-            print(f"Number of reading set to {value}")
+            self.feedback_msg = f"Number of reading set to {value}"
         else:
-            print('Return Error', self.client.buffer)
+            self.feedback_msg = f'Return Error,  {self.client.buffer}'
 
     def check_calibration_state(self):  # TODO, to be tested
         self.query('&u#')
         if self.client.buffer == '%u:0#\r':
-            print('Board is not calibrated.')
+            self.feedback_msg = 'Board is not calibrated.'
             self.calibrated = False
         elif self.client.buffer == '%u:1#\r':
-            print('Board is calibrated.')
+            self.feedback_msg = 'Board is calibrated.'
             self.calibrated = True
         else:
-            print('Return Error', self.client.buffer)
+            self.feedback_msg = f'Return Error,  {self.client.buffer}'
 
     def set_calibration_points_mm(self, pt: int, pos: int):
         if self.client.buffer == f'Cal Pt {pt + 1} set to: {pos}\r':
             self.cal_pt[pt] = pos
-            print(f'Calibration point {pt + 1} set to {pos} mm')
+            self.feedback_msg = f'Calibration point {pt + 1} set to {pos} mm'
         else:
-            print('Return Error', self.client.buffer)
+            self.feedback_msg = f'Return Error,  {self.client.buffer}'
 
     def calibrate(self, pt: int):
         if self.cal_pt[pt] is not None:
-            print(f'Calibration for point {pt + 1}: {self.cal_pt[pt]} mm. Touch Stylus ...')
+            self.feedback_msg = f'Calibration for point {pt + 1}: {self.cal_pt[pt]} mm. Touch Stylus ...'
             self.query(f"&{pt + 1}r#")
             if self.client.buffer == f'&Xr#: X={pt + 1}\r':
                 msg = ""
@@ -383,7 +383,7 @@ class Dcs5Interface:
 
             self.calibrated = True
 
-            print('Calibration done.')
+            self.feedback_msg = 'Calibration done.'
 
 
 class Dcs5Controller(Dcs5Interface):
@@ -430,26 +430,27 @@ class Dcs5Controller(Dcs5Interface):
         self.numpad_memory = []
 
     def activate_board(self, interactive: bool = True):
+        print('Activating board.')
         self.client.clear_socket_buffer()
         self.active = True
         self.set_backlighting_level(95)
         self.set_backlighting_auto_mode(False)
         stdscr: curses.window = None
         if interactive is True:
+            self.feedback_msg = "Board Ready"
             stdscr = curses.initscr()
         while self.active is True:
             if interactive is True:
-                stdscr.addstr(0, 0, status_info(self))
-                stdscr.refresh()
+                interactive_board(stdscr, self)
             self.client.receive()
             self.process_board_output()
         if interactive is True:
             curses.endwin()
 
     def deactivate_board(self):
+        print('Board deactivated')
         self.active = False
         self.set_backlighting_level(0)
-        # print('The Board is inactive.')
 
     def process_board_output(self):
         for msg in self.client.buffer.replace('\r', '').split('#'):
@@ -464,16 +465,17 @@ class Dcs5Controller(Dcs5Interface):
                 self.trigger_mode_key()
                 # DO something with the arrow for lights.
 
+            elif self.mode_key_activated is True:
+                if out in KEY_TYPES['mode_function']:
+                    self.select_board_setting(out)
+                elif out == 'a6':
+                    self.deactivate_board()
+                else:
+                    self.mode_key_activated = False
+
             elif out in KEY_TYPES['function']:
                 #    print('Function out: ', out)
                 continue
-
-            elif self.mode_key_activated is True:
-                if out in KEY_TYPES['setting']:
-                    self.select_board_setting(out)
-                #        print('Board setting', out)
-                if out == 'a6':
-                    self.deactivate_board()
 
             if out in KEY_TYPES['numpad']:
                 if self.numpad_storing_mode is True:
@@ -599,7 +601,7 @@ class Dcs5Controller(Dcs5Interface):
             print(self.client.buffer)
 
 
-def status_info(dcs5_controller: Dcs5Controller):
+def interactive_board(stdscr: curses.window, dcs5_controller: Dcs5Controller):
     sections = ['BACKLIGHT', 'STYLUS', '', '', 'META', 'NUMPAD']
     cols_width = [18, 25, 40]
     lines = [
@@ -626,9 +628,12 @@ def status_info(dcs5_controller: Dcs5Controller):
             else:
                 out += col[0] + ": [" + (str(col[1])).rjust(w - len(col[0])) + "] | "
         state_print += s.ljust(10) + "| " + out + '\n'
-    state_print += f'[Last entry: {dcs5_controller.last_entry}]'.ljust(78) + '\n'
+    state_print += f'Last entry: {dcs5_controller.last_entry}' + '\n'
+    state_print += f'\n{dcs5_controller.feedback_msg}'
 
-    return state_print
+    stdscr.addstr(0, 0, state_print)
+    stdscr.refresh()
+
 
 
 def test(scan: bool = False):
