@@ -14,12 +14,13 @@ References
     https://bigfinllc.com/wp-content/uploads/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf?fbclid=IwAR0tJMwvN7jkqxgEhRQABS0W3HLLntpOflg12bMEwM5YrDOwcHStznJJNQM
 
 """
-
+import curses.textpad
 import socket
 import bluetooth
 import re
 from typing import *
 import curses  # Terminal Dynamic Printing
+from curses.textpad import Textbox, rectangle
 
 SOCKET_METHOD = ['socket', 'bluetooth'][0]
 DEVICE_NAME = "BigFinDCS5-E5FE"
@@ -406,15 +407,15 @@ class Dcs5Controller(Dcs5Interface):
         self.stylus: str = 'pen'  # [finger/pen]
         self.stylus_offset: str = 0
 
-        self.board_entry_mode: str = 'length'  # [top, length, bot]
+        self.board_entry_mode: str = 'center'  # [top, center, bot]
         self.swipe_triggered: bool = False
         self.swipe_value: str = ''
 
         self.mode_key_activated: bool = False
 
         self.numpad_storing_mode: bool = False
-        self.number_of_numpad_entry: int = None
-        self.selected_setting: str = None
+        self.number_of_numpad_entry: int = ''
+        self.selected_command: str = ''
 
         self.numpad_buffer: str = ''
         self.numpad_memory: list = []
@@ -435,13 +436,13 @@ class Dcs5Controller(Dcs5Interface):
         self.active = True
         self.set_backlighting_level(95)
         self.set_backlighting_auto_mode(False)
-        stdscr: curses.window = None
+        stdscr: CliWindow = None
         if interactive is True:
-            self.feedback_msg = "Board Ready"
-            stdscr = curses.initscr()
+            self.feedback_msg = ""
+            stdscr = CliWindow()
         while self.active is True:
             if interactive is True:
-                interactive_board(stdscr, self)
+                stdscr.update_window(self)
             self.client.receive()
             self.process_board_output()
         if interactive is True:
@@ -496,7 +497,7 @@ class Dcs5Controller(Dcs5Interface):
                     if self.swipe_triggered is True:
                         self.check_for_board_entry_swipe(out[1])
                     else:
-                        if self.board_entry_mode == 'length':
+                        if self.board_entry_mode == 'center':
                             pass
                         #                print('Board entry', out[1])
                         else:
@@ -511,7 +512,8 @@ class Dcs5Controller(Dcs5Interface):
         if self.mode_key_activated is True:
             self.mode_key_activated = False
             self.numpad_storing_mode = False
-            self.selected_setting = None
+            self.selected_command = ''
+            self.number_of_numpad_entry = ""
         else:
             self.mode_key_activated = True
 
@@ -523,15 +525,16 @@ class Dcs5Controller(Dcs5Interface):
 
         if value == 'b1':
             self.number_of_numpad_entry = 2
-            self.selected_setting = 'test_setting'
+            self.selected_command = 'test_setting'
 
     def set_board_setting(self):
-        if self.selected_setting == 'test_setting':
+        if self.selected_command == 'test_setting':
             pass
         #   print(self.numpad_memory)
         self.clear_numpad_memory()
-        self.mode_key_activated = False
-        self.numpad_storing_mode = False
+        self.trigger_mode_key()
+        #self.mode_key_activated = False
+        #self.numpad_storing_mode = False
 
     def process_numpad_entry(self, value):
         if value == 'enter':
@@ -551,7 +554,7 @@ class Dcs5Controller(Dcs5Interface):
     def check_for_board_entry_swipe(self, value):
         self.swipe_triggered = False
         if int(value) > 630:
-            self.board_entry_mode = 'length'
+            self.board_entry_mode = 'center'
         elif int(value) > 430:
             self.board_entry_mode = 'bot'
         elif int(value) > 230:
@@ -601,39 +604,49 @@ class Dcs5Controller(Dcs5Interface):
             print(self.client.buffer)
 
 
-def interactive_board(stdscr: curses.window, dcs5_controller: Dcs5Controller):
-    sections = ['BACKLIGHT', 'STYLUS', '', '', 'META', 'NUMPAD']
-    cols_width = [18, 25, 40]
-    lines = [
-    [('Level', dcs5_controller.backlighting_level), ('Auto', dcs5_controller.backlighting_auto_mode),
-     ("Sensitivity", dcs5_controller.backlighting_sensitivity)],
-    [('Mode', dcs5_controller.sensor_mode), ('Type', dcs5_controller.stylus), ('Offset', dcs5_controller.stylus_offset)],
-    [('Entry', dcs5_controller.board_entry_mode), ('', ''), ('', '')],
-    [('Setting Delay', dcs5_controller.stylus_settling_delay), ('Max Deviation', dcs5_controller.stylus_max_deviation),
-     ('Number of reading', dcs5_controller.number_of_reading)],
-    [('Status', dcs5_controller.mode_key_activated), ('Command', dcs5_controller.selected_setting),
-     ('# values', dcs5_controller.number_of_numpad_entry)],
-    [('Storing', dcs5_controller.numpad_storing_mode), ('Buffer', dcs5_controller.numpad_buffer), ('Memory', dcs5_controller.numpad_memory)]
+class CliWindow():
+    def __init__(self):
+        self.window = curses.initscr()
+        curses.nocbreak()
+        self.window.keypad(False)
+        curses.echo()
+
+    def update_window(self, dcs5_controller: Dcs5Controller):
+        sections = ['BACKLIGHT', 'STYLUS', '', '', 'META', 'NUMPAD']
+        cols_width = [18, 25, 40]
+        lines = [
+            [('Level', dcs5_controller.backlighting_level), ('Auto', dcs5_controller.backlighting_auto_mode),
+             ("Sensitivity", dcs5_controller.backlighting_sensitivity)],
+            [('Mode', dcs5_controller.sensor_mode), ('Type', dcs5_controller.stylus),
+             ('Offset', dcs5_controller.stylus_offset)],
+            [('Entry', dcs5_controller.board_entry_mode), ('', ''), ('', '')],
+            [('Setting Delay', dcs5_controller.stylus_settling_delay),
+             ('Max Deviation', dcs5_controller.stylus_max_deviation),
+             ('Number of reading', dcs5_controller.number_of_reading)],
+            [('Status', dcs5_controller.mode_key_activated), ('Command', dcs5_controller.selected_command),
+             ('# values', dcs5_controller.number_of_numpad_entry)],
+            [('Storing', dcs5_controller.numpad_storing_mode), ('Buffer', dcs5_controller.numpad_buffer),
+             ('Memory', dcs5_controller.numpad_memory)]
         ]
 
-    state_print = f"Mac Address: {dcs5_controller.client.dcs5_address}\n" \
-                  + f"Port: {dcs5_controller.client.port}\n" \
-                  + f"Device active: {dcs5_controller.active}\n"
+        state_print = f"Mac Address: {dcs5_controller.client.dcs5_address}\n" \
+                      + f"Port: {dcs5_controller.client.port}\n" \
+                      + f"Device active: {dcs5_controller.active}\n"
 
-    for s, line in zip(sections, lines):
-        out = ""
-        for col, w in zip(line, cols_width):
-            if col[0] == '':
-                out += (w + 4) * '-' + " | "
-            else:
-                out += col[0] + ": [" + (str(col[1])).rjust(w - len(col[0])) + "] | "
-        state_print += s.ljust(10) + "| " + out + '\n'
-    state_print += f'Last entry: {dcs5_controller.last_entry}' + '\n'
-    state_print += f'\n{dcs5_controller.feedback_msg}'
+        for s, line in zip(sections, lines):
+            out = ""
+            for col, w in zip(line, cols_width):
+                if col[0] == '':
+                    out += (w + 2) * ' ' + " | "
+                else:
+                    out += col[0] + ": " + (str(col[1])).rjust(w - len(col[0])) + " | "
+            state_print += s.ljust(10) + "| " + out + '\n'
+        state_print += f'Last entry: {dcs5_controller.last_entry}' + '\n'
+        state_print += f'\n{dcs5_controller.feedback_msg}'
 
-    stdscr.addstr(0, 0, state_print)
-    stdscr.refresh()
-
+        self.window.clear()
+        self.window.addstr(state_print)
+        self.window.refresh()
 
 
 def test(scan: bool = False):
@@ -645,7 +658,17 @@ def test(scan: bool = False):
     return c
 
 
+def test_window():
+    c = Dcs5Controller()
+    w = CliWindow()
+    w.update_window(c)
+    w.window.getch()
+    curses.endwin()
+
+
 if __name__ == "__main__":
     c = test()
-
     c.activate_board()
+    c.close_client()
+
+    #test_window()
