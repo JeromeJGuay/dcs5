@@ -3,11 +3,9 @@ TODO
 ----
 Class to handle interfacing error.
 
-
-
 Notes
 -----
-
+Calibration should be done with the Finger Stylus and not the Pen Stylus since the magnet is further away in the pen. ~(5mm)
 
 References
 ----------
@@ -44,12 +42,7 @@ DEFAULT_BACKLIGHTING_SENSITIVITY = 0
 MIN_BACKLIGHTING_SENSITIVITY = 0
 MAX_BACKLIGHTING_SENSITIVITY = 7
 
-UNSOLICITED_MESSAGES = {
-    "%t": r"%t,(d+)#",
-    "%l": r"%l,(d+)#",
-    "%s": r"%s,(d+)#",
-    "%d": r"%d,(d+)#",
-}
+DEFAULT_FINGER_STYLUS_OFFSET = -5
 
 XT_KEY_MAP = {
     "01": "a1",
@@ -91,7 +84,23 @@ KEY_TYPES = {'function': tuple(f'a{i}' for i in range(1, 7)),
              'numpad': tuple(f'{i}' for i in range(1, 9)) + ('.', 'enter', 'del', 'skip'),
              }
 
+
 SWIPE_THRESHOLD = 30
+
+
+BOARD_KEYS = {'top': list('abcdefghijklmnopqrstuvwxyz')+[f'{i+1}B' for i in range(8)],
+              'bot': list('1234.56789') + [
+                         'view', 'batch', 'tab', 'histo', 'summary', 'dismiss', 'fish', 'sample', 'sex', 'size',
+                         'light_bulb', 'scale', 'location', 'pit_pwr', 'settings'
+                     ] + [f'{i+1}G' for i in range(8)]}
+
+# BOARD_MAP =
+
+
+# HOW TO MAP THE KEYS FROM A LENGTH MEASUREMENT
+# between value of key_n = (y_n <= x*ratio < Y_(n+1))
+# find the ratio with 2 value that are flush so that each circle is an integer in the key axis.
+# index = int(x*ratio - first_key_value_in_mm); if index < len(keys) -1 # and voilà.
 
 
 def scan_bluetooth_device():
@@ -217,7 +226,7 @@ class Dcs5Interface:
     def close_client(self):
         self.client.close()
 
-    def set_default_parameters(self):
+    def set_default_board_settings(self):
         self.set_sensor_mode(0)  # length measuring mode
         self.set_interface(1)  # FEED
         self.set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
@@ -227,7 +236,7 @@ class Dcs5Interface:
         self.set_number_of_reading(DEFAULT_NUMBER_OF_READING)
 
     def query(self, value: str, listen: bool = True):
-        """Receive message are locatedin self.client.msg"""
+        """Receive message are located in self.client.buffer"""
         self.client.send(value)
         if listen is True:
             self.client.receive()
@@ -391,18 +400,17 @@ class Dcs5Controller(Dcs5Interface):
     """
     TODO
     ----
-        -Use a1 - a2 to map andes F1-F6 action.
-        -numpad, arrows, del enter should be always seeding entry to andes except when mode key is used.
-        - mode + key b1 - b6 to change parameters. Change the numpad+arrows+enter+del action mode.
+        - Reserve a1 - a2 to map andes F1-F6 action.
         - add a measured function that can be called from andes.
-        - class key into categories.
-        - swipe to change from length to character or number or option. The position of the swipe could indicate the mode.
+        - Add command to change stylus, change finger stylus offset.
+
+
     """
 
     def __init__(self):
         Dcs5Interface.__init__(self)
 
-        self.active: bool = False
+        self.is_awake: bool = False
 
         self.stylus: str = 'pen'  # [finger/pen]
         self.stylus_offset: str = 0
@@ -421,6 +429,7 @@ class Dcs5Controller(Dcs5Interface):
         self.numpad_memory: list = []
 
         self.last_entry: str = ''
+        self.out_value: str = None
 
         self.out = None
 
@@ -430,27 +439,28 @@ class Dcs5Controller(Dcs5Interface):
     def clear_numpad_memory(self):
         self.numpad_memory = []
 
-    def activate_board(self, interactive: bool = True):
-        print('Activating board.')
+    def wake_up_board(self, interactive: bool = True):
         self.client.clear_socket_buffer()
-        self.active = True
         self.set_backlighting_level(95)
         self.set_backlighting_auto_mode(False)
+        self.is_awake = True
         stdscr: CliWindow = None
         if interactive is True:
-            self.feedback_msg = ""
+            self.feedback_msg = ''
             stdscr = CliWindow()
-        while self.active is True:
-            if interactive is True:
-                stdscr.update_window(self)
+        stdscr.update_window(self)
+        while self.is_awake is True:
             self.client.receive()
             self.process_board_output()
+            if interactive is True:
+                stdscr.update_window(self)
+            self.feedback_msg = ''
+            self.out_value = ''
         if interactive is True:
             curses.endwin()
 
-    def deactivate_board(self):
-        print('Board deactivated')
-        self.active = False
+    def silence_board(self):
+        self.is_awake = False
         self.set_backlighting_level(0)
 
     def process_board_output(self):
@@ -470,22 +480,19 @@ class Dcs5Controller(Dcs5Interface):
                 if out in KEY_TYPES['mode_function']:
                     self.select_board_setting(out)
                 elif out == 'a6':
-                    self.deactivate_board()
+                    self.silence_board()
                 else:
                     self.mode_key_activated = False
 
             elif out in KEY_TYPES['function']:
-                #    print('Function out: ', out)
                 continue
 
             if out in KEY_TYPES['numpad']:
                 if self.numpad_storing_mode is True:
                     self.process_numpad_entry(out)
-                    #        print('Numpad entry: ', out)
                     if self.number_of_numpad_entry == 0:
                         self.set_board_setting()
                 else:
-                    #        print('numpad out ', out)
                     continue
 
             elif isinstance(out, tuple):
@@ -497,18 +504,11 @@ class Dcs5Controller(Dcs5Interface):
                     if self.swipe_triggered is True:
                         self.check_for_board_entry_swipe(out[1])
                     else:
-                        if self.board_entry_mode == 'center':
-                            pass
-                        #                print('Board entry', out[1])
-                        else:
-                            self.map_board_entry(out[1])
-
+                        self.map_board_entry(out[1])
             else:
                 continue
-            #    print('simple out', out)
 
     def trigger_mode_key(self):
-        # print('key mode active')
         if self.mode_key_activated is True:
             self.mode_key_activated = False
             self.numpad_storing_mode = False
@@ -530,11 +530,9 @@ class Dcs5Controller(Dcs5Interface):
     def set_board_setting(self):
         if self.selected_command == 'test_setting':
             pass
-        #   print(self.numpad_memory)
+
         self.clear_numpad_memory()
         self.trigger_mode_key()
-        #self.mode_key_activated = False
-        #self.numpad_storing_mode = False
 
     def process_numpad_entry(self, value):
         if value == 'enter':
@@ -561,8 +559,10 @@ class Dcs5Controller(Dcs5Interface):
             self.board_entry_mode = 'top'
 
     def map_board_entry(self, value):
-        # TODO
-        pass
+        if self.board_entry_mode == 'center':
+            self.out_value = value
+        else:
+            pass
 
     def decode_buffer(self, value: str):
         if '%t' in value:
@@ -596,11 +596,11 @@ class Dcs5Controller(Dcs5Interface):
         return int(re.findall(r"%s,(-*\d+)", value)[0])
 
     def raw_output_test(self):
-        self.active = True
-        while self.active is True:
+        self.is_awake = True
+        while self.is_awake is True:
             self.client.receive()
             if self.client.buffer == 'F,06#\r':
-                self.active = False
+                self.is_awake = False
             print(self.client.buffer)
 
 
@@ -631,7 +631,7 @@ class CliWindow():
 
         state_print = f"Mac Address: {dcs5_controller.client.dcs5_address}\n" \
                       + f"Port: {dcs5_controller.client.port}\n" \
-                      + f"Device active: {dcs5_controller.active}\n"
+                      + f"Device active: {dcs5_controller.is_awake}\n"
 
         for s, line in zip(sections, lines):
             out = ""
@@ -641,8 +641,9 @@ class CliWindow():
                 else:
                     out += col[0] + ": " + (str(col[1])).rjust(w - len(col[0])) + " | "
             state_print += s.ljust(10) + "| " + out + '\n'
-        state_print += f'Last entry: {dcs5_controller.last_entry}' + '\n'
-        state_print += f'\n{dcs5_controller.feedback_msg}'
+        state_print += f'Last entry: {dcs5_controller.last_entry}'
+        state_print += f'\nLast Board Message: {dcs5_controller.feedback_msg}'
+        state_print += f'\nOut_value: {dcs5_controller.out_value}'
 
         self.window.clear()
         self.window.addstr(state_print)
@@ -651,24 +652,16 @@ class CliWindow():
 
 def test(scan: bool = False):
     c = Dcs5Controller()
-
     address = search_for_dcs5board() if scan is True else DCS5_ADDRESS
     c.start_client(address, PORT)
-    c.set_default_parameters()
+    c.set_default_board_settings()
+    c.wake_up_board()
     return c
-
-
-def test_window():
-    c = Dcs5Controller()
-    w = CliWindow()
-    w.update_window(c)
-    w.window.getch()
-    curses.endwin()
 
 
 if __name__ == "__main__":
     c = test()
-    c.activate_board()
     c.close_client()
 
-    #test_window()
+
+
