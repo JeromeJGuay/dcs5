@@ -5,7 +5,10 @@ Class to handle interfacing error.
 
 Notes
 -----
-Calibration should be done with the Finger Stylus and not the Pen Stylus since the magnet is further away in the pen. ~(5mm)
+ The code is written for a stylus calibration.
+    Calibration should probably be done with the Finger Stylus and not the Pen Stylus
+    since the magnet is further away in the pen (~5mm). If this is the case, the code should be changed.
+
 
 References
 ----------
@@ -18,7 +21,6 @@ import bluetooth
 import re
 from typing import *
 import curses  # Terminal Dynamic Printing
-from curses.textpad import Textbox, rectangle
 
 SOCKET_METHOD = ['socket', 'bluetooth'][0]
 DEVICE_NAME = "BigFinDCS5-E5FE"
@@ -30,8 +32,8 @@ EXIT_COMMAND = "stop"
 ENCODING = 'UTF-8'
 BUFFER_SIZE = 4096
 
-DEFAULT_SETTLING_DELAY = 1  # from 0 to 20
-DEFAULT_MAX_DEVIATION = 6  # from 1 to 100
+DEFAULT_SETTLING_DELAY = 3 # 1  # from 0 to 20 DEFAULT 1
+DEFAULT_MAX_DEVIATION = 6  # from 1 to 100 DEFAULT 6
 DEFAULT_NUMBER_OF_READING = 5
 
 DEFAULT_BACKLIGHTING_LEVEL = 0
@@ -79,26 +81,31 @@ XT_KEY_MAP = {
     "32": "mode",
 }
 
-KEY_TYPES = {'function': tuple(f'a{i}' for i in range(1, 7)),
+XT_KEY_TYPES = {'function': tuple(f'a{i}' for i in range(1, 7)),
              'mode_function': tuple(f'b{i}' for i in range(1, 7)),
-             'numpad': tuple(f'{i}' for i in range(1, 9)) + ('.', 'enter', 'del', 'skip'),
-             }
+             'numpad': tuple(f'{i}' for i in range(0, 10)) + ('.', 'enter', 'del', 'skip'),
+                }
 
 
-SWIPE_THRESHOLD = 30
+SWIPE_THRESHOLD = 20
 
 
-BOARD_KEYS = {'top': list('abcdefghijklmnopqrstuvwxyz')+[f'{i+1}B' for i in range(8)],
+BOARD_KEYS_MAP = {'top': list('abcdefghijklmnopqrstuvwxyz') + [f'{i + 1}B' for i in range(8)],
               'bot': list('1234.56789') + [
                          'view', 'batch', 'tab', 'histo', 'summary', 'dismiss', 'fish', 'sample', 'sex', 'size',
                          'light_bulb', 'scale', 'location', 'pit_pwr', 'settings'
                      ] + [f'{i+1}G' for i in range(8)]}
 
-# BOARD_MAP =
-
+# pen stylus measure offset = 12 from center to measure.
+STYLUS_OFFSET = {'pen': 6, 'finger': 2} # mm -> check calibration procedure. TODO
+BOARD_KEY_RATIO = 15.385 #~200/13
+BOARD_KEY_DETECTION_RANGE = 2
+BOARD_KEY_ZERO = 104 - BOARD_KEY_DETECTION_RANGE
+BOARD_KEY_EXTENT = 627 - BOARD_KEY_DETECTION_RANGE
+BOARD_KEY_DEL_LAST = 718 - BOARD_KEY_DETECTION_RANGE
 
 # HOW TO MAP THE KEYS FROM A LENGTH MEASUREMENT
-# between value of key_n = (y_n <= x*ratio < Y_(n+1))
+# between value of key_n = (y_n <= x*ratio+zero < Y_(n+1))
 # find the ratio with 2 value that are flush so that each circle is an integer in the key axis.
 # index = int(x*ratio - first_key_value_in_mm); if index < len(keys) -1 # and voilà.
 
@@ -375,6 +382,7 @@ class Dcs5Interface:
             self.feedback_msg = f'Return Error,  {self.client.buffer}'
 
     def set_calibration_points_mm(self, pt: int, pos: int):
+        self.query(f'&{pt}mm,{pos}#')
         if self.client.buffer == f'Cal Pt {pt + 1} set to: {pos}\r':
             self.cal_pt[pt] = pos
             self.feedback_msg = f'Calibration point {pt + 1} set to {pos} mm'
@@ -383,16 +391,13 @@ class Dcs5Interface:
 
     def calibrate(self, pt: int):
         if self.cal_pt[pt] is not None:
-            self.feedback_msg = f'Calibration for point {pt + 1}: {self.cal_pt[pt]} mm. Touch Stylus ...'
             self.query(f"&{pt + 1}r#")
             if self.client.buffer == f'&Xr#: X={pt + 1}\r':
                 msg = ""
                 while 'c' not in msg:
                     self.client.receive()
                     msg += self.client.buffer  # FIXME
-
             self.calibrated = True
-
             self.feedback_msg = 'Calibration done.'
 
 
@@ -411,9 +416,11 @@ class Dcs5Controller(Dcs5Interface):
         Dcs5Interface.__init__(self)
 
         self.is_awake: bool = False
+        self.interactive: bool = True
+        self.stdscr: curses.window = None
 
         self.stylus: str = 'pen'  # [finger/pen]
-        self.stylus_offset: str = 0
+        self.stylus_offset: str = STYLUS_OFFSET['pen']
 
         self.board_entry_mode: str = 'center'  # [top, center, bot]
         self.swipe_triggered: bool = False
@@ -440,23 +447,24 @@ class Dcs5Controller(Dcs5Interface):
         self.numpad_memory = []
 
     def wake_up_board(self, interactive: bool = True):
+        self.interactive = interactive
         self.client.clear_socket_buffer()
         self.set_backlighting_level(95)
         self.set_backlighting_auto_mode(False)
         self.is_awake = True
-        stdscr: CliWindow = None
-        if interactive is True:
+        self.stdscr: CliWindow = None
+        if self.interactive is True:
             self.feedback_msg = ''
-            stdscr = CliWindow()
-        stdscr.update_window(self)
+            self.stdscr = CliWindow()
+        self.stdscr.update_window(self)
         while self.is_awake is True:
             self.client.receive()
             self.process_board_output()
-            if interactive is True:
-                stdscr.update_window(self)
+            if self.interactive is True:
+                self.stdscr.update_window(self)
             self.feedback_msg = ''
             self.out_value = ''
-        if interactive is True:
+        if self.interactive is True:
             curses.endwin()
 
     def silence_board(self):
@@ -477,23 +485,27 @@ class Dcs5Controller(Dcs5Interface):
                 # DO something with the arrow for lights.
 
             elif self.mode_key_activated is True:
-                if out in KEY_TYPES['mode_function']:
+                if out in XT_KEY_TYPES['mode_function']:
                     self.select_board_setting(out)
-                elif out == 'a6':
-                    self.silence_board()
-                else:
                     self.mode_key_activated = False
+                else:
+                    if out == 'c1':
+                        self.change_stylus()
+                    elif out == 'a6':
+                        self.silence_board()
+                    self.trigger_mode_key()
 
-            elif out in KEY_TYPES['function']:
-                continue
+            elif out in XT_KEY_TYPES['function']:
+                self.out_value = 'function'+out[1]
 
-            if out in KEY_TYPES['numpad']:
+            if out in XT_KEY_TYPES['numpad']:
                 if self.numpad_storing_mode is True:
-                    self.process_numpad_entry(out)
-                    if self.number_of_numpad_entry == 0:
+                    if self.number_of_numpad_entry > 0:
+                        self.process_numpad_entry(out)
+                    else:
                         self.set_board_setting()
                 else:
-                    continue
+                    self.out_value = out
 
             elif isinstance(out, tuple):
                 if out[0] == 's':
@@ -505,36 +517,44 @@ class Dcs5Controller(Dcs5Interface):
                         self.check_for_board_entry_swipe(out[1])
                     else:
                         self.map_board_entry(out[1])
-            else:
-                continue
 
     def trigger_mode_key(self):
         if self.mode_key_activated is True:
             self.mode_key_activated = False
             self.numpad_storing_mode = False
             self.selected_command = ''
-            self.number_of_numpad_entry = ""
+            self.clear_numpad_buffer()
+            self.clear_numpad_memory()
         else:
             self.mode_key_activated = True
 
-    def select_board_setting(self, value):
+    def select_board_setting(self, value: str):
         # TODO
         self.clear_numpad_buffer()
         self.clear_numpad_memory()
         self.numpad_storing_mode = True
 
         if value == 'b1':
+            self.selected_command = 'set calibration point'
             self.number_of_numpad_entry = 2
-            self.selected_command = 'test_setting'
+        if value == 'b2':
+            self.number_of_numpad_entry = 0
+            self.selected_command = 'calibrate'
 
     def set_board_setting(self):
-        if self.selected_command == 'test_setting':
-            pass
-
+        if self.selected_command == 'set calibration point':
+            self.set_calibration_points_mm(0, int(self.numpad_memory[0]))
+            self.set_calibration_points_mm(1, int(self.numpad_memory[1]))
+            self.feedback_msg = f'cal points: 1: {int(self.numpad_memory[0])}, 2: {int(self.numpad_memory[1])}'
+        elif self.selected_command == 'calibrate':
+            for i in [0, 1]:
+                self.feedback_msg = f'Calibrating point {i+1}: {self.cal_pt[i]} mm. Touch Stylus ...'
+                if self.interactive:
+                    self.stdscr.refresh()
+                self.calibrate(i)
         self.clear_numpad_memory()
-        self.trigger_mode_key()
 
-    def process_numpad_entry(self, value):
+    def process_numpad_entry(self, value: str):
         if value == 'enter':
             if len(self.numpad_buffer) == 0:
                 self.numpad_buffer = '0'
@@ -545,11 +565,14 @@ class Dcs5Controller(Dcs5Interface):
             self.numpad_buffer += value
 
     def load_numpad_buffer_to_memory(self):
-        self.numpad_memory.append(float(self.numpad_buffer))
+        if '.' in self.numpad_buffer:
+            self.numpad_memory.append(float(self.numpad_buffer))
+        else:
+            self.numpad_memory.append(int(self.numpad_buffer))
         self.clear_numpad_buffer()
         self.number_of_numpad_entry -= 1
 
-    def check_for_board_entry_swipe(self, value):
+    def check_for_board_entry_swipe(self, value: str):
         self.swipe_triggered = False
         if int(value) > 630:
             self.board_entry_mode = 'center'
@@ -558,11 +581,19 @@ class Dcs5Controller(Dcs5Interface):
         elif int(value) > 230:
             self.board_entry_mode = 'top'
 
-    def map_board_entry(self, value):
+    def map_board_entry(self, value: int):
         if self.board_entry_mode == 'center':
-            self.out_value = value
+            self.out_value = value - self.stylus_offset
         else:
-            pass
+            if value < BOARD_KEY_ZERO:
+                self.out_value = 'space'
+            elif value < BOARD_KEY_EXTENT:
+                index = int((value - BOARD_KEY_ZERO) / BOARD_KEY_RATIO)
+                self.out_value = BOARD_KEYS_MAP[self.board_entry_mode][index]
+            elif value < BOARD_KEY_DEL_LAST:
+                self.out_value = 'space'
+            else:
+                self.out_value = 'del_last'
 
     def decode_buffer(self, value: str):
         if '%t' in value:
@@ -573,6 +604,13 @@ class Dcs5Controller(Dcs5Interface):
             return 's', self.get_swipe(value)
         elif 'F' in value:
             return XT_KEY_MAP[value[2:]]
+
+    def change_stylus(self):
+        if self.stylus == 'pen':
+            self.stylus = 'finger'
+        else:
+            self.stylus = 'pen'
+        self.stylus_offset = STYLUS_OFFSET[self.stylus]
 
     def change_backlighting(self, value: int):
         if value == 1 and self.backlighting_level < MAX_BACKLIGHTING_LEVEL:
@@ -589,7 +627,7 @@ class Dcs5Controller(Dcs5Interface):
 
     @staticmethod
     def get_length(value: str):
-        return re.findall(r"%l,(\d+)", value)[0]
+        return int(re.findall(r"%l,(\d+)", value)[0])
 
     @staticmethod
     def get_swipe(value: str):
@@ -613,7 +651,7 @@ class CliWindow():
 
     def update_window(self, dcs5_controller: Dcs5Controller):
         sections = ['BACKLIGHT', 'STYLUS', '', '', 'META', 'NUMPAD']
-        cols_width = [18, 25, 40]
+        cols_width = [18, 30, 40]
         lines = [
             [('Level', dcs5_controller.backlighting_level), ('Auto', dcs5_controller.backlighting_auto_mode),
              ("Sensitivity", dcs5_controller.backlighting_sensitivity)],
