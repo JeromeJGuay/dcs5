@@ -15,22 +15,14 @@ References
     https://bigfinllc.com/wp-content/uploads/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf?fbclid=IwAR0tJMwvN7jkqxgEhRQABS0W3HLLntpOflg12bMEwM5YrDOwcHStznJJNQM
 
 """
-
+import argparse
 import logging
 import socket
 import bluetooth
 import re
 from typing import *
 import time
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler("debug.log"),
-        logging.StreamHandler()
-    ]
-)
+from pynput.keyboard import Key, Controller
 
 SOCKET_METHOD = ['socket', 'bluetooth'][0]
 DEVICE_NAME = "BigFinDCS5-E5FE"
@@ -397,20 +389,18 @@ class Dcs5Interface:
                 while f'&{pt}c' not in msg:
                     self.client.receive()
                     msg += self.client.buffer  # FIXME
-                    # logging.info(self.client.buffer)
                 logging.info(f'Point {pt} calibrated.')
 
 
 class Dcs5Controller(Dcs5Interface):
     """
-
     """
-
     def __init__(self):
         Dcs5Interface.__init__(self)
 
         self.is_awake: bool = False
         self.interactive: bool = True
+        self.keyboard = Controller()
 
         self.stylus: str = 'pen'  # [finger/pen]
         self.stylus_offset: str = STYLUS_OFFSET['pen']
@@ -423,6 +413,13 @@ class Dcs5Controller(Dcs5Interface):
 
         self.last_entry: str = ''
         self.out = None
+
+    def flash_lights(self, n):
+        current_level = self.backlighting_level
+        for i in range(n):
+            self.set_backlighting_level(0)
+            time.sleep(0.5)
+            self.set_backlighting_level(current_level)
 
     def wake_up_board(self):
         self.set_backlighting_level(95)
@@ -448,9 +445,8 @@ class Dcs5Controller(Dcs5Interface):
             self.last_entry = out
             if out is None:
                 continue
-
             if out in ['a1', 'a2', 'a3', 'a4', 'a5', 'a6']:
-                self.out_value = f'F{out[-1]}'
+                self.out_value = f'f{out[-1]}'
             elif out in ['b1', 'b2', 'b3', 'b4', 'b5', 'b6']:
                 if out == 'b1':
                     self.change_backlighting(1)
@@ -460,7 +456,7 @@ class Dcs5Controller(Dcs5Interface):
                     logging.info(f'{out} not mapped.')
             elif out == 'mode':
                 self.change_stylus()
-            elif out == 'c1':
+            elif out in ['c1', 'skip']:
                 logging.info(f'{out} not mapped.')
             else:
                 if isinstance(out, tuple):
@@ -478,15 +474,29 @@ class Dcs5Controller(Dcs5Interface):
                     self.out_value = out
             if self.out_value is not None:
                 logging.info(f'output value {self.out_value}')
+                self.to_keyboard(self.out_value)
+
+    def decode_buffer(self, value: str):
+        if '%t' in value:
+            return None
+        elif '%l' in value:
+            return 'l', self.get_length(value)
+        elif '%s' in value:
+            return 's', self.get_swipe(value)
+        elif 'F' in value:
+            return XT_KEY_MAP[value[2:]]
 
     def check_for_board_entry_swipe(self, value: str):
         self.swipe_triggered = False
         if int(value) > 630:
             self.board_entry_mode = 'center'
+            self.flash_lights(2)
         elif int(value) > 430:
             self.board_entry_mode = 'bot'
+            self.flash_lights(6)
         elif int(value) > 230:
             self.board_entry_mode = 'top'
+            self.flash_lights(4)
 
     def map_board_entry(self, value: int):
         if self.board_entry_mode == 'center':
@@ -502,15 +512,33 @@ class Dcs5Controller(Dcs5Interface):
             else:
                 return 'del_last'
 
-    def decode_buffer(self, value: str):
-        if '%t' in value:
-            return None
-        elif '%l' in value:
-            return 'l', self.get_length(value)
-        elif '%s' in value:
-            return 's', self.get_swipe(value)
-        elif 'F' in value:
-            return XT_KEY_MAP[value[2:]]
+    def to_keyboard(self, value: str):
+        if value == 'space':
+            self.keyboard_entry(Key.space)
+        if value == 'up':
+            self.keyboard_entry(Key.up)
+        if value == 'down':
+            self.keyboard_entry(Key.down)
+        if value == 'left':
+            self.keyboard_entry(Key.left)
+        if value == 'right':
+            self.keyboard_entry(Key.right)
+        if value == 'space':
+            self.keyboard_entry(Key.space)
+        if value == 'del_last':
+            self.keyboard_entry(Key.backspace)
+        if value == 'del':
+            self.keyboard_entry(Key.delete)
+        if value in ['f1', 'f2', 'f3', 'f4', 'f5', 'f6']:
+            self.keyboard_entry(Key.__dict__[value])
+        if str(value) in '.0123456789abcdefghijklmnopqrstuvwxyz':
+            self.keyboard_entry(value)
+        if isinstance(value, (int, float)):
+            self.keyboard.type(str(value))
+
+    def keyboard_entry(self, value):
+        self.keyboard.press(value)
+        self.keyboard.release(value)
 
     def change_stylus(self):
         if self.stylus == 'pen':
@@ -542,28 +570,40 @@ class Dcs5Controller(Dcs5Interface):
     def get_swipe(value: str):
         return int(re.findall(r"%s,(-*\d+)", value)[0])
 
-    def raw_output_test(self):
-        self.is_awake = True
-        while self.is_awake is True:
-            self.client.receive()
-            if self.client.buffer == 'F,06#\r':
-                self.is_awake = False
-            print(self.client.buffer)
 
-
-def main(scan: bool = False):
-    logging.basicConfig(filename='dcs5.log', level=logging.INFO)
-    logging.info('Started')
+def launch_board(scan: bool):
     c = Dcs5Controller()
-    # c = Dcs5Interface()
     address = search_for_dcs5board() if scan is True else DCS5_ADDRESS
     c.start_client(address, PORT)
     c.set_default_board_settings()
     c.wake_up_board()
     logging.info('Finished')
-    return c
+
+
+def main(scan: bool = False):
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        default="info",
+        help=("Provide logging level: [debug, info, warning, error, critical]"),
+    )
+
+    args = parser.parse_args()
+
+    logging.basicConfig(
+        level=args.verbose.upper(),
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.FileHandler("debug.log"),
+            logging.StreamHandler()
+        ]
+    )
+    logging.basicConfig(filename='dcs5.log', level=logging.INFO)
+    logging.info('Started')
+    launch_board(scan)
 
 
 if __name__ == "__main__":
-    c = main()
-    # c.close_client()
+    main()
+
