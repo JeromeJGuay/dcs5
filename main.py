@@ -15,13 +15,24 @@ References
     https://bigfinllc.com/wp-content/uploads/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf?fbclid=IwAR0tJMwvN7jkqxgEhRQABS0W3HLLntpOflg12bMEwM5YrDOwcHStznJJNQM
 
 """
-import curses.textpad
+
+import logging
 import socket
 import bluetooth
 import re
 from typing import *
 import curses  # Terminal Dynamic Printing
+import curses.textpad
 import time
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler("debug.log"),
+        logging.StreamHandler()
+    ]
+)
 
 SOCKET_METHOD = ['socket', 'bluetooth'][0]
 DEVICE_NAME = "BigFinDCS5-E5FE"
@@ -91,11 +102,12 @@ XT_KEY_TYPES = {'function': tuple(f'a{i}' for i in range(1, 7)),
 SWIPE_THRESHOLD = 20
 
 
-BOARD_KEYS_MAP = {'top': list('abcdefghijklmnopqrstuvwxyz') + [f'{i + 1}B' for i in range(8)],
-              'bot': list('1234.56789') + [
-                         'view', 'batch', 'tab', 'histo', 'summary', 'dismiss', 'fish', 'sample', 'sex', 'size',
-                         'light_bulb', 'scale', 'location', 'pit_pwr', 'settings'
-                     ] + [f'{i+1}G' for i in range(8)]}
+BOARD_KEYS_MAP = {
+    'top': list('abcdefghijklmnopqrstuvwxyz') + [f'{i + 1}B' for i in range(8)],
+    'bot': list('1234.56789') +\
+           ['view', 'batch', 'tab', 'histo', 'summary', 'dismiss', 'fish', 'sample',
+           'sex', 'size', 'light_bulb', 'scale', 'location', 'pit_pwr', 'settings'] +\
+           [f'{i+1}G' for i in range(8)]}
 
 # pen stylus measure offset = 12 from center to measure.
 STYLUS_OFFSET = {'pen': 6, 'finger': 2} # mm -> check calibration procedure. TODO
@@ -108,28 +120,23 @@ BOARD_KEY_DEL_LAST = 718 - BOARD_KEY_DETECTION_RANGE
 
 def scan_bluetooth_device():
     devices = {}
-    print("Scanning for bluetooth devices ...")
+    logging.info("Scanning for bluetooth devices ...")
     _devices = bluetooth.discover_devices(lookup_names=True, lookup_class=True)
     number_of_devices = len(_devices)
-    print(number_of_devices, " devices found")
+    logging.info(number_of_devices, " devices found")
     for addr, name, device_class in _devices:
         devices[name] = {'address': addr, 'class': device_class}
-        print('\n')
-        print("Devices:")
-        print(f" Name: {name}")
-        print(f" MAC Address: {addr}")
-        print(f" Class: {device_class}")
-        print('\n')
+        logging.info(f"Devices: \n Name: {name}\n MAC Address: {addr}\n Class: {device_class}")
     return devices
 
 
 def search_for_dcs5board() -> str:
     devices = scan_bluetooth_device()
     if DEVICE_NAME in devices:
-        print(f'{DEVICE_NAME}, found.')
+        logging.info(f'{DEVICE_NAME}, found.')
         return devices[DEVICE_NAME]['address']
     else:
-        print(f'{DEVICE_NAME}, not found.')
+        logging.info(f'{DEVICE_NAME}, not found.')
         return None
 
 
@@ -159,7 +166,7 @@ class Dcs5Client:
         try:
             self.socket.connect((self.dcs5_address, self.port))
         except (bluetooth.BluetoothError, socket.error) as err:
-            print(err)
+            logging.info(err)
             pass
 
     def send(self, command: str):
@@ -205,7 +212,7 @@ class Dcs5Interface:
         self.board_interface: str = None
 
         self.calibrated: bool = None
-        self.cal_pt: List[int] = [100,600]#[None, None]
+        self.cal_pt: List[int] = [None, None]
 
         self.backlighting_level: int = None
         self.backlighting_auto_mode: bool = None
@@ -215,16 +222,16 @@ class Dcs5Interface:
 
     def start_client(self, address: str = None, port: int = None):
         try:
-            print(f'\nAttempting to connect to board via port {port}.')
+            logging.info(f'Attempting to connect to board via port {port}.')
             self.client.connect(address, port)
-            print('Connection Successful.')
+            logging.info('Connection Successful.')
         except OSError as error:
             if '[Errno 112]' in str(error):
-                print('\nConnection Failed. Device Not Detected')
+                logging.info('Connection Failed. Device Not Detected')
             if '[Errno 107]' in str(error):
-                print('\nBluetooth not turn on.')
+                logging.info('Bluetooth not turn on.')
             else:
-                print(error)
+                logging.error(error)
 
     def close_client(self):
         self.client.close()
@@ -242,35 +249,36 @@ class Dcs5Interface:
         """Receive message are located in self.client.buffer"""
         self.client.send(value)
         if listen is True:
+            time.sleep(0.05)
             self.client.receive()
 
     def board_initialization(self):
         self.query('&init#')
         if self.client.buffer == "Rebooting in 2 seconds...":
-            self.feedback_msg = self.client.buffer
+            logging.info(self.client.buffer)
 
     def reboot(self):  # FIXME NOT WORKING
         self.query('&rr#')
         if self.client.buffer == "%rebooting":
-            self.feedback_msg = self.client.buffer
+            logging.info(self.client.buffer)
 
     def ping(self):
         """This could use for something more useful. Like checking at regular interval if the board is still active:
         """
         self.query('a#')
         if self.client.buffer == '%a:e#':
-            self.feedback_msg = 'pong'
+            logging.info('pong')
 
     def get_board_stats(self):
         self.query('b#')
         self.board_stats = self.client.buffer
-        self.feedback_msg = self.client.buffer  # TODO remove
+        logging.info(self.client.buffer)
 
     def get_battery_level(self):
         self.client.send('&q#')
         self.client.receive()
         self.battery_level = re.findall(r'%q:(-*\d*,\d*)#', self.client.buffer)[0]
-        self.feedback_msg = f"Battery: {self.battery_level}%"  # TODO remove
+        logging.info(f"Battery: {self.battery_level}%")
 
     def set_sensor_mode(self, value):
         """
@@ -284,14 +292,18 @@ class Dcs5Interface:
         self.client.receive()
         if self.client.buffer == 'length mode activated\r':
             self.sensor_mode = 'length'
+            logging.info(self.client.buffer)
         elif self.client.buffer == 'alpha mode activated\r':
             self.sensor_mode = 'alpha'
+            logging.info(self.client.buffer)
         elif self.client.buffer == 'shortcut mode activated\r':
             self.sensor_mode = 'shortcut'
+            logging.info(self.client.buffer)
         elif self.client.buffer == 'numeric mode activated\r':
             self.sensor_mode = 'numeric'
+            logging.info(self.client.buffer)
         else:
-            self.feedback_msg = f'Return Error,  {self.client.buffer}'
+            logging.error(f'Return Error,  {self.client.buffer}')
 
     def set_interface(self, value: int):
         """
@@ -305,11 +317,11 @@ class Dcs5Interface:
 
     def restore_cal_data(self):
         self.query("&cr,m1,m2,raw1,raw2#")
-        self.feedback_msg = self.client.buffer  # TODO received %a:e#
+        logging.info(self.client.buffer)
 
     def clear_cal_data(self):
         self.query("&ca#")
-        self.feedback_msg = self.client.buffer  # TODO
+        logging.info(self.client.buffer)
         self.calibrated = False
 
     def set_backlighting_level(self, value: int):
@@ -333,69 +345,69 @@ class Dcs5Interface:
         self.query(f'&sn,{int(value)}')
         if self.client.buffer == f'%sn:{int(value)}#\r':  # NOT WORKING
             if value is True:
-                self.feedback_msg = 'Stylus Status Message Enable'
+                logging.info('Stylus Status Message Enable')
                 self.stylus_status_msg = 'Enable'
             else:
-                self.feedback_msg = 'Stylus Status Message Disable'
+                logging.info('Stylus Status Message Disable')
                 self.stylus_status_msg = 'Disable'
         else:
-            self.feedback_msg = f'Return Error,  {self.client.buffer}'
+            logging.error(f'Stylus status message,  {self.client.buffer}')
 
     def set_stylus_settling_delay(self, value: int = 1):
         self.query(f"&di,{value}#")
         if self.client.buffer == f"%di:{value}#\r":
             self.stylus_settling_delay = value
-            self.feedback_msg = f"Stylus settling delay set to {value}"
+            logging.info(f"Stylus settling delay set to {value}")
         else:
-            self.feedback_msg = f'Return Error,  {self.client.buffer}'
+            logging.error(f'Settling delay,  {self.client.buffer}')
 
     def set_stylus_max_deviation(self, value: int):
         self.query(f"&dm,{value}#")
         if self.client.buffer == f"%dm:{value}#\r":
             self.stylus_max_deviation = value
-            self.feedback_msg = f"Stylus max deviation set to {value}"
+            logging.info(f"Stylus max deviation set to {value}")
         else:
-            self.feedback_msg = f'Return Error,  {self.client.buffer}'
+            logging.error(f'Max deviation,  {self.client.buffer}')
 
     def set_number_of_reading(self, value: int = 5):
         self.query(f"&dn,{value}#")
         if self.client.buffer == f"%dn:{value}#\r":
             self.number_of_reading = value
-            self.feedback_msg = f"Number of reading set to {value}"
+            logging.info(f"Number of reading set to {value}")
         else:
-            self.feedback_msg = f'Return Error,  {self.client.buffer}'
+            logging.error(f'Number of reading,  {self.client.buffer}')
 
     def check_calibration_state(self):  # TODO, to be tested
         self.query('&u#')
         if self.client.buffer == '%u:0#\r':
-            self.feedback_msg = 'Board is not calibrated.'
+            logging.info('Board is not calibrated.')
             self.calibrated = False
         elif self.client.buffer == '%u:1#\r':
-            self.feedback_msg = 'Board is calibrated.'
+            logging.info('Board is calibrated.')
             self.calibrated = True
         else:
-            self.feedback_msg = f'Return Error,  {self.client.buffer}'
+            logging.error(f'Calibration state {self.client.buffer}')
 
     def set_calibration_points_mm(self, pt: int, pos: int):
         self.query(f'&{pt}mm,{pos}#')
-        if self.client.buffer == f'Cal Pt {pt + 1} set to: {pos}\r':
-            self.cal_pt[pt] = pos
-            self.feedback_msg = f'Calibration point {pt + 1} set to {pos} mm'
+        if self.client.buffer == f'Cal Pt {pt} set to: {pos}\r':
+            self.cal_pt[pt-1] = pos
+            logging.info(f'Calibration point {pt} set to {pos} mm')
         else:
-            self.feedback_msg = f'Return Error,  {self.client.buffer}'
+            logging.error(f'Calibration point {self.client.buffer}')
 
     def calibrate(self, pt: int):
-        if self.cal_pt[pt] is not None:
-            self.feedback_msg = f'entered calibrate function {pt+1}'
-            self.query(f"&{pt + 1}r#")
-            self.feedback_msg = f'Calibrating point {pt + 1}: {self.cal_pt[pt]} mm. Touch Stylus ...'
-            self.feedback_msg = self.client.buffer
-            time.sleep(5)
-            if self.client.buffer == f'&Xr#: X={pt + 1}\r':
+        if self.cal_pt[pt-1] is not None:
+            self.query(f"&{pt}r#")
+            if self.client.buffer == f'&Xr#: X={pt}\r':
+                logging.info(f'Set stylus down for point {pt} ...')
                 msg = ""
-                while 'c' not in msg:
+                while f'&{pt}c' not in msg:
                     self.client.receive()
                     msg += self.client.buffer  # FIXME
+                    #logging.info(self.client.buffer)
+                logging.info(f'Point {pt} calibrated.')
+
 
 
 class Dcs5Controller(Dcs5Interface):
@@ -543,7 +555,7 @@ class Dcs5Controller(Dcs5Interface):
     def set_board_setting(self):
         if self.selected_command == 'set calibration point':
             for i in [0, 1]:
-                self.set_calibration_points_mm(i, int(self.numpad_memory[i]))
+                self.set_calibration_points_mm(i+1, int(self.numpad_memory[i]))
                 if self.interactive is True:
                     self.stdscr.update_window(self)
             self.clear_numpad_memory()
@@ -552,7 +564,7 @@ class Dcs5Controller(Dcs5Interface):
             for i in [0, 1]:
                 if self.interactive is True:
                     self.stdscr.update_window(self)
-                self.calibrate(i)
+                self.calibrate(i+1)
         self.board_setting = False
         self.selected_command = ''
 
@@ -690,20 +702,22 @@ class CliWindow():
         self.window.refresh()
 
 
-def test(scan: bool = False):
+def main(scan: bool = False):
+    logging.basicConfig(filename='dcs5.log', level=logging.INFO)
+    logging.info('Started')
     c = Dcs5Controller()
+    #c = Dcs5Interface()
     address = search_for_dcs5board() if scan is True else DCS5_ADDRESS
     c.start_client(address, PORT)
     c.set_default_board_settings()
-    c.set_calibration_points_mm(0, 100)
-    c.set_calibration_points_mm(0, 600)
     c.wake_up_board()
+    logging.info('Finished')
     return c
 
 
 if __name__ == "__main__":
-    c = test()
-    c.close_client()
+    c = main()
+    #c.close_client()
 
 
 
