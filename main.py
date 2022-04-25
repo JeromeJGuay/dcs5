@@ -221,7 +221,7 @@ class Dcs5Interface:
         self.client.close()
 
     def set_default_board_settings(self):
-        self.set_sensor_mode(0)  # length measuring mode
+        #self.set_sensor_mode(0)  # length measuring mode # doesn't seems to do much
         self.set_interface(1)  # FEED
         self.set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
         self.set_stylus_detection_message(False)
@@ -233,7 +233,7 @@ class Dcs5Interface:
         """Receive message are located in self.client.buffer"""
         self.client.send(value)
         if listen is True:
-            time.sleep(0.05)
+            time.sleep(0.1) #to prevent some error. Sometime message from the board are cut. This may fix it
             self.client.receive()
 
     def board_initialization(self):
@@ -398,7 +398,7 @@ class Dcs5Controller(Dcs5Interface):
     def __init__(self):
         Dcs5Interface.__init__(self)
 
-        self.is_awake: bool = False
+        self.listening: bool = False
         self.interactive: bool = True
         self.keyboard = Controller()
 
@@ -411,38 +411,36 @@ class Dcs5Controller(Dcs5Interface):
 
         self.out_value: str = None
 
-        self.last_entry: str = ''
         self.out = None
 
     def flash_lights(self, n):
         current_level = self.backlighting_level
         for i in range(n):
             self.set_backlighting_level(0)
-            time.sleep(0.5)
+            time.sleep(1)
             self.set_backlighting_level(current_level)
 
-    def wake_up_board(self):
+    def listen_to_board(self):
         self.set_backlighting_level(95)
         self.set_backlighting_auto_mode(False)
-        self.is_awake = True
+        self.listening = True
         self.client.clear_socket_buffer()
-        logging.info('Board is active')
-        while self.is_awake is True:
+        logging.info('Listening to Board')
+        while self.listening is True:
             self.client.receive()
-            self.process_board_output()
-
-    def silence_board(self):
+            self.process_board_message()
         logging.info('Board is silent')
-        self.is_awake = False
         self.set_backlighting_level(0)
 
-    def process_board_output(self):
+    def silence_board(self):
+        self.listening = False
+
+    def process_board_message(self):
         for msg in self.client.buffer.replace('\r', '').split('#'):
             self.out_value = None
             if msg == "":
                 continue
-            out = self.decode_buffer(msg)
-            self.last_entry = out
+            out = self.decode_board_message(msg)
             if out is None:
                 continue
             if out in ['a1', 'a2', 'a3', 'a4', 'a5', 'a6']:
@@ -456,7 +454,9 @@ class Dcs5Controller(Dcs5Interface):
                     logging.info(f'{out} not mapped.')
             elif out == 'mode':
                 self.change_stylus()
-            elif out in ['c1', 'skip']:
+            elif out == 'skip':
+                self.out_value = 'space'
+            elif out in ['c1']:
                 logging.info(f'{out} not mapped.')
             else:
                 if isinstance(out, tuple):
@@ -466,17 +466,17 @@ class Dcs5Controller(Dcs5Interface):
                             self.swipe_triggered = True
                     if out[0] == 'l':
                         if self.swipe_triggered is True:
-                            self.check_for_board_entry_swipe(out[1])
+                            self.check_for_board_swipe(out[1])
                             logging.info(f'Board entry: {self.board_entry_mode}.')
                         else:
-                            self.out_value = self.map_board_entry(out[1])
+                            self.out_value = self.map_board_length_entry(out[1])
                 else:
                     self.out_value = out
             if self.out_value is not None:
                 logging.info(f'output value {self.out_value}')
-                self.to_keyboard(self.out_value)
+                self.stdout_to_keyboard(self.out_value)
 
-    def decode_buffer(self, value: str):
+    def decode_board_message(self, value: str):
         if '%t' in value:
             return None
         elif '%l' in value:
@@ -486,19 +486,19 @@ class Dcs5Controller(Dcs5Interface):
         elif 'F' in value:
             return XT_KEY_MAP[value[2:]]
 
-    def check_for_board_entry_swipe(self, value: str):
+    def check_for_board_swipe(self, value: str):
         self.swipe_triggered = False
         if int(value) > 630:
             self.board_entry_mode = 'center'
-            self.flash_lights(2)
+            self.flash_lights(1)
         elif int(value) > 430:
             self.board_entry_mode = 'bot'
-            self.flash_lights(6)
+            self.flash_lights(1)
         elif int(value) > 230:
             self.board_entry_mode = 'top'
-            self.flash_lights(4)
+            self.flash_lights(1)
 
-    def map_board_entry(self, value: int):
+    def map_board_length_entry(self, value: int):
         if self.board_entry_mode == 'center':
             return value - self.stylus_offset
         else:
@@ -512,7 +512,7 @@ class Dcs5Controller(Dcs5Interface):
             else:
                 return 'del_last'
 
-    def to_keyboard(self, value: str):
+    def stdout_to_keyboard(self, value: str):
         if value == 'space':
             self.keyboard_entry(Key.space)
         if value == 'up':
@@ -576,7 +576,7 @@ def launch_board(scan: bool):
     address = search_for_dcs5board() if scan is True else DCS5_ADDRESS
     c.start_client(address, PORT)
     c.set_default_board_settings()
-    c.wake_up_board()
+    c.listen_to_board()
     logging.info('Finished')
 
 
