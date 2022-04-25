@@ -21,6 +21,7 @@ import bluetooth
 import re
 from typing import *
 import curses  # Terminal Dynamic Printing
+import time
 
 SOCKET_METHOD = ['socket', 'bluetooth'][0]
 DEVICE_NAME = "BigFinDCS5-E5FE"
@@ -103,11 +104,6 @@ BOARD_KEY_DETECTION_RANGE = 2
 BOARD_KEY_ZERO = 104 - BOARD_KEY_DETECTION_RANGE
 BOARD_KEY_EXTENT = 627 - BOARD_KEY_DETECTION_RANGE
 BOARD_KEY_DEL_LAST = 718 - BOARD_KEY_DETECTION_RANGE
-
-# HOW TO MAP THE KEYS FROM A LENGTH MEASUREMENT
-# between value of key_n = (y_n <= x*ratio+zero < Y_(n+1))
-# find the ratio with 2 value that are flush so that each circle is an integer in the key axis.
-# index = int(x*ratio - first_key_value_in_mm); if index < len(keys) -1 # and voilà.
 
 
 def scan_bluetooth_device():
@@ -209,7 +205,7 @@ class Dcs5Interface:
         self.board_interface: str = None
 
         self.calibrated: bool = None
-        self.cal_pt: List[int] = [None, None]
+        self.cal_pt: List[int] = [100,600]#[None, None]
 
         self.backlighting_level: int = None
         self.backlighting_auto_mode: bool = None
@@ -310,7 +306,6 @@ class Dcs5Interface:
     def restore_cal_data(self):
         self.query("&cr,m1,m2,raw1,raw2#")
         self.feedback_msg = self.client.buffer  # TODO received %a:e#
-        # self.calibrated = True
 
     def clear_cal_data(self):
         self.query("&ca#")
@@ -391,14 +386,16 @@ class Dcs5Interface:
 
     def calibrate(self, pt: int):
         if self.cal_pt[pt] is not None:
+            self.feedback_msg = f'entered calibrate function {pt+1}'
             self.query(f"&{pt + 1}r#")
+            self.feedback_msg = f'Calibrating point {pt + 1}: {self.cal_pt[pt]} mm. Touch Stylus ...'
+            self.feedback_msg = self.client.buffer
+            time.sleep(5)
             if self.client.buffer == f'&Xr#: X={pt + 1}\r':
                 msg = ""
                 while 'c' not in msg:
                     self.client.receive()
                     msg += self.client.buffer  # FIXME
-            self.calibrated = True
-            self.feedback_msg = 'Calibration done.'
 
 
 class Dcs5Controller(Dcs5Interface):
@@ -417,7 +414,7 @@ class Dcs5Controller(Dcs5Interface):
 
         self.is_awake: bool = False
         self.interactive: bool = True
-        self.stdscr: curses.window = None
+        self.stdscr: CliWindow = None
 
         self.stylus: str = 'pen'  # [finger/pen]
         self.stylus_offset: str = STYLUS_OFFSET['pen']
@@ -431,6 +428,7 @@ class Dcs5Controller(Dcs5Interface):
         self.numpad_storing_mode: bool = False
         self.number_of_numpad_entry: int = ''
         self.selected_command: str = ''
+        self.board_setting: bool = False
 
         self.numpad_buffer: str = ''
         self.numpad_memory: list = []
@@ -448,15 +446,16 @@ class Dcs5Controller(Dcs5Interface):
 
     def wake_up_board(self, interactive: bool = True):
         self.interactive = interactive
-        self.client.clear_socket_buffer()
         self.set_backlighting_level(95)
         self.set_backlighting_auto_mode(False)
         self.is_awake = True
-        self.stdscr: CliWindow = None
+
         if self.interactive is True:
             self.feedback_msg = ''
             self.stdscr = CliWindow()
         self.stdscr.update_window(self)
+
+        self.client.clear_socket_buffer()
         while self.is_awake is True:
             self.client.receive()
             self.process_board_output()
@@ -464,6 +463,7 @@ class Dcs5Controller(Dcs5Interface):
                 self.stdscr.update_window(self)
             self.feedback_msg = ''
             self.out_value = ''
+
         if self.interactive is True:
             curses.endwin()
 
@@ -487,13 +487,12 @@ class Dcs5Controller(Dcs5Interface):
             elif self.mode_key_activated is True:
                 if out in XT_KEY_TYPES['mode_function']:
                     self.select_board_setting(out)
-                    self.mode_key_activated = False
                 else:
                     if out == 'c1':
                         self.change_stylus()
                     elif out == 'a6':
                         self.silence_board()
-                    self.trigger_mode_key()
+                self.trigger_mode_key()
 
             elif out in XT_KEY_TYPES['function']:
                 self.out_value = 'function'+out[1]
@@ -502,12 +501,16 @@ class Dcs5Controller(Dcs5Interface):
                 if self.numpad_storing_mode is True:
                     if self.number_of_numpad_entry > 0:
                         self.process_numpad_entry(out)
-                    else:
-                        self.set_board_setting()
+                    if self.number_of_numpad_entry == 0:
+                        self.numpad_storing_mode = False
+                        self.board_setting = True
                 else:
                     self.out_value = out
 
-            elif isinstance(out, tuple):
+            if self.board_setting is True:
+                self.set_board_setting()
+
+            if isinstance(out, tuple):
                 if out[0] == 's':
                     self.swipe_value = out[1]
                     if out[1] > SWIPE_THRESHOLD:
@@ -519,46 +522,46 @@ class Dcs5Controller(Dcs5Interface):
                         self.map_board_entry(out[1])
 
     def trigger_mode_key(self):
-        if self.mode_key_activated is True:
-            self.mode_key_activated = False
-            self.numpad_storing_mode = False
-            self.selected_command = ''
-            self.clear_numpad_buffer()
-            self.clear_numpad_memory()
-        else:
-            self.mode_key_activated = True
+        self.mode_key_activated = not self.mode_key_activated
 
     def select_board_setting(self, value: str):
         # TODO
-        self.clear_numpad_buffer()
-        self.clear_numpad_memory()
-        self.numpad_storing_mode = True
-
+        self.selected_command = ''
         if value == 'b1':
             self.selected_command = 'set calibration point'
             self.number_of_numpad_entry = 2
+            self.clear_numpad_buffer()
+            self.clear_numpad_memory()
+            self.numpad_storing_mode = True
         if value == 'b2':
             self.number_of_numpad_entry = 0
             self.selected_command = 'calibrate'
+            self.board_setting = True
+        if self.interactive is True:
+            self.stdscr.update_window(self)
 
     def set_board_setting(self):
         if self.selected_command == 'set calibration point':
-            self.set_calibration_points_mm(0, int(self.numpad_memory[0]))
-            self.set_calibration_points_mm(1, int(self.numpad_memory[1]))
-            self.feedback_msg = f'cal points: 1: {int(self.numpad_memory[0])}, 2: {int(self.numpad_memory[1])}'
-        elif self.selected_command == 'calibrate':
             for i in [0, 1]:
-                self.feedback_msg = f'Calibrating point {i+1}: {self.cal_pt[i]} mm. Touch Stylus ...'
-                if self.interactive:
-                    self.stdscr.refresh()
+                self.set_calibration_points_mm(i, int(self.numpad_memory[i]))
+                if self.interactive is True:
+                    self.stdscr.update_window(self)
+            self.clear_numpad_memory()
+        elif self.selected_command == 'calibrate':
+            self.client.clear_socket_buffer()
+            for i in [0, 1]:
+                if self.interactive is True:
+                    self.stdscr.update_window(self)
                 self.calibrate(i)
-        self.clear_numpad_memory()
+        self.board_setting = False
+        self.selected_command = ''
 
     def process_numpad_entry(self, value: str):
         if value == 'enter':
             if len(self.numpad_buffer) == 0:
                 self.numpad_buffer = '0'
             self.load_numpad_buffer_to_memory()
+            self.number_of_numpad_entry -= 1
         if value == 'del' and len(self.numpad_buffer) > 0:
             self.numpad_buffer = self.numpad_buffer[:-1]
         if value in '.0123456789':
@@ -570,7 +573,6 @@ class Dcs5Controller(Dcs5Interface):
         else:
             self.numpad_memory.append(int(self.numpad_buffer))
         self.clear_numpad_buffer()
-        self.number_of_numpad_entry -= 1
 
     def check_for_board_entry_swipe(self, value: str):
         self.swipe_triggered = False
@@ -693,6 +695,8 @@ def test(scan: bool = False):
     address = search_for_dcs5board() if scan is True else DCS5_ADDRESS
     c.start_client(address, PORT)
     c.set_default_board_settings()
+    c.set_calibration_points_mm(0, 100)
+    c.set_calibration_points_mm(0, 600)
     c.wake_up_board()
     return c
 
