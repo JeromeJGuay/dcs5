@@ -585,8 +585,16 @@ def main(scan: bool = False):
     parser.add_argument(
         "-v",
         "--verbose",
+        nargs=1,
         default="info",
         help=("Provide logging level: [debug, info, warning, error, critical]"),
+    )
+    parser.add_argument(
+        "-log",
+        "--logfile",
+        nargs=1,
+        default="debug.log",
+        help=("Filename to print the logs to."),
     )
 
     args = parser.parse_args()
@@ -595,12 +603,13 @@ def main(scan: bool = False):
         level=args.verbose.upper(),
         format="%(asctime)s [%(levelname)s] %(message)s",
         handlers=[
-            logging.FileHandler("debug.log"),
+            logging.FileHandler(args.logfile),
             logging.StreamHandler()
         ]
     )
     logging.basicConfig(filename='dcs5.log', level=logging.INFO)
     logging.info('Started')
+
     launch_board(scan)
 
 
