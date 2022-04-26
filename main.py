@@ -36,9 +36,11 @@ EXIT_COMMAND = "stop"
 ENCODING = 'UTF-8'
 BUFFER_SIZE = 4096
 
-DEFAULT_SETTLING_DELAY = 3  # 1  # from 0 to 20 DEFAULT 1
-DEFAULT_MAX_DEVIATION = 6  # from 1 to 100 DEFAULT 6
-DEFAULT_NUMBER_OF_READING = 5
+
+
+DEFAULT_SETTLING_DELAY = {'center': 3, 'top': 1, 'bottom': 1} # from 0 to 20 DEFAULT 1
+DEFAULT_MAX_DEVIATION = {'center': 6, 'top': 6, 'bottom': 6}  # from 1 to 100 DEFAULT 6
+DEFAULT_NUMBER_OF_READING = {'center': 5, 'top': 2, 'bottom': 2} # from 0 to 20 DEFAULT 1
 
 DEFAULT_BACKLIGHTING_LEVEL = 0
 MIN_BACKLIGHTING_LEVEL = 0
@@ -47,6 +49,8 @@ DEFAULT_BACKLIGHTING_AUTO_MODE = False
 DEFAULT_BACKLIGHTING_SENSITIVITY = 0
 MIN_BACKLIGHTING_SENSITIVITY = 0
 MAX_BACKLIGHTING_SENSITIVITY = 7
+
+TOP_BOT_SETTLING_DELAY = 1
 
 DEFAULT_FINGER_STYLUS_OFFSET = -5
 
@@ -212,11 +216,10 @@ class Dcs5Interface:
         logging.info(f'Attempting to connect to board via port {port}.')
         try:
             self.client.connect(address, port)
-        except (bluetooth.BluetoothError, socket.error) as err:
-            logging.info(err)
-        finally:
             self.client_connected = True
             logging.info('Connection Successful.')
+        except (bluetooth.BluetoothError, socket.error) as err:
+            logging.info(err)
 
     def close_client(self):
         self.client.close()
@@ -227,9 +230,9 @@ class Dcs5Interface:
         self.set_interface(1)  # FEED
         self.set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
         self.set_stylus_detection_message(False)
-        self.set_stylus_settling_delay(DEFAULT_SETTLING_DELAY)
-        self.set_stylus_max_deviation(DEFAULT_MAX_DEVIATION)
-        self.set_number_of_reading(DEFAULT_NUMBER_OF_READING)
+        self.set_stylus_settling_delay(DEFAULT_SETTLING_DELAY['center'])
+        self.set_stylus_max_deviation(DEFAULT_MAX_DEVIATION['center'])
+        self.set_stylus_number_of_reading(DEFAULT_NUMBER_OF_READING['center'])
 
     def query(self, value: str, listen: bool = True):
         """Receive message are located in self.client.buffer"""
@@ -354,7 +357,7 @@ class Dcs5Interface:
         else:
             logging.error(f'Max deviation,  {self.client.buffer}')
 
-    def set_number_of_reading(self, value: int = 5):
+    def set_stylus_number_of_reading(self, value: int = 5):
         self.query(f"&dn,{value}#")
         if self.client.buffer == f"%dn:{value}#\r":
             self.number_of_reading = value
@@ -405,20 +408,16 @@ class Dcs5Controller(Dcs5Interface):
         self.stylus: str = 'pen'  # [finger/pen]
         self.stylus_offset: str = STYLUS_OFFSET['pen']
 
-        self.board_entry_mode: str = 'center'  # [top, center, bot]
+        self.stylus_entry_mode: str = 'center'  # [top, center, bot]
+        self.stylus_modes_settling_delay: Dict[str: int] = DEFAULT_SETTLING_DELAY
+        self.stylus_modes_number_of_reading: Dict[str: int] = DEFAULT_NUMBER_OF_READING
+        self.stylus_modes_max_deviation: Dict[str: int] = DEFAULT_MAX_DEVIATION
         self.swipe_triggered: bool = False
         self.swipe_value: str = ''
 
         self.out_value: str = None
 
         self.out = None
-
-    def flash_lights(self, n):
-        current_level = self.backlighting_level
-        for i in range(n):
-            self.set_backlighting_level(0)
-            time.sleep(1)
-            self.set_backlighting_level(current_level)
 
     def listen_to_board(self):
         self.set_backlighting_level(95)
@@ -468,7 +467,7 @@ class Dcs5Controller(Dcs5Interface):
                     if out[0] == 'l':
                         if self.swipe_triggered is True:
                             self.check_for_stylus_swipe(out[1])
-                            logging.info(f'Board entry: {self.board_entry_mode}.')
+                            logging.info(f'Board entry: {self.stylus_entry_mode}.')
                         else:
                             self.out_value = self.map_stylus_length_measure(out[1])
                 else:
@@ -491,24 +490,30 @@ class Dcs5Controller(Dcs5Interface):
     def check_for_stylus_swipe(self, value: str):
         self.swipe_triggered = False
         if int(value) > 630:
-            self.board_entry_mode = 'center'
+            self.stylus_entry_mode = 'center'
             self.flash_lights(1)
         elif int(value) > 430:
-            self.board_entry_mode = 'bot'
+            self.stylus_entry_mode = 'bot'
             self.flash_lights(1)
         elif int(value) > 230:
-            self.board_entry_mode = 'top'
+            self.stylus_entry_mode = 'top'
             self.flash_lights(1)
 
+    def change_stylus_entry_mode(self, value: str):
+        self.stylus_entry_mode = value
+        self.set_stylus_settling_delay(DEFAULT_SETTLING_DELAY[value])
+        self.set_stylus_number_of_reading(DEFAULT_NUMBER_OF_READING[value])
+        self.set_stylus_max_deviation(DEFAULT_MAX_DEVIATION[value])
+
     def map_stylus_length_measure(self, value: int):
-        if self.board_entry_mode == 'center':
+        if self.stylus_entry_mode == 'center':
             return value - self.stylus_offset
         else:
             if value < BOARD_KEY_ZERO:
                 return 'space'
             elif value < BOARD_KEY_EXTENT:
                 index = int((value - BOARD_KEY_ZERO) / BOARD_KEY_RATIO)
-                return BOARD_KEYS_MAP[self.board_entry_mode][index]
+                return BOARD_KEYS_MAP[self.stylus_entry_mode][index]
             elif value < BOARD_KEY_DEL_LAST:
                 return 'space'
             else:
@@ -532,6 +537,13 @@ class Dcs5Controller(Dcs5Interface):
             self.stylus = 'pen'
         logging.info(f'Stylus set to {self.stylus}. Stylus offset {self.stylus_offset}')
         self.stylus_offset = STYLUS_OFFSET[self.stylus]
+
+    def flash_lights(self, n):
+        current_level = self.backlighting_level
+        for i in range(n):
+            self.set_backlighting_level(0)
+            time.sleep(1)
+            self.set_backlighting_level(current_level)
 
     def change_backlighting(self, value: int):
         if value == 1 and self.backlighting_level < MAX_BACKLIGHTING_LEVEL:
@@ -565,8 +577,12 @@ def launch_dcs5_board(scan: bool):
             c.listen_to_board()
         except (bluetooth.BluetoothError, socket.error) as err:
             logging.info(err)
-        finally:
-            c.close_client()
+        except SystemExit:
+            if c.client_connected is True:
+                c.close_client()
+
+
+
 
 
 def main(scan: bool = False):
