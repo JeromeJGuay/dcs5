@@ -93,6 +93,12 @@ BOARD_KEYS_MAP = {
             'sex', 'size', 'light_bulb', 'scale', 'location', 'pit_pwr', 'settings'] + \
            [f'{i + 1}G' for i in range(8)]}
 
+KEYBOARD_MAP = {
+    'space': Key.space, 'enter': Key.enter, 'del_last': Key.backspace, 'del': Key.delete,
+    'up': Key.up, 'down': Key.down, 'left': Key.left, 'right': Key.right
+}
+
+
 # STYLUS SETTINGS
 STYLUS_OFFSET = {'pen': 6, 'finger': 1}  # mm -> check calibration procedure. TODO
 BOARD_KEY_RATIO = 15.385  # ~200/13
@@ -399,7 +405,6 @@ class Dcs5Controller(Dcs5Interface):
         Dcs5Interface.__init__(self)
 
         self.listening: bool = False
-        self.interactive: bool = True
         self.keyboard = Controller()
 
         self.stylus: str = 'pen'  # [finger/pen]
@@ -443,6 +448,7 @@ class Dcs5Controller(Dcs5Interface):
             out = self.decode_board_message(msg)
             if out is None:
                 continue
+
             if out in ['a1', 'a2', 'a3', 'a4', 'a5', 'a6']:
                 self.out_value = f'f{out[-1]}'
             elif out in ['b1', 'b2', 'b3', 'b4', 'b5', 'b6']:
@@ -466,12 +472,13 @@ class Dcs5Controller(Dcs5Interface):
                             self.swipe_triggered = True
                     if out[0] == 'l':
                         if self.swipe_triggered is True:
-                            self.check_for_board_swipe(out[1])
+                            self.check_for_stylus_swipe(out[1])
                             logging.info(f'Board entry: {self.board_entry_mode}.')
                         else:
-                            self.out_value = self.map_board_length_entry(out[1])
+                            self.out_value = self.map_stylus_length_measure(out[1])
                 else:
                     self.out_value = out
+
             if self.out_value is not None:
                 logging.info(f'output value {self.out_value}')
                 self.stdout_to_keyboard(self.out_value)
@@ -486,7 +493,7 @@ class Dcs5Controller(Dcs5Interface):
         elif 'F' in value:
             return XT_KEY_MAP[value[2:]]
 
-    def check_for_board_swipe(self, value: str):
+    def check_for_stylus_swipe(self, value: str):
         self.swipe_triggered = False
         if int(value) > 630:
             self.board_entry_mode = 'center'
@@ -498,7 +505,7 @@ class Dcs5Controller(Dcs5Interface):
             self.board_entry_mode = 'top'
             self.flash_lights(1)
 
-    def map_board_length_entry(self, value: int):
+    def map_stylus_length_measure(self, value: int):
         if self.board_entry_mode == 'center':
             return value - self.stylus_offset
         else:
@@ -513,32 +520,14 @@ class Dcs5Controller(Dcs5Interface):
                 return 'del_last'
 
     def stdout_to_keyboard(self, value: str):
-        if value == 'space':
-            self.keyboard_entry(Key.space)
-        if value == 'up':
-            self.keyboard_entry(Key.up)
-        if value == 'down':
-            self.keyboard_entry(Key.down)
-        if value == 'left':
-            self.keyboard_entry(Key.left)
-        if value == 'right':
-            self.keyboard_entry(Key.right)
-        if value == 'space':
-            self.keyboard_entry(Key.space)
-        if value == 'del_last':
-            self.keyboard_entry(Key.backspace)
-        if value == 'del':
-            self.keyboard_entry(Key.delete)
-        if value in ['f1', 'f2', 'f3', 'f4', 'f5', 'f6']:
-            self.keyboard_entry(Key.__dict__[value])
-        if str(value) in '.0123456789abcdefghijklmnopqrstuvwxyz':
-            self.keyboard_entry(value)
-        if isinstance(value, (int, float)):
+        if value in KEYBOARD_MAP:
+            self.keyboard.tap(KEYBOARD_MAP[value])
+        elif value in ['f1', 'f2', 'f3', 'f4', 'f5', 'f6']:
+            self.keyboard.tap(Key.__dict__[value])
+        elif str(value) in '.0123456789abcdefghijklmnopqrstuvwxyz':
+            self.keyboard.tap(value)
+        elif isinstance(value, (int, float)):
             self.keyboard.type(str(value))
-
-    def keyboard_entry(self, value):
-        self.keyboard.press(value)
-        self.keyboard.release(value)
 
     def change_stylus(self):
         if self.stylus == 'pen':
