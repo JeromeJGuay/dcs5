@@ -36,10 +36,8 @@ EXIT_COMMAND = "stop"
 ENCODING = 'UTF-8'
 BUFFER_SIZE = 4096
 
-
-
 DEFAULT_SETTLING_DELAY = {'center': 3, 'top': 1, 'bottom': 1} # from 0 to 20 DEFAULT 1
-DEFAULT_MAX_DEVIATION = {'center': 6, 'top': 6, 'bottom': 6}  # from 1 to 100 DEFAULT 6
+DEFAULT_MAX_DEVIATION = {'center': 6, 'top': 3, 'bottom': 3}  # from 1 to 100 DEFAULT 6
 DEFAULT_NUMBER_OF_READING = {'center': 5, 'top': 2, 'bottom': 2} # from 0 to 20 DEFAULT 1
 
 DEFAULT_BACKLIGHTING_LEVEL = 0
@@ -49,10 +47,6 @@ DEFAULT_BACKLIGHTING_AUTO_MODE = False
 DEFAULT_BACKLIGHTING_SENSITIVITY = 0
 MIN_BACKLIGHTING_SENSITIVITY = 0
 MAX_BACKLIGHTING_SENSITIVITY = 7
-
-TOP_BOT_SETTLING_DELAY = 1
-
-DEFAULT_FINGER_STYLUS_OFFSET = -5
 
 XT_KEY_MAP = {
     "01": "a1",
@@ -90,18 +84,25 @@ XT_KEY_MAP = {
 }
 
 
-SWIPE_THRESHOLD = 10
+SWIPE_THRESHOLD = 5
 
 BOARD_KEYS_MAP = {
     'top': list('abcdefghijklmnopqrstuvwxyz') + [f'{i + 1}B' for i in range(8)],
-    'bot': list('01234.56789') + \
+    'bottom': list('01234.56789') + \
            ['view', 'batch', 'tab', 'histo', 'summary', 'dismiss', 'fish', 'sample',
             'sex', 'size', 'light_bulb', 'scale', 'location', 'pit_pwr', 'settings'] + \
            [f'{i + 1}G' for i in range(8)]}
 
 KEYBOARD_MAP = {
-    'space': Key.space, 'enter': Key.enter, 'del_last': Key.backspace, 'del': Key.delete,
-    'up': Key.up, 'down': Key.down, 'left': Key.left, 'right': Key.right
+    'space': Key.space,
+    'enter': Key.enter,
+    'del_last': Key.backspace,
+    'del': Key.delete,
+    'up': Key.up,
+    'down': Key.down,
+    'left': Key.left,
+    'right': Key.right,
+    '1B': '-'
 }
 
 
@@ -408,7 +409,7 @@ class Dcs5Controller(Dcs5Interface):
         self.stylus: str = 'pen'  # [finger/pen]
         self.stylus_offset: str = STYLUS_OFFSET['pen']
 
-        self.stylus_entry_mode: str = 'center'  # [top, center, bot]
+        self.stylus_entry_mode: str = 'center'  # [top, center, bottom]
         self.stylus_modes_settling_delay: Dict[str: int] = DEFAULT_SETTLING_DELAY
         self.stylus_modes_number_of_reading: Dict[str: int] = DEFAULT_NUMBER_OF_READING
         self.stylus_modes_max_deviation: Dict[str: int] = DEFAULT_MAX_DEVIATION
@@ -490,13 +491,13 @@ class Dcs5Controller(Dcs5Interface):
     def check_for_stylus_swipe(self, value: str):
         self.swipe_triggered = False
         if int(value) > 630:
-            self.stylus_entry_mode = 'center'
+            self.change_stylus_entry_mode('center')
             self.flash_lights(1)
         elif int(value) > 430:
-            self.stylus_entry_mode = 'bot'
+            self.change_stylus_entry_mode('bottom')
             self.flash_lights(1)
         elif int(value) > 230:
-            self.stylus_entry_mode = 'top'
+            self.change_stylus_entry_mode('top')
             self.flash_lights(1)
 
     def change_stylus_entry_mode(self, value: str):
@@ -577,7 +578,8 @@ def launch_dcs5_board(scan: bool):
             c.listen_to_board()
         except (bluetooth.BluetoothError, socket.error) as err:
             logging.info(err)
-        except SystemExit:
+        except (KeyboardInterrupt, SystemExit) as err:
+            logging.info(err)
             if c.client_connected is True:
                 c.close_client()
 
