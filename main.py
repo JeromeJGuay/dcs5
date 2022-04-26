@@ -37,8 +37,11 @@ ENCODING = 'UTF-8'
 BUFFER_SIZE = 4096
 
 DEFAULT_SETTLING_DELAY = {'center': 3, 'top': 1, 'bottom': 1} # from 0 to 20 DEFAULT 1
-DEFAULT_MAX_DEVIATION = {'center': 6, 'top': 3, 'bottom': 3}  # from 1 to 100 DEFAULT 6
-DEFAULT_NUMBER_OF_READING = {'center': 5, 'top': 2, 'bottom': 2} # from 0 to 20 DEFAULT 1
+DEFAULT_MAX_DEVIATION = {'center': 6, 'top': 1, 'bottom': 1}  # from 1 to 100 DEFAULT 6
+DEFAULT_NUMBER_OF_READING = {'center': 5, 'top': 1, 'bottom': 1} # from 0 to 20 DEFAULT 1
+
+MAX_SETTLING_DELAY = 20
+MAX_MAX_DEVIATION = 100
 
 DEFAULT_BACKLIGHTING_LEVEL = 0
 MIN_BACKLIGHTING_LEVEL = 0
