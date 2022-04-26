@@ -237,9 +237,9 @@ class Dcs5Interface:
         self.set_interface(1)  # FEED
         self.set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
         self.set_stylus_detection_message(False)
-        self.set_stylus_settling_delay(DEFAULT_SETTLING_DELAY['center'])
-        self.set_stylus_max_deviation(DEFAULT_MAX_DEVIATION['center'])
-        self.set_stylus_number_of_reading(DEFAULT_NUMBER_OF_READING['center'])
+        self.set_stylus_settling_delay(DEFAULT_SETTLING_DELAY['measure'])
+        self.set_stylus_max_deviation(DEFAULT_MAX_DEVIATION['measure'])
+        self.set_stylus_number_of_reading(DEFAULT_NUMBER_OF_READING['measure'])
 
     def query(self, value: str, listen: bool = True):
         """Receive message are located in self.client.buffer"""
@@ -793,15 +793,17 @@ def main(scan: bool = False):
     )
     logging.info('Starting')
     c = Dcs5Controller()
-    c.start_gui()
-    if c.client.isconnected is True:
-        try:
-            c.set_default_board_settings()
-            # c.start_listening()
-            c.start_gui()
-        except (OSError, bluetooth.BluetoothError, socket.error) as err:
-            logging.error(err)
-
+    c.start_client(DCS5_ADDRESS, PORT)
+    while True:
+        if c.client.isconnected is True:
+            try:
+                c.set_default_board_settings()
+                # c.start_listening()
+                c.start_gui()
+            except (OSError, bluetooth.BluetoothError, socket.error) as err:
+                logging.error(err)
+            break
+    c.gui()
     logging.info('Finished')
 
     return c
