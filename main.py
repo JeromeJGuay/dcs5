@@ -22,7 +22,9 @@ import bluetooth
 import re
 from typing import *
 import time
+import datetime
 from pynput.keyboard import Key, Controller
+from pathlib import PurePath
 
 SOCKET_METHOD = ['socket', 'bluetooth'][0]
 DEVICE_NAME = "BigFinDCS5-E5FE"
@@ -138,7 +140,6 @@ class Dcs5Client:
     """
 
     def __init__(self, method: str = 'socket'):
-
         self.dcs5_address: str = None
         self.port: int = None
         self.buffer: str = None
@@ -153,11 +154,7 @@ class Dcs5Client:
     def connect(self, address: str, port: int):
         self.dcs5_address = address
         self.port = port
-        try:
-            self.socket.connect((self.dcs5_address, self.port))
-        except (bluetooth.BluetoothError, socket.error) as err:
-            logging.info(err)
-            pass
+        self.socket.connect((self.dcs5_address, self.port))
 
     def send(self, command: str):
         self.socket.send(bytes(command, ENCODING))
@@ -166,7 +163,7 @@ class Dcs5Client:
         self.buffer = str(self.socket.recv(BUFFER_SIZE).decode(ENCODING))
 
     def clear_socket_buffer(self):
-        self.socket.settimeout(.01)
+        self.socket.settimeout(.1)
         try:
             self.socket.recv(1024)
         except socket.timeout:
@@ -188,6 +185,7 @@ class Dcs5Interface:
 
     def __init__(self):
         self.client: Dcs5Client = Dcs5Client(method=SOCKET_METHOD)
+        self.client_connected: bool = False
 
         self.sensor_mode: str = None
         self.stylus_status_msg: str = None
@@ -211,20 +209,18 @@ class Dcs5Interface:
         self.feedback_msg: str = None
 
     def start_client(self, address: str = None, port: int = None):
+        logging.info(f'Attempting to connect to board via port {port}.')
         try:
-            logging.info(f'Attempting to connect to board via port {port}.')
             self.client.connect(address, port)
+        except (bluetooth.BluetoothError, socket.error) as err:
+            logging.info(err)
+        finally:
+            self.client_connected = True
             logging.info('Connection Successful.')
-        except OSError as error:
-            if '[Errno 112]' in str(error):
-                logging.info('Connection Failed. Device Not Detected')
-            if '[Errno 107]' in str(error):
-                logging.info('Bluetooth not turn on.')
-            else:
-                logging.error(error)
 
     def close_client(self):
         self.client.close()
+        logging.info('Client Closed.')
 
     def set_default_board_settings(self):
         #self.set_sensor_mode(0)  # length measuring mode # doesn't seems to do much
@@ -277,7 +273,6 @@ class Dcs5Interface:
         2 -> shortcut 'shortcut mode activated\r'
         3 -> numeric 'numeric mode activated\r'
         """
-
         self.client.send(f'&m,{int(value)}#')
         self.client.receive()
         if self.client.buffer == 'length mode activated\r':
@@ -560,13 +555,18 @@ class Dcs5Controller(Dcs5Interface):
         return int(re.findall(r"%s,(-*\d+)", value)[0])
 
 
-def launch_board(scan: bool):
+def launch_dcs5_board(scan: bool):
     c = Dcs5Controller()
     address = search_for_dcs5board() if scan is True else DCS5_ADDRESS
     c.start_client(address, PORT)
-    c.set_default_board_settings()
-    c.listen_to_board()
-    logging.info('Finished')
+    if c.client_connected is True:
+        try:
+            c.set_default_board_settings()
+            c.listen_to_board()
+        except (bluetooth.BluetoothError, socket.error) as err:
+            logging.info(err)
+        finally:
+            c.close_client()
 
 
 def main(scan: bool = False):
@@ -578,27 +578,32 @@ def main(scan: bool = False):
         default="info",
         help=("Provide logging level: [debug, info, warning, error, critical]"),
     )
-    parser.add_argument(
-        "-log",
-        "--logfile",
-        nargs=1,
-        default="dcs5.log",
-        help=("Filename to print the logs to."),
-    )
-
+#    parser.add_argument(
+#        "-log",
+#        "--logfile",
+#        nargs=1,
+#        default="./lod/dcs5.log",
+#        help=("Filename to print the logs to."),
+#    )
     args = parser.parse_args()
+
+    log_name = 'dcs5_log_' + time.strftime("%y%m%dT%H%M%S", time.gmtime())
+
+    log_path = PurePath(PurePath(__file__).parent, 'logs', log_name)
 
     logging.basicConfig(
         level=args.verbose.upper(),
         format="%(asctime)s [%(levelname)s] %(message)s",
         handlers=[
-            logging.FileHandler(args.logfile),
+            logging.FileHandler(log_path),
             logging.StreamHandler()
         ]
     )
-    logging.info('Started')
+    logging.info('Starting')
 
-    launch_board(scan)
+    launch_dcs5_board(scan)
+
+    logging.info('Finished')
 
 
 if __name__ == "__main__":
