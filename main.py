@@ -19,12 +19,16 @@ import argparse
 import logging
 import socket
 import bluetooth
+import threading
 import re
 from typing import *
 import time
 import datetime
 from pynput.keyboard import Key, Controller
 from pathlib import PurePath
+
+import PySimpleGUI as sg
+
 
 SOCKET_METHOD = ['socket', 'bluetooth'][0]
 DEVICE_NAME = "BigFinDCS5-E5FE"
@@ -405,6 +409,10 @@ class Dcs5Controller(Dcs5Interface):
     """
     def __init__(self):
         Dcs5Interface.__init__(self)
+        threading.Thread.__init__(self)
+
+        self.listen_thread: threading.Thread = None
+        self.gui_thread: threading.Thread = None
 
         self.listening: bool = False
         self.keyboard = Controller()
@@ -423,19 +431,34 @@ class Dcs5Controller(Dcs5Interface):
 
         self.out = None
 
-    def listen_to_board(self):
+    def start_listening(self):
+        self.listen_thread = threading.Thread(target=self.listen)
+        self.listen_thread.start()
+        self.listen_thread.join()
+
+    def start_gui(self):
+        self.gui_thread = threading.Thread(target=self.gui)
+        self.gui_thread.start()
+        self.gui_thread.join()
+
+    def listen(self):
         self.set_backlighting_level(95)
         self.set_backlighting_auto_mode(False)
         self.listening = True
         self.client.clear_socket_buffer()
-        logging.info('Listening to Board')
+        logging.info('Listening started')
+        self.client.socket.settimeout(1)
         while self.listening is True:
-            self.client.receive()
-            self.process_board_message()
-        logging.info('Board is silent')
+            try:
+                self.client.receive()
+                self.process_board_message()
+            except socket.timeout:
+                pass
+        self.client.socket.settimeout(None)
+        logging.info('Listening stopped')
         self.set_backlighting_level(0)
 
-    def silence_board(self):
+    def stop_listening(self):
         self.listening = False
 
     def process_board_message(self):
@@ -570,24 +593,61 @@ class Dcs5Controller(Dcs5Interface):
     def get_swipe(value: str):
         return int(re.findall(r"%s,(-*\d+)", value)[0])
 
+    def gui(self):
+        sg.theme('DarkAmber')
+
+        layout = [
+                  [sg.Text('set settling delay'), sg.Input(f'{self.stylus_settling_delay}', key='-delay_input-', do_not_clear=True, size=(4,1))],
+                  [sg.Text('set max deviation'), sg.Input(key='-deviation_input-')]
+                  [sg.Button("start listening"), sg.Button("stop listening")],
+        # Create the window
+        window = sg.Window("DCS5-XT Board Interface", layout, finalize=True)
+
+        while True:
+            event, values = window.read(timeout=1)
+            # End program if user closes window or
+            # presses the OK button
+            if event == "start listening":
+                self.start_listening()
+            if event == 'stop listening':
+                self.stop_listening()
+            if event == '-delay_input-' + "_Enter":
+                if values['-delay_input-'].isnumeric():
+                    #self.set_stylus_settling_delay(int(values['delay_input']))
+                    print(event)
+                    self.stylus_settling_delay = int(values['-delay_input-'])
+            if '-delay_input-' in event:
+                window['-delay_input-'].update(self.stylus_settling_delay)
+                window['-delay_input_text-'].update(self.stylus_settling_delay)
+
+            if event == 'deviation_input' + "_Enter":
+                pass
+            if event == sg.WIN_CLOSED:
+                break
+
+
+        window.close()
+
 
 def launch_dcs5_board(scan: bool):
+
     c = Dcs5Controller()
     address = search_for_dcs5board() if scan is True else DCS5_ADDRESS
-    c.start_client(address, PORT)
-    if c.client_connected is True:
-        try:
-            c.set_default_board_settings()
-            c.listen_to_board()
-        except (bluetooth.BluetoothError, socket.error) as err:
-            logging.info(err)
-        except (KeyboardInterrupt, SystemExit) as err:
-            logging.info(err)
-            if c.client_connected is True:
-                c.close_client()
+    try:
+        c.start_client(address, PORT)
+        if c.client_connected is True:
+            try:
+                c.set_default_board_settings()
+                #c.start_listening()
+                c.start_gui()
+            except (bluetooth.BluetoothError, socket.error) as err:
+                logging.info(err)
+    except (KeyboardInterrupt, SystemExit) as err:
+        logging.info(err)
+        if c.client_connected is True:
+            c.close_client()
 
-
-
+    return c
 
 
 def main(scan: bool = False):
@@ -622,11 +682,15 @@ def main(scan: bool = False):
     )
     logging.info('Starting')
 
-    launch_dcs5_board(scan)
+    c = launch_dcs5_board(scan)
 
     logging.info('Finished')
 
+    return c
+
 
 if __name__ == "__main__":
-    main()
+    #c = main()
+    c = Dcs5Controller()
+    c.start_gui()
 
