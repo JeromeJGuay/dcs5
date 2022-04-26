@@ -593,7 +593,7 @@ def main(scan: bool = False):
         "-log",
         "--logfile",
         nargs=1,
-        default="debug.log",
+        default="dcs5.log",
         help=("Filename to print the logs to."),
     )
 
@@ -607,7 +607,6 @@ def main(scan: bool = False):
             logging.StreamHandler()
         ]
     )
-    logging.basicConfig(filename='dcs5.log', level=logging.INFO)
     logging.info('Started')
 
     launch_board(scan)
