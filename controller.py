@@ -120,10 +120,9 @@ KEYBOARD_MAP = {
 STYLUS_OFFSET = {'pen': 6, 'finger': 1}  # mm -> check calibration procedure. TODO
 BOARD_KEY_RATIO = 15.385  # ~200/13
 BOARD_KEY_DETECTION_RANGE = 2
-BOARD_KEY_ZERO = - BOARD_KEY_DETECTION_RANGE #104 - BOARD_KEY_DETECTION_RANGE
-BOARD_KEY_EXTENT = 627 - BOARD_KEY_DETECTION_RANGE
-BOARD_KEY_DEL_LAST = 718 - BOARD_KEY_DETECTION_RANGE
+BOARD_KEY_ZERO = -3.695 - BOARD_KEY_DETECTION_RANGE
 BOARD_NUMBER_OF_KEYS = 49
+
 
 
 def scan_bluetooth_device():
@@ -160,7 +159,7 @@ class Dcs5Client:
         self.port: int = None
         self.buffer: str = ''
         self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
-        self.default_timeout = .1
+        self.default_timeout = .05
         self.socket.settimeout(self.default_timeout)
 
     def connect(self, address: str, port: int):
@@ -225,8 +224,6 @@ class Dcs5Interface:
         self.backlighting_auto_mode: bool = None
         self.backlighting_sensitivity: int = None
 
-        self.feedback_msg: str = None
-
     def start_client(self, address: str = None, port: int = None):
         logging.info(f'Attempting to connect to board via port {port}.')
         try:
@@ -236,6 +233,8 @@ class Dcs5Interface:
             logging.info('Connection Successful.')
         except socket.timeout:
             logging.info('Could not connect. Time Out')
+        except OSError as err:
+            logging.error(err)
 
     def close_client(self):
         self.client.close()
@@ -422,7 +421,6 @@ class Dcs5Controller(Dcs5Interface):
         threading.Thread.__init__(self)
 
         self.listen_thread: threading.Thread = None
-        self.gui_thread: threading.Thread = None
 
         self.listening: bool = False
         self.keyboard = Controller()
@@ -524,13 +522,10 @@ class Dcs5Controller(Dcs5Interface):
         self.swipe_triggered = False
         if int(value) > 630:
             self.change_stylus_entry_mode('center')
-            self.flash_lights(1)
         elif int(value) > 430:
             self.change_stylus_entry_mode('bottom')
-            self.flash_lights(1)
         elif int(value) > 230:
             self.change_stylus_entry_mode('top')
-            self.flash_lights(1)
 
     def change_stylus_entry_mode(self, value: str):
         self.stylus_entry_mode = value
@@ -543,7 +538,8 @@ class Dcs5Controller(Dcs5Interface):
         if self.stylus_entry_mode == 'center':
             return value - self.stylus_offset
         else:
-            index = int(value / BOARD_KEY_RATIO)
+            index = int((value - BOARD_KEY_ZERO) / BOARD_KEY_RATIO)
+            logging.info(f'index {index}')
             if index < BOARD_NUMBER_OF_KEYS:
                 return BOARD_KEYS_MAP[self.stylus_entry_mode][index]
             #if value < BOARD_KEY_ZERO <:
@@ -563,7 +559,7 @@ class Dcs5Controller(Dcs5Interface):
             self.keyboard.type(str(value))
         elif value in ['f1', 'f2', 'f3', 'f4', 'f5', 'f6']:
             self.keyboard.tap(Key.__dict__[value])
-        elif str(value) in '.abcdefghijklmnopqrstuvwxyz3-148101900':
+        elif str(value) in '.0123456789abcdefghijklmnopqrstuvwxyz':
             self.keyboard.tap(value)
 
     def change_stylus(self):
@@ -574,13 +570,6 @@ class Dcs5Controller(Dcs5Interface):
             self.stylus = 'pen'
         logging.info(f'Stylus set to {self.stylus}. Stylus offset {self.stylus_offset}')
         self.stylus_offset = STYLUS_OFFSET[self.stylus]
-
-    def flash_lights(self, n):
-        current_level = self.backlighting_level
-        for i in range(n):
-            self.set_backlighting_level(0)
-            time.sleep(1)
-            self.set_backlighting_level(current_level)
 
     def change_backlighting(self, value: int):
         if value == 1 and self.backlighting_level < MAX_BACKLIGHTING_LEVEL:
