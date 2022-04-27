@@ -103,12 +103,12 @@ def make_window(controller: Dcs5Controller):
                  [sg.Drop(values=('pen', 'finger'), default_value='pen', size=(10, 2), auto_size_text=True)],
                  ]
 
-    active_status = [('\u2B24' + 'Active', 'red'), ('\u2B24' + ' Inactive', 'green')]
+    active_status = [('\u2B24' + 'Inactive', 'red'), ('\u2B24' + ' Active', 'green')]
     active_row = [
         [
             sg.Text(text=active_status[0][0], text_color=active_status[0][1], size=(20, 1), key='-active-indicator-'),
-            sg.Button("Activate", button_color='darkgreen'),
-            sg.Button("Deactivate", button_color='darkred')
+            sg.Column([[sg.Button("Activate", button_color='darkgreen'),
+            sg.Button("Deactivate", button_color='darkred')]])
         ]
     ]
 
@@ -141,7 +141,7 @@ def make_window(controller: Dcs5Controller):
         elif event == 'Activate':
             controller.start_listening()
             window['-active-indicator-'].update(value=active_status[1][0], text_color=active_status[1][1])
-        elif event == 'Deactivate:':
+        elif event == 'Deactivate':
             controller.stop_listening()
             window['-active-indicator-'].update(value=active_status[0][0], text_color=active_status[0][1])
         elif event == '-init-':
