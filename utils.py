@@ -1,9 +1,9 @@
 import json
 from typing import *
-from pathlib import Path
+from pathlib import PurePath
 
 
-def dict2json(filename: str, dictionary: Dict, indent: int = 4) -> None:
+def dict2json(filename: Union[str, PurePath], dictionary: Dict, indent: int = 4) -> None:
     """Makes json file from dictionary
     Parameters
     ----------
@@ -16,7 +16,7 @@ def dict2json(filename: str, dictionary: Dict, indent: int = 4) -> None:
         json.dump(dictionary, f, indent=indent)
 
 
-def json2dict(json_file: Union[str, Path])->dict:
+def json2dict(json_file: Union[str, PurePath])->dict:
     """Open json file as a dictionary."""
     with open(json_file) as f:
         dictionary = json.load(f)

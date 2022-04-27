@@ -23,36 +23,38 @@ import threading
 import re
 from typing import *
 import time
-import datetime
 from pynput.keyboard import Key, Controller
 from pathlib import PurePath
 
-import PySimpleGUI as sg
+from utils import json2dict
 
 SOCKET_METHOD = ['socket', 'bluetooth'][0]
-DEVICE_NAME = "BigFinDCS5-E5FE"
-PORT = 1
-
-DCS5_ADDRESS = "00:06:66:89:E5:FE"
-EXIT_COMMAND = "stop"
 
 ENCODING = 'UTF-8'
 BUFFER_SIZE = 4096
 
-DEFAULT_SETTLING_DELAY = {'measure': 3, 'typing': 1}  # from 0 to 20 DEFAULT 1
-DEFAULT_MAX_DEVIATION = {'measure': 6, 'typing': 1}  # from 1 to 100 DEFAULT 6
-DEFAULT_NUMBER_OF_READING = {'measure': 5, 'typing': 1}  # from 0 to 20 DEFAULT 1
+SETTINGS = json2dict(PurePath(PurePath(__file__).parent, 'src_files/default_settings.json'))
 
-MAX_SETTLING_DELAY = 20
-MAX_MAX_DEVIATION = 100
+CLIENT_SETTINGS = SETTINGS['client_settings']
+DEVICE_NAME = CLIENT_SETTINGS["DEVICE_NAME"]
+PORT = CLIENT_SETTINGS["PORT"]
+DCS5_ADDRESS = CLIENT_SETTINGS["DCS5_ADDRESS"]
 
-DEFAULT_BACKLIGHTING_LEVEL = 0
-MIN_BACKLIGHTING_LEVEL = 0
-MAX_BACKLIGHTING_LEVEL = 95
-DEFAULT_BACKLIGHTING_AUTO_MODE = False
-DEFAULT_BACKLIGHTING_SENSITIVITY = 0
-MIN_BACKLIGHTING_SENSITIVITY = 0
-MAX_BACKLIGHTING_SENSITIVITY = 7
+BOARD_SETTINGS = SETTINGS['board_settings']
+DEFAULT_SETTLING_DELAY = {'measure': BOARD_SETTINGS['DEFAULT_SETTLING_DELAY'], 'typing': 1}
+DEFAULT_MAX_DEVIATION = {'measure': BOARD_SETTINGS['DEFAULT_MAX_DEVIATION'], 'typing': 1}
+DEFAULT_NUMBER_OF_READING = {'measure': BOARD_SETTINGS['DEFAULT_NUMBER_OF_READING'], 'typing': 1}
+
+MAX_SETTLING_DELAY = BOARD_SETTINGS['MAX_SETTLING_DELAY']
+MAX_MAX_DEVIATION = BOARD_SETTINGS['MAX_MAX_DEVIATION']
+
+DEFAULT_BACKLIGHTING_LEVEL = BOARD_SETTINGS['DEFAULT_BACKLIGHTING_LEVEL']
+MIN_BACKLIGHTING_LEVEL = BOARD_SETTINGS['MIN_BACKLIGHTING_LEVEL']
+MAX_BACKLIGHTING_LEVEL = BOARD_SETTINGS['MAX_BACKLIGHTING_LEVEL']
+DEFAULT_BACKLIGHTING_AUTO_MODE = BOARD_SETTINGS['DEFAULT_BACKLIGHTING_AUTO_MODE']
+DEFAULT_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['DEFAULT_BACKLIGHTING_SENSITIVITY']
+MIN_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['MIN_BACKLIGHTING_SENSITIVITY']
+MAX_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['MAX_BACKLIGHTING_SENSITIVITY']
 
 XT_KEY_MAP = {
     "01": "a1",
@@ -152,7 +154,6 @@ class Dcs5Client:
         self.dcs5_address: str = None
         self.port: int = None
         self.buffer: str = None
-        self.isconnected: bool = False
         if method == 'socket':
             self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
         elif method == 'bluetooth':
@@ -165,7 +166,6 @@ class Dcs5Client:
         self.dcs5_address = address
         self.port = port
         self.socket.connect((self.dcs5_address, self.port))
-        self.isconnected = True
 
     def send(self, command: str):
         self.socket.send(bytes(command, ENCODING))
@@ -196,7 +196,7 @@ class Dcs5Interface:
 
     def __init__(self):
         self.client: Dcs5Client = Dcs5Client(method=SOCKET_METHOD)
-        self.client_connected: bool = False
+        self.client_isconnected: bool = False
 
         self.sensor_mode: str = None
         self.stylus_status_msg: str = None
@@ -223,7 +223,7 @@ class Dcs5Interface:
         logging.info(f'Attempting to connect to board via port {port}.')
         try:
             self.client.connect(address, port)
-            self.client_connected = True
+            self.client_isconnected = True
             logging.info('Connection Successful.')
         except (bluetooth.BluetoothError, socket.error) as err:
             logging.info(err)
@@ -435,10 +435,6 @@ class Dcs5Controller(Dcs5Interface):
         self.listen_thread = threading.Thread(target=self.listen)
         self.listen_thread.start()
 
-    def start_gui(self):
-        self.gui_thread = threading.Thread(target=self.gui)
-        self.gui_thread.start()
-
     def listen(self):
         self.set_backlighting_level(95)
         self.set_backlighting_auto_mode(False)
@@ -593,23 +589,21 @@ class Dcs5Controller(Dcs5Interface):
         return int(re.findall(r"%s,(-*\d+)", value)[0])
 
 
-
-
 def launch_dcs5_board(scan: bool):
     c = Dcs5Controller()
     address = search_for_dcs5board() if scan is True else DCS5_ADDRESS
     try:
         c.start_client(address, PORT)
-        if c.client_connected is True:
+        if c.client_isconnected is True:
             try:
                 c.set_default_board_settings()
-                # c.start_listening()
-                c.start_gui()
+                c.start_listening()
+
             except (bluetooth.BluetoothError, socket.error) as err:
                 logging.info(err)
     except (KeyboardInterrupt, SystemExit) as err:
         logging.info(err)
-        if c.client_connected is True:
+        if c.client_isconnected is True:
             c.close_client()
 
     return c
@@ -646,25 +640,11 @@ def main(scan: bool = False):
         ]
     )
     logging.info('Starting')
-    c = Dcs5Controller()
-    c.start_client(DCS5_ADDRESS, PORT)
-    while True:
-        if c.client.isconnected is True:
-            try:
-                c.set_default_board_settings()
-                # c.start_listening()
-                c.start_gui()
-            except (OSError, bluetooth.BluetoothError, socket.error) as err:
-                logging.error(err)
-            break
-    c.gui()
+    c = launch_dcs5_board(scan)
     logging.info('Finished')
 
     return c
 
 
 if __name__ == "__main__":
-    #c = main()
-    c = Dcs5Controller()
-    c.start_gui()
-
+    c = main()
