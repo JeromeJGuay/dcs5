@@ -355,7 +355,7 @@ class Dcs5Interface:
                 logging.info('Stylus Status Message Disable')
                 self.stylus_status_msg = 'Disable'
         else:
-            logging.error(f'Stylus status message,  {self.client.buffer}')
+            logging.error(f'Stylus status message {value},  {self.client.buffer}')
 
     def set_stylus_settling_delay(self, value: int = 1):
         self.client.query(f"&di,{value}#")
@@ -363,7 +363,7 @@ class Dcs5Interface:
             self.stylus_settling_delay = value
             logging.info(f"Stylus settling delay set to {value}")
         else:
-            logging.error(f'Settling delay,  {self.client.buffer}')
+            logging.error(f'Settling delay {value},  {self.client.buffer}')
 
     def set_stylus_max_deviation(self, value: int):
         self.client.query(f"&dm,{value}#")
@@ -371,7 +371,7 @@ class Dcs5Interface:
             self.stylus_max_deviation = value
             logging.info(f"Stylus max deviation set to {value}")
         else:
-            logging.error(f'Max deviation,  {self.client.buffer}')
+            logging.error(f'Max deviation {value},  {self.client.buffer}')
 
     def set_stylus_number_of_reading(self, value: int = 5):
         self.client.query(f"&dn,{value}#")
@@ -379,7 +379,7 @@ class Dcs5Interface:
             self.number_of_reading = value
             logging.info(f"Number of reading set to {value}")
         else:
-            logging.error(f'Number of reading,  {self.client.buffer}')
+            logging.error(f'Number of reading {value},  {self.client.buffer}')
 
     def check_calibration_state(self):  # TODO, to be tested
         self.client.query('&u#')
@@ -429,9 +429,9 @@ class Dcs5Controller(Dcs5Interface):
         self.stylus_offset: str = STYLUS_OFFSET['pen']
 
         self.stylus_entry_mode: str = 'center'  # [top, center, bottom]
-        self.stylus_modes_settling_delay: Dict[str: int] = DEFAULT_SETTLING_DELAY
-        self.stylus_modes_number_of_reading: Dict[str: int] = DEFAULT_NUMBER_OF_READING
-        self.stylus_modes_max_deviation: Dict[str: int] = DEFAULT_MAX_DEVIATION
+        self.stylus_modes_settling_delay: Dict[str: int] = DEFAULT_SETTLING_DELAY#{'measure': None, 'typing': None}
+        self.stylus_modes_number_of_reading: Dict[str: int] = DEFAULT_NUMBER_OF_READING#{'measure': None, 'typing': None}
+        self.stylus_modes_max_deviation: Dict[str: int] = DEFAULT_MAX_DEVIATION#{'measure': None, 'typing': None}
         self.swipe_triggered: bool = False
         self.swipe_value: str = ''
 
