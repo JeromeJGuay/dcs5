@@ -1,10 +1,44 @@
 import PySimpleGUI as sg
-from dcs5.controller import Dcs5Interface
+from controller import Dcs5Controller
+from utils import json2dict, dict2json
+from pathlib import PurePath
+import logging
+import argparse
+import time
 
-def gui(self):
+DEFAULT_SETTINGS = json2dict(PurePath(PurePath(__file__).parent, 'src_files/default_settings.json'))
+
+CLIENT_SETTINGS = DEFAULT_SETTINGS['client_settings']
+DEVICE_NAME = CLIENT_SETTINGS["DEVICE_NAME"]
+PORT = CLIENT_SETTINGS["PORT"]
+DCS5_ADDRESS = CLIENT_SETTINGS["DCS5_ADDRESS"]
+
+BOARD_SETTINGS = DEFAULT_SETTINGS['board_settings']
+DEFAULT_SETTLING_DELAY = {'measure': BOARD_SETTINGS['DEFAULT_SETTLING_DELAY'], 'typing': 1}
+DEFAULT_MAX_DEVIATION = {'measure': BOARD_SETTINGS['DEFAULT_MAX_DEVIATION'], 'typing': 1}
+DEFAULT_NUMBER_OF_READING = {'measure': BOARD_SETTINGS['DEFAULT_NUMBER_OF_READING'], 'typing': 1}
+
+MAX_SETTLING_DELAY = BOARD_SETTINGS['MAX_SETTLING_DELAY']
+MAX_MAX_DEVIATION = BOARD_SETTINGS['MAX_MAX_DEVIATION']
+
+DEFAULT_BACKLIGHTING_LEVEL = BOARD_SETTINGS['DEFAULT_BACKLIGHTING_LEVEL']
+MIN_BACKLIGHTING_LEVEL = BOARD_SETTINGS['MIN_BACKLIGHTING_LEVEL']
+MAX_BACKLIGHTING_LEVEL = BOARD_SETTINGS['MAX_BACKLIGHTING_LEVEL']
+DEFAULT_BACKLIGHTING_AUTO_MODE = BOARD_SETTINGS['DEFAULT_BACKLIGHTING_AUTO_MODE']
+DEFAULT_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['DEFAULT_BACKLIGHTING_SENSITIVITY']
+MIN_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['MIN_BACKLIGHTING_SENSITIVITY']
+MAX_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['MAX_BACKLIGHTING_SENSITIVITY']
+
+
+#threading.Thread.__init__(self)
+#self.listen_thread: threading.Thread = None
+#self.listen_thread = threading.Thread(target=self.listen)
+#self.listen_thread.start()
+
+def make_window(controller: Dcs5Controller):
     width_col1 = 20
     width_col2 = 10
-    sg.theme('Topanga')  # lightgreen darkamber
+    sg.theme('Topanga')
     row_m = [
         [
             sg.Text(f'Settling delay [0-{MAX_SETTLING_DELAY}]', size=(width_col1, 1)),
@@ -69,13 +103,24 @@ def gui(self):
                  [sg.Drop(values=('pen', 'finger'), default_value='pen', size=(10, 2), auto_size_text=True)],
                  ]
 
+    active_status = [('\u2B24' + 'Active', 'red'), ('\u2B24' + ' Inactive', 'green')]
+    active_row = [
+        [
+            sg.Text(text=active_status[0][0], text_color=active_status[0][1], size=(20, 1), key='-active-indicator-'),
+            sg.Button("Activate", button_color='darkgreen'),
+            sg.Button("Deactivate", button_color='darkred')
+        ]
+    ]
+
+
     layout = [
         [sg.Frame(title='Connection', layout=client_row)],
+        [sg.Button('Initialize Board', key='-init-')],
         [sg.Frame(title='Measuring Settings', layout=row_m, font=('Helvetica', 12))],
         [sg.Frame(title='Typing Settings', layout=row_t, font=('Helvetica', 12))],
         [sg.Push(), sg.Button('Update Firmware')],
         [sg.Frame(title='Modes', layout=row_modes, font=('Helvetica', 12))],
-        [sg.Button("start listening", button_color='darkgreen'), sg.Button("stop listening", button_color='darkred')],
+        [sg.Frame(title='Status', layout=active_row,font=('Helvetica', 12))]
     ]
 
     window = sg.Window("DCS5-XT Board Interface", layout, finalize=True, location=(400, 100))
@@ -83,62 +128,64 @@ def gui(self):
         event, values = window.read(timeout=500)
         # End program if user closes window or
         # presses the OK button
-        if event == "start listening":
-            self.start_listening()
-        if event == 'stop listening':
-            self.stop_listening()
-
         if event == 'Connect':
-            self.client.connect(address=DCS5_ADDRESS, port=PORT)
-            window['-mac_address-'].update(self.client.dcs5_address)
-            window['-port-'].update(self.client.port)
-            if self.client.isconnected is True:
+            controller.start_client(address=DCS5_ADDRESS, port=PORT)
+            window['-mac_address-'].update(controller.client.dcs5_address)
+            window['-port-'].update(controller.client.port)
+            if controller.client_isconnected is True:
                 window['INDICATOR'].update(value=connection_status[1][0], text_color=connection_status[1][1])
-        if event == 'Disconnect':
-            self.close_client()
-            if self.client.isconnected is True:
+        elif event == 'Disconnect':
+            controller.close_client()
+            if controller.client_isconnected is True:
                 window['INDICATOR'].update(value=connection_status[0][0], text_color=connection_status[0][1])
-
-        if event == '-update_row_m-':
+        elif event == 'Activate':
+            controller.start_listening()
+            window['-active-indicator-'].update(value=active_status[1][0], text_color=active_status[1][1])
+        elif event == 'Deactivate:':
+            controller.stop_listening()
+            window['-active-indicator-'].update(value=active_status[0][0], text_color=active_status[0][1])
+        elif event == '-init-':
+            controller.set_default_board_settings()
+        elif event == '-update_row_m-':
             if values['-m_delay_input-'].isnumeric():
                 delay = int(values['-m_delay_input-'])
                 if 0 <= delay <= MAX_SETTLING_DELAY:
-                    self.stylus_modes_settling_delay['measure'] = values['-m_delay_input-']
+                    controller.stylus_modes_settling_delay['measure'] = values['-m_delay_input-']
             if values['-m_max_deviation_input-'].isnumeric():
                 deviation = int(values['-m_max_deviation_input-'])
                 if 0 <= deviation <= MAX_MAX_DEVIATION:
-                    self.stylus_modes_max_deviation['measure'] = values['-m_max_deviation_input-']
+                    controller.stylus_modes_max_deviation['measure'] = values['-m_max_deviation_input-']
             if values['-m_number_of_reading_input-'].isnumeric():
-                self.stylus_modes_number_of_reading['measure'] = values['-m_number_of_reading_input-']
-            if self.stylus_entry_mode == 'measure':
-                self.change_stylus_entry_mode('measure')
+                controller.stylus_modes_number_of_reading['measure'] = values['-m_number_of_reading_input-']
+            if controller.stylus_entry_mode == 'measure':
+                controller.change_stylus_entry_mode('measure')
             window['-m_delay_input-'].update('')
             window['-m_max_deviation_input-'].update('')
             window['-m_number_of_reading_input-'].update('')
 
-        if event == '-update_row_t-':
+        elif event == '-update_row_t-':
             if values['-t_delay_input-'].isnumeric():
                 delay = int(values['-t_delay_input-'])
                 if 0 <= delay <= MAX_SETTLING_DELAY:
-                    self.stylus_modes_settling_delay['typing'] = values['-t_delay_input-']
+                    controller.stylus_modes_settling_delay['typing'] = values['-t_delay_input-']
             if values['-t_max_deviation_input-'].isnumeric():
                 deviation = int(values['-t_max_deviation_input-'])
                 if 0 <= deviation <= MAX_MAX_DEVIATION:
-                    self.stylus_modes_max_deviation['typing'] = values['-t_max_deviation_input-']
+                    controller.stylus_modes_max_deviation['typing'] = values['-t_max_deviation_input-']
             if values['-t_number_of_reading_input-'].isnumeric():
-                self.stylus_modes_number_of_reading['typing'] = values['-t_number_of_reading_input-']
-            if self.stylus_entry_mode == 'typing':
-                self.change_stylus_entry_mode('typing')
+                controller.stylus_modes_number_of_reading['typing'] = values['-t_number_of_reading_input-']
+            if controller.stylus_entry_mode == 'typing':
+                controller.change_stylus_entry_mode('typing')
             window['-t_delay_input-'].update('')
             window['-t_max_deviation_input-'].update('')
             window['-t_number_of_reading_input-'].update('')
 
-        if event == 'Update Firmware':
+        elif event == 'Update Firmware':
             update_file = sg.popup_get_file('Select firmware update file')
-        if event == sg.WIN_CLOSED:
+        elif event == sg.WIN_CLOSED:
             break
 
-        controller_values = self.get_controller_values()
+        controller_values = get_controller_values(controller)
         for key, cvalue in controller_values.items():
             if window[key].get() != cvalue:
                 window[key].update(cvalue)
@@ -146,11 +193,50 @@ def gui(self):
     window.close()
 
 
-def get_controller_values(self):
-    return {'-m_delay-': self.stylus_modes_settling_delay['measure'],
-            '-m_max_deviation-': self.stylus_modes_max_deviation['measure'],
-            '-m_number_of_reading-': self.stylus_modes_number_of_reading['measure'],
-            '-t_delay-': self.stylus_modes_settling_delay['typing'],
-            '-t_max_deviation-': self.stylus_modes_max_deviation['typing'],
-            '-t_number_of_reading-': self.stylus_modes_number_of_reading['typing']
+def get_controller_values(controller: Dcs5Controller):
+    return {'-m_delay-': controller.stylus_modes_settling_delay['measure'],
+            '-m_max_deviation-': controller.stylus_modes_max_deviation['measure'],
+            '-m_number_of_reading-': controller.stylus_modes_number_of_reading['measure'],
+            '-t_delay-': controller.stylus_modes_settling_delay['typing'],
+            '-t_max_deviation-': controller.stylus_modes_max_deviation['typing'],
+            '-t_number_of_reading-': controller.stylus_modes_number_of_reading['typing']
             }
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        nargs=1,
+        default="info",
+        help=("Provide logging level: [debug, info, warning, error, critical]"),
+    )
+    #    parser.add_argument(
+    #        "-log",
+    #        "--logfile",
+    #        nargs=1,
+    #        default="./lod/dcs5.log",
+    #        help=("Filename to print the logs to."),
+    #    )
+    args = parser.parse_args()
+
+    log_name = 'dcs5_log_' + time.strftime("%y%m%dT%H%M%S", time.gmtime())
+
+    log_path = PurePath(PurePath(__file__).parent, 'logs', log_name)
+
+    logging.basicConfig(
+        level=args.verbose.upper(),
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.FileHandler(log_path),
+            logging.StreamHandler()
+        ]
+    )
+    logging.info('Starting')
+    c = Dcs5Controller()
+    make_window(c)
+    logging.info('Finished')
+
+
+if __name__ == '__main__':
+    main()
