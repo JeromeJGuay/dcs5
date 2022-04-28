@@ -124,7 +124,6 @@ BOARD_KEY_ZERO = -3.695 - BOARD_KEY_DETECTION_RANGE
 BOARD_NUMBER_OF_KEYS = 49
 
 
-
 def scan_bluetooth_device():
     devices = {}
     logging.info("Scanning for bluetooth devices ...")
