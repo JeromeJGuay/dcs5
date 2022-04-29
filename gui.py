@@ -1,5 +1,5 @@
 import PySimpleGUI as sg
-from controller import Dcs5Controller
+from controller import Dcs5Listener
 from utils import json2dict, dict2json
 from pathlib import PurePath
 import logging
@@ -35,7 +35,7 @@ MAX_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['MAX_BACKLIGHTING_SENSITIVITY']
 #self.listen_thread = threading.Thread(target=self.listen)
 #self.listen_thread.start()
 
-def make_window(controller: Dcs5Controller):
+def make_window(controller: Dcs5Listener):
     width_col1 = 20
     width_col2 = 10
     sg.theme('Topanga')
@@ -193,7 +193,7 @@ def make_window(controller: Dcs5Controller):
     window.close()
 
 
-def get_controller_values(controller: Dcs5Controller):
+def get_controller_values(controller: Dcs5Listener):
     return {'-m_delay-': controller.stylus_modes_settling_delay['measure'],
             '-m_max_deviation-': controller.stylus_modes_max_deviation['measure'],
             '-m_number_of_reading-': controller.stylus_modes_number_of_reading['measure'],
@@ -233,7 +233,7 @@ def main():
         ]
     )
     logging.info('Starting')
-    c = Dcs5Controller()
+    c = Dcs5Listener()
     make_window(c)
     logging.info('Finished')
 
