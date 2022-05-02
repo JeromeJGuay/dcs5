@@ -27,6 +27,7 @@ import re
 from typing import *
 import time
 import pynput.keyboard as keyboard
+
 from pathlib import PurePath
 from utils import json2dict
 
@@ -226,7 +227,7 @@ class Dcs5Controller(Dcs5BoardState):
         self.expected_message_queue: List[str] = []
 
         self.listening: bool = False
-        self.silence_board: bool = False
+        self.is_muted: bool = False
 
         self.stylus: str = 'pen'  # [finger/pen]
         self.stylus_offset: str = STYLUS_OFFSET['pen']
@@ -263,9 +264,16 @@ class Dcs5Controller(Dcs5BoardState):
         self.command_thread = threading.Thread(target=self.handle_command)
         self.listen_thread.start()
         self.command_thread.start()
+        self.listening = True
 
     def stop_listening(self):
         self.listening = False
+
+    def unmute_board(self):
+        self.is_muted = False
+
+    def mute_board(self):
+        self.is_muted = True
 
     def change_stylus(self, value: str):
         self.stylus = 'pen'
@@ -273,24 +281,59 @@ class Dcs5Controller(Dcs5BoardState):
         logging.info(f'Stylus set to {self.stylus}. Stylus offset {self.stylus_offset}')
 
     def handle_command(self):
+        logging.info('Command Handler Initiated')
         while self.listening is True:
             if len(self.received_queue) > 0:
+                logging.info(f"Send_Queue: {self.send_queue}")
+                logging.info(f"Expected_Queue: {self.expected_message_queue}")
+                logging.info(f"Received_Queue: {self.received_queue}")
                 isvalid = False
                 received, expected = self.received_queue.pop(0), self.expected_message_queue.pop(0)
+                logging.info(rf'Received: {[received]}, Expected: {[expected]}')
                 if "regex_" in expected:
-                    match = re.findall("("+expected[7:]+")", received)[0]
-                    if len(match) > 0:
-                        isvalid = True
+                   # match = re.findall("(" + expected[7:] + ")", received)[0]
+                   # if len(match) > 0:
+                   #     isvalid = True
+                    pass
 
                 elif received == expected:
                     isvalid = True
 
                 if isvalid is True:
-                    logging.info(f'Valid: Command received: {received}, Command expected: {expected}')
                     if received == "....":
-                        pass #TODO something
-                    elif received == "...":
-                        pass  # TODO something else
+                        pass  # TODO something
+
+                    elif 'mode activated' in received:
+                        logging.info(f'Mode activated...{received}')
+                        pass
+
+                    elif "sn" in received:
+                        value = 'TODO'
+                        # f'%sn:{int(value)}#\r'
+                        # self.number_of_reading = value
+                        logging.info('Stylus Status Message Enable')
+                    # self.stylus_status_msg = 'Enable'
+                    # logging.info('Stylus Status Message Disable')
+                    # self.stylus_status_msg = 'Disable'
+
+                    elif "di" in received:
+                        value = 'TODO'
+                        # f"%di:{value}#\r"
+                        # self.number_of_reading = value
+                        # self.stylus_settling_delay = value
+                        logging.info(f"Stylus settling delay set to {value}")
+
+                    elif "dm" in received:
+                        value = "TODO"
+                        # f"%dm:{value}#\r":
+                        logging.info(f"Stylus max deviation set to {value}")
+                        # self.stylus_max_deviation = value
+
+                    elif "dn" in received:
+                        value = 'TODO'
+                        # f"%dn:{value}#\r":
+                        # self.number_of_reading = value
+                        logging.info(f"Number of reading set to {value}")
 
                     elif received == "BATTERY":
                         string = "%q:(-*\d*,\d*)#"
@@ -304,12 +347,31 @@ class Dcs5Controller(Dcs5BoardState):
                             self.calibrated = True
                         else:
                             logging.error(f'Calibration state {self.client.buffer}')
+
+                    elif 'Cal Pt' in received:
+                        logging.info(f'Calibration point todo set to todo mm')
+                        # if self.client.buffer == f'Cal Pt {pt} set to: {pos}\r':
+                        #    self.cal_pt[pt - 1] = pos
+                        #    logging.info(f'Calibration point {pt} set to {pos} mm')
+                        # else:
+                        #    logging.error(f'Calibration point {self.client.buffer}')
+
+                    elif ' &Xr#: X=' in received:
+                        logging.info(f'Set stylus down for point TODO ...')
+                        # if self.client.buffer == f'&Xr#: X={pt}\r':
+                        #    logging.info(f'Set stylus down for point {pt} ...')
+                        #    msg = ""
+                        #    while f'&{pt}c' not in msg:
+                        #        self.client.receive()
+                        #        msg += self.client.buffer  # FIXME
+                        #    logging.info(f'Point {pt} calibrated.')
                 else:
                     logging.error(f'Invalid: Command received: {received}, Command expected: {expected}')
 
             if len(self.send_queue) > 0:
+                #  logging.info(f'Send_Queue: {self.send_queue}')
                 command = self.send_queue.pop(0)
-                self.client.send()
+                self.client.send(command)
                 logging.info(f'command sent: {command}')
 
     def c_board_initialization(self):
@@ -321,7 +383,7 @@ class Dcs5Controller(Dcs5BoardState):
     def c_ping(self):
         """This could use for something more useful. Like checking at regular interval if the board is still active:
         """
-        self.queue_command("a#", "%a:e#")
+        self.queue_command("a#", "%a:e#\r")
 
     def c_get_board_stats(self):
         self.queue_command("b#", "regex_%.*#")
@@ -347,63 +409,38 @@ class Dcs5Controller(Dcs5BoardState):
     def c_set_backlighting_level(self, value: int):
         """0-95"""
         self.queue_command(f'&o,{value}#', None)
-        self.backlighting_level = value
+        #self.backlighting_level = value
 
     def c_set_backlighting_auto_mode(self, value: int):
         self.queue_command(f"&oa,{value}", None)
-        self.backlighting_auto_mode = value
+        #self.backlighting_auto_mode = value
 
     def c_set_backlighting_sensitivity(self, value: int):
         """0-7"""
         self.queue_command(f"&os,{value}", None)
-        self.backlighting_sensitivity = {True: 'auto', False: 'manual'}
+        #self.backlighting_sensitivity = {True: 'auto', False: 'manual'}
 
     def c_set_stylus_detection_message(self, value: bool):
         """
         When disabled (false): %t0 %t1 are not sent
         """
         self.queue_command(f'&sn,{value}', f'%sn:{value}#\r')
-        if self.client.buffer == f'%sn:{int(value)}#\r':  # NOT WORKING
-            if value is True:
-                logging.info('Stylus Status Message Enable')
-                self.stylus_status_msg = 'Enable'
-            else:
-                logging.info('Stylus Status Message Disable')
-                self.stylus_status_msg = 'Disable'
-        else:
-            logging.error(f'Stylus status message,  {self.client.buffer}')
 
     def c_set_stylus_settling_delay(self, value: int = 1):
         self.queue_command(f"&di,{value}#", f"%di:{value}#\r")
-        if self.client.buffer == f"%di:{value}#\r":
-            self.stylus_settling_delay = value
-            logging.info(f"Stylus settling delay set to {value}")
-        else:
-            logging.error(f'Settling delay,  {self.client.buffer}')
 
     def c_set_stylus_max_deviation(self, value: int):
         self.queue_command(f"&dm,{value}#", f"%dm:{value}#\r")
-        if self.client.buffer == f"%dm:{value}#\r":
-            self.stylus_max_deviation = value
-            logging.info(f"Stylus max deviation set to {value}")
-        else:
-            logging.error(f'Max deviation,  {self.client.buffer}')
 
     def c_set_stylus_number_of_reading(self, value: int = 5):
         self.queue_command(f"&dn,{value}#", f"%dn:{value}#\r")
-
-        if self.client.buffer == f"%dn:{value}#\r":
-            self.number_of_reading = value
-            logging.info(f"Number of reading set to {value}")
-        else:
-            logging.error(f'Number of reading,  {self.client.buffer}')
 
     def c_restore_cal_data(self):
         self.queue_command("&cr,m1,m2,raw1,raw2#", None)
 
     def _clear_cal_data(self):
         self.queue_command("&ca#", None)
-        self.calibrated = False
+       # self.calibrated = False
 
     def c_check_calibration_state(self):  # TODO, to be tested
         self.queue_command('&u#', 'regex_%u:\d#\r')
@@ -411,27 +448,14 @@ class Dcs5Controller(Dcs5BoardState):
     def c_set_calibration_points_mm(self, pt: int, pos: int):
         self.queue_command(f'&{pt}mm,{pos}#', f'Cal Pt {pt} set to: {pos}\r')
 
-        if self.client.buffer == f'Cal Pt {pt} set to: {pos}\r':
-            self.cal_pt[pt - 1] = pos
-            logging.info(f'Calibration point {pt} set to {pos} mm')
-        else:
-            logging.error(f'Calibration point {self.client.buffer}')
-
     def c_calibrate(self, pt: int):
         self.queue_command(f"&{pt}r#", f'&Xr#: X={pt}\r')
-
-        if self.client.buffer == f'&Xr#: X={pt}\r':
-            logging.info(f'Set stylus down for point {pt} ...')
-            msg = ""
-            while f'&{pt}c' not in msg:
-                self.client.receive()
-                msg += self.client.buffer  # FIXME
-            logging.info(f'Point {pt} calibrated.')
 
 
 class Dcs5Listener:
     """
     """
+
     def __init__(self, controller: Dcs5Controller):
         self.controller = controller
         self.message_queue: list = []
@@ -456,69 +480,73 @@ class Dcs5Listener:
         logging.info('Listening stopped')
 
     def split_board_message(self):
-        delimiters = ["\r", "\#", "%rebooting", "Rebooting in 2 seconds ..."]
+        delimiters = ["\n", "\r", "#", "%rebooting", "Rebooting in 2 seconds ..."]
         for d in delimiters:
             msg = self.controller.client.buffer.split(d)
             if len(msg) > 1:
                 self.controller.client.buffer = msg[-1]
                 self.message_queue.append(msg[0] + d)
+                logging.info(rf"messages received: {self.message_queue}")
 
     def process_board_message(self):
         """ANALYZE SOLICITED VS UNSOLICITED MESSAGE"""
-        a = ["%t", "%l", "%s,.*#", "F,(.*)#"] # #####################################TODO TODO TODO
         while len(self.message_queue) > 0:
             message = self.message_queue.pop(0)
             self.stdout_value = None
-            if message == "":
-                continue
-            out = self.decode_board_message(message)
-            if out is None:
-                continue
-            if out in ['a1', 'a2', 'a3', 'a4', 'a5', 'a6']:
-                self.stdout_value = f'f{out[-1]}'
-            elif out in ['b1', 'b2', 'b3', 'b4', 'b5', 'b6']:
-                if out == 'b1':
-                    self.change_backlighting_level(1)
-                elif out == 'b2':
-                    self.change_backlighting_level(-1)
+            msg_type, msg_value = self.decode_board_message(message)
+            if msg_type == "xt_key":
+                if msg_value in ['a1', 'a2', 'a3', 'a4', 'a5', 'a6']:
+                    self.stdout_value = f'f{msg_value[-1]}'
+                elif msg_value in ['b1', 'b2', 'b3', 'b4', 'b5', 'b6']:
+                    if msg_value == 'b1':
+                        self.change_backlighting_level(1)
+                    elif msg_value == 'b2':
+                        self.change_backlighting_level(-1)
+                    else:
+                        logging.info(f'{msg_value} not mapped.')
+                elif msg_value == 'mode':
+                    self.cycle_stylus()
+                elif msg_value == 'skip':
+                    self.stdout_value = 'space'
+                elif msg_value in ['c1']:
+                    logging.info(f'{msg_value} not mapped.')
                 else:
-                    logging.info(f'{out} not mapped.')
-            elif out == 'mode':
-                self.cycle_stylus()
-            elif out == 'skip':
-                self.stdout_value = 'space'
-            elif out in ['c1']:
-                logging.info(f'{out} not mapped.')
-            else:
-                if isinstance(out, tuple):
-                    if out[0] == 's':
-                        self.swipe_value = out[1]
-                        if out[1] > SWIPE_THRESHOLD:
-                            self.swipe_triggered = True
-                    if out[0] == 'l':
-                        if self.swipe_triggered is True:
-                            self.check_for_stylus_swipe(out[1])
-                            logging.info(f'Board entry: {self.stylus_output_mode}.')
-                        else:
-                            self.stdout_value = self.map_stylus_length_measure(out[1])
+                    self.stdout_value = msg_value
+
+            elif msg_type == 'swipe':
+                self.swipe_value = msg_value
+                if msg_value > SWIPE_THRESHOLD:
+                    self.swipe_triggered = True
+
+            elif msg_type == 'length':
+                if self.swipe_triggered is True:
+                    self.check_for_stylus_swipe(msg_value)
+                    logging.info(f'Board entry: {self.stylus_output_mode}.')
                 else:
-                    self.stdout_value = out
+                    self.stdout_value = self.map_stylus_length_measure(msg_value)
+
+            elif msg_type == "unsolicited":
+                self.controller.received_queue.append(msg_value)
 
             if self.stdout_value is not None:
                 logging.info(f'output value {self.stdout_value}')
-                if self.controller.silence_board is False:
+                if self.controller.is_muted is False:
                     self.stdout_to_keyboard(self.stdout_value)
 
     @staticmethod
     def decode_board_message(value: str):
-        if 't' in value:
-            return None
-        elif 'l' in value:
-            return 'l', int(re.findall("%l,(\d+)#", value)[0])
-        elif 's' in value:
-            return 's', int(re.findall("%s,(-*\d+)#", value)[0])
-        elif 'F' in value:
-            return XT_KEY_MAP[value[2:]]
+        pattern = "%t,([0-9])#|%l,([0-9]*)#|%s,([0-9]*)#|F,([0-9]{2})#"
+        match = re.findall(pattern, value)
+        logging.info(match)
+        if len(match) > 0:
+            if match[0][1] != "":
+                return 'length', int(match[0][1])
+            elif match[0][2] != "":
+                return 'swipe', int(match[0][2])
+            elif match[0][3] != "":
+                return 'xt_key', XT_KEY_MAP[match[0][3]]
+        else:
+            return 'unsolicited', value
 
     def check_for_stylus_swipe(self, value: str):
         self.swipe_triggered = False
@@ -575,12 +603,19 @@ class Dcs5Listener:
             self.controller.c_set_backlighting_level(self.controller.backlighting_level)
 
 
-def init_dcs5_board(settings):
+def init_dcs5_board(c: Dcs5Controller):
     """
     init a board object
     change default settings with settings
     applies them
     """
+    c.c_set_sensor_mode(1)
+    c.c_set_interface(1)
+    c.c_set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
+    c.c_set_stylus_detection_message(False)
+    c.c_set_stylus_settling_delay(50)#DEFAULT_SETTLING_DELAY)
+    c.c_set_stylus_max_deviation(DEFAULT_MAX_DEVIATION)
+    c.c_set_stylus_number_of_reading(DEFAULT_NUMBER_OF_READING)
 
 
 def launch_dcs5_board(scan: bool):
@@ -591,7 +626,7 @@ def launch_dcs5_board(scan: bool):
         if c.client_isconnected is True:
             try:
                 c.start_listening()
-
+                init_dcs5_board(c)
             except socket.error as err:
                 logging.info(err)
     except (KeyboardInterrupt, SystemExit) as err:
@@ -609,7 +644,7 @@ def main(scan: bool = False):
         "--verbose",
         nargs=1,
         default="info",
-        help=("Provide logging level: [debug, info, warning, error, critical]"),
+        help="Provide logging level: [debug, info, warning, error, critical]",
     )
     #    parser.add_argument(
     #        "-log",
@@ -634,10 +669,13 @@ def main(scan: bool = False):
     )
     logging.info('Starting')
     c = launch_dcs5_board(scan)
-    logging.info('Finished')
 
     return c
 
 
 if __name__ == "__main__":
-    c = main()
+    try:
+        c = main()
+    except KeyboardInterrupt:
+        c.close_client()
+

@@ -1,5 +1,6 @@
+#! /usr/bin/env python3
 import PySimpleGUI as sg
-from controller import Dcs5Listener
+from controller import Dcs5Listener, Dcs5Controller
 from utils import json2dict, dict2json
 from pathlib import PurePath
 import logging
@@ -233,7 +234,7 @@ def main():
         ]
     )
     logging.info('Starting')
-    c = Dcs5Listener()
+    c = Dcs5Controller()
     make_window(c)
     logging.info('Finished')
 
