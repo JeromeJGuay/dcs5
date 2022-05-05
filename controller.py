@@ -26,7 +26,8 @@ import threading
 import re
 from typing import *
 import time
-import pynput.keyboard as keyboard
+#import pynput.keyboard as keyboard
+import pyautogui as pag
 
 from pathlib import PurePath
 from utils import json2dict
@@ -108,14 +109,14 @@ BOARD_KEYS_MAP = {
               6 * ['space'] + 2 * ['del_last'], }
 
 KEYBOARD_MAP = {
-    'space': keyboard.Key.space,
-    'enter': keyboard.Key.enter,
-    'del_last': keyboard.Key.backspace,
-    'del': keyboard.Key.delete,
-    'up': keyboard.Key.up,
-    'down': keyboard.Key.down,
-    'left': keyboard.Key.left,
-    'right': keyboard.Key.right,
+    'space': 'space',#keyboard.Key.space,
+    'enter': 'enter',#keyboard.Key.enter,
+    'del_last': 'backspace',#keyboard.Key.backspace,
+    'del': 'delete',#keyboard.Key.delete,
+    'up': 'up',#keyboard.Key.up,
+    'down': 'down',#keyboard.Key.down,
+    'left': 'left',#keyboard.Key.left,
+    'right': 'right',#keyboard.Key.right,
     '1B': '-'
 }
 
@@ -256,8 +257,7 @@ class Dcs5Controller(Dcs5BoardState):
 
     def queue_command(self, command, message):
         self.send_queue.append(command)
-        if message is not None:
-            self.expected_message_queue.append(message)
+        self.expected_message_queue.append(message)
 
     def start_listening(self):
         listener = Dcs5Listener(self)
@@ -289,7 +289,10 @@ class Dcs5Controller(Dcs5BoardState):
                 logging.info(f"Expected_Queue: {self.expected_message_queue}")
                 logging.info(f"Received_Queue: {self.received_queue}")
                 isvalid = False
-                received, expected = self.received_queue.pop(0), self.expected_message_queue.pop(0)
+                received = self.received_queue.pop(0)
+                expected = None
+                while expected is None:
+                    expected = self.expected_message_queue.pop(0)
                 logging.info(rf'Received: {[received]}, Expected: {[expected]}')
                 if "regex_" in expected:
                    # match = re.findall("(" + expected[7:] + ")", received)[0]
@@ -465,7 +468,7 @@ class Dcs5Listener:
         self.swipe_triggered: bool = False
         self.swipe_value: str = ''
 
-        self.keyboard_controller = keyboard.Controller()
+        #self.keyboard_controller = keyboard.Controller()
         self.stdout_value: str = None
 
     def listen(self):
@@ -576,13 +579,13 @@ class Dcs5Listener:
 
     def stdout_to_keyboard(self, value: str):
         if value in KEYBOARD_MAP:
-            self.keyboard_controller.tap(KEYBOARD_MAP[value])
+            pag.press(KEYBOARD_MAP[value])
         elif isinstance(value, (int, float)):
-            self.keyboard_controller.type(str(value))
+            pag.write(str(value))
         elif value in ['f1', 'f2', 'f3', 'f4', 'f5', 'f6']:
-            self.keyboard_controller.tap(keyboard.Key.__dict__[value])
+            pag.press(value)
         elif str(value) in '.0123456789abcdefghijklmnopqrstuvwxyz':
-            self.keyboard_controller.tap(value)
+            pag.write(value)
 
     def cycle_stylus(self):
         if self.controller.stylus == 'pen':
