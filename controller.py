@@ -256,15 +256,16 @@ class Dcs5Controller(Dcs5BoardState):
 
     def queue_command(self, command, message):
         self.send_queue.append(command)
-        self.expected_message_queue.append(message)
+        if message is not None:
+            self.expected_message_queue.append(message)
 
     def start_listening(self):
         listener = Dcs5Listener(self)
-        self.listen_thread = threading.Thread(target=listener.listen)
-        self.command_thread = threading.Thread(target=self.handle_command)
-        self.listen_thread.start()
-        self.command_thread.start()
         self.listening = True
+        self.command_thread = threading.Thread(target=self.handle_command)
+        self.command_thread.start()
+        self.listen_thread = threading.Thread(target=listener.listen)
+        self.listen_thread.start()
 
     def stop_listening(self):
         self.listening = False
@@ -361,7 +362,7 @@ class Dcs5Controller(Dcs5BoardState):
                         # if self.client.buffer == f'&Xr#: X={pt}\r':
                         #    logging.info(f'Set stylus down for point {pt} ...')
                         #    msg = ""
-                        #    while f'&{pt}c' not in msg:
+                        #    while f'&{pt}c' not in msg457347:
                         #        self.client.receive()
                         #        msg += self.client.buffer  # FIXME
                         #    logging.info(f'Point {pt} calibrated.')
@@ -409,22 +410,22 @@ class Dcs5Controller(Dcs5BoardState):
     def c_set_backlighting_level(self, value: int):
         """0-95"""
         self.queue_command(f'&o,{value}#', None)
-        #self.backlighting_level = value
+        self.backlighting_level = value
 
     def c_set_backlighting_auto_mode(self, value: int):
         self.queue_command(f"&oa,{value}", None)
-        #self.backlighting_auto_mode = value
+        self.backlighting_auto_mode = value
 
     def c_set_backlighting_sensitivity(self, value: int):
         """0-7"""
         self.queue_command(f"&os,{value}", None)
-        #self.backlighting_sensitivity = {True: 'auto', False: 'manual'}
+        self.backlighting_sensitivity = {True: 'auto', False: 'manual'}
 
     def c_set_stylus_detection_message(self, value: bool):
         """
         When disabled (false): %t0 %t1 are not sent
         """
-        self.queue_command(f'&sn,{value}', f'%sn:{value}#\r')
+        self.queue_command(f'&sn,{value}', f'%sn:{int(value)}#\r')
 
     def c_set_stylus_settling_delay(self, value: int = 1):
         self.queue_command(f"&di,{value}#", f"%di:{value}#\r")
@@ -440,7 +441,7 @@ class Dcs5Controller(Dcs5BoardState):
 
     def _clear_cal_data(self):
         self.queue_command("&ca#", None)
-       # self.calibrated = False
+        self.calibrated = False
 
     def c_check_calibration_state(self):  # TODO, to be tested
         self.queue_command('&u#', 'regex_%u:\d#\r')
@@ -626,7 +627,10 @@ def launch_dcs5_board(scan: bool):
         if c.client_isconnected is True:
             try:
                 c.start_listening()
+                time.sleep(1)
+                c.mute_board()
                 init_dcs5_board(c)
+                c.unmute_board()
             except socket.error as err:
                 logging.info(err)
     except (KeyboardInterrupt, SystemExit) as err:
