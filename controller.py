@@ -26,11 +26,13 @@ import threading
 import re
 from typing import *
 import time
-#import pynput.keyboard as keyboard
 import pyautogui as pag
 
 from pathlib import PurePath
-from utils import json2dict
+from utils import json2dict, resolve_relative_path
+from dataclasses import dataclass
+from queue import Queue
+
 
 ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
@@ -109,14 +111,14 @@ BOARD_KEYS_MAP = {
               6 * ['space'] + 2 * ['del_last'], }
 
 KEYBOARD_MAP = {
-    'space': 'space',#keyboard.Key.space,
-    'enter': 'enter',#keyboard.Key.enter,
-    'del_last': 'backspace',#keyboard.Key.backspace,
-    'del': 'delete',#keyboard.Key.delete,
-    'up': 'up',#keyboard.Key.up,
-    'down': 'down',#keyboard.Key.down,
-    'left': 'left',#keyboard.Key.left,
-    'right': 'right',#keyboard.Key.right,
+    'space': 'space',  # keyboard.Key.space,
+    'enter': 'enter',  # keyboard.Key.enter,
+    'del_last': 'backspace',  # keyboard.Key.backspace,
+    'del': 'delete',  # keyboard.Key.delete,
+    'up': 'up',  # keyboard.Key.up,
+    'down': 'down',  # keyboard.Key.down,
+    'left': 'left',  # keyboard.Key.left,
+    'right': 'right',  # keyboard.Key.right,
     '1B': '-'
 }
 
@@ -127,6 +129,18 @@ BOARD_KEY_DETECTION_RANGE = 2
 BOARD_KEY_ZERO = -3.695 - BOARD_KEY_DETECTION_RANGE
 BOARD_NUMBER_OF_KEYS = 49
 
+
+
+
+def shout_to_keyboard(value: str):
+    if value in KEYBOARD_MAP:
+        pag.press(KEYBOARD_MAP[value])
+    elif isinstance(value, (int, float)):
+        pag.write(str(value))
+    elif value in ['f1', 'f2', 'f3', 'f4', 'f5', 'f6']:
+        pag.press(value)
+    elif str(value) in '.0123456789abcdefghijklmnopqrstuvwxyz':
+        pag.write(value)
 
 def scan_bluetooth_device():
     devices = {}
@@ -183,29 +197,29 @@ class Dcs5Client:
         self.socket.close()
 
 
+@dataclass(unsafe_hash=True, init=True)
 class Dcs5BoardState:
-    def __init__(self):
-        self.sensor_mode: str = None
-        self.stylus_status_msg: str = None
-        self.stylus_settling_delay: int = None
-        self.stylus_max_deviation: int = None
-        self.number_of_reading: int = None
+    sensor_mode: str = None
+    stylus_status_msg: str = None
+    stylus_settling_delay: int = None
+    stylus_max_deviation: int = None
+    number_of_reading: int = None
 
-        self.battery_level: str = None
-        self.humidity: int = None
-        self.temperature: int = None
-        self.board_stats: str = None
-        self.board_interface: str = None
+    battery_level: str = None
+    humidity: int = None
+    temperature: int = None
+    board_stats: str = None
+    board_interface: str = None
+    calibrated: bool = None
+    cal_pt_1: int = None
+    cal_pt_2: int = None
 
-        self.calibrated: bool = None
-        self.cal_pt: List[int] = [None, None]
-
-        self.backlighting_level: int = None
-        self.backlighting_auto_mode: bool = None
-        self.backlighting_sensitivity: int = None
+    backlighting_level: int = None
+    backlighting_auto_mode: bool = None
+    backlighting_sensitivity: int = None
 
 
-class Dcs5Controller(Dcs5BoardState):
+class Dcs5Controller:
     """
     Notes
     -----
@@ -218,17 +232,20 @@ class Dcs5Controller(Dcs5BoardState):
         Dcs5BoardState.__init__(self)
         threading.Thread.__init__(self)
 
+        self.board_state = Dcs5BoardState()
+
         self.listen_thread: threading.Thread = None
         self.command_thread: threading.Thread = None
-        self.client: Dcs5Client = Dcs5Client()
-        self.client_isconnected: bool = False
 
-        self.send_queue: List[str] = []
-        self.received_queue: List[str] = []
-        self.expected_message_queue: List[str] = []
+        self.client = Dcs5Client()
+        self.client_isconnected = False
 
-        self.listening: bool = False
-        self.is_muted: bool = False
+        self.send_queue = Queue()
+        self.received_queue = Queue()
+        self.expected_message_queue = Queue()
+
+        self.listening = False
+        self.is_muted = False
 
         self.stylus: str = 'pen'  # [finger/pen]
         self.stylus_offset: str = STYLUS_OFFSET['pen']
@@ -236,6 +253,10 @@ class Dcs5Controller(Dcs5BoardState):
         self.stylus_modes_settling_delay: Dict[str: int] = DEFAULT_SETTLING_DELAY
         self.stylus_modes_number_of_reading: Dict[str: int] = DEFAULT_NUMBER_OF_READING
         self.stylus_modes_max_deviation: Dict[str: int] = DEFAULT_MAX_DEVIATION
+
+        self.shout_method = 'keyboard'
+        self.board_output_mode = 'center'
+        self.swipe_triggered = False
 
     def start_client(self, address: str = None, port: int = None):
         logging.info(f'Attempting to connect to board via port {port}.')
@@ -255,20 +276,27 @@ class Dcs5Controller(Dcs5BoardState):
         self.client.close()
         logging.info('Client Closed.')
 
-    def queue_command(self, command, message):
-        self.send_queue.append(command)
-        self.expected_message_queue.append(message)
+    def queue_command(self, command, message=None):
+        logging.info(f'Queued: {[command]}, {[message]}')
+        if message is not None:
+            self.expected_message_queue.put(message)
+        self.send_queue.put(command)
 
     def start_listening(self):
+        self.client.receive()
+        logging.info('starting threads')
         listener = Dcs5Listener(self)
         self.listening = True
         self.command_thread = threading.Thread(target=self.handle_command)
         self.command_thread.start()
+
         self.listen_thread = threading.Thread(target=listener.listen)
         self.listen_thread.start()
 
     def stop_listening(self):
         self.listening = False
+        self.listen_thread.join()
+        self.command_thread.join()
 
     def unmute_board(self):
         self.is_muted = False
@@ -277,27 +305,76 @@ class Dcs5Controller(Dcs5BoardState):
         self.is_muted = True
 
     def change_stylus(self, value: str):
-        self.stylus = 'pen'
-        self.stylus = STYLUS_OFFSET[self.stylus]
+        """Stylus must be one of [pen, finger]"""
+        self.stylus = value
+        self.stylus_offset = STYLUS_OFFSET[self.stylus]
         logging.info(f'Stylus set to {self.stylus}. Stylus offset {self.stylus_offset}')
+
+    def cycle_stylus(self):
+        if self.stylus == 'pen':
+            self.change_stylus('finger')
+        else:
+            self.change_stylus('pen')
+
+    def change_board_output_mode(self, value: str):
+        """
+        value must be one of  [center, bottom, top]
+        """
+        self.board_output_mode = value
+        mode = {'center': 'measure', 'bottom': 'typing', 'top': 'typing'}[value]
+        self.c_set_stylus_settling_delay(self.stylus_modes_settling_delay[mode])
+        self.c_set_stylus_number_of_reading(self.stylus_modes_number_of_reading[mode])
+        self.c_set_stylus_max_deviation(self.stylus_modes_max_deviation[mode])
+
+    def map_stylus_length_measure(self, value: int):
+        if self.board_output_mode == 'center':
+            return value - self.stylus_offset
+        else:
+            index = int((value - BOARD_KEY_ZERO) / BOARD_KEY_RATIO)
+            logging.info(f'index {index}')
+            if index < BOARD_NUMBER_OF_KEYS:
+                return BOARD_KEYS_MAP[self.board_output_mode][index]
+
+    def check_for_stylus_swipe(self, value: str):
+        self.swipe_triggered = False
+        if int(value) > 630:
+            self.change_board_output_mode('center')
+        elif int(value) > 430:
+            self.change_board_output_mode('bottom')
+        elif int(value) > 230:
+            self.change_board_output_mode('top')
+        logging.info(f'Board entry: {self.board_output_mode}.')
+
+    def shout(self, value: Union[int, float, str]):
+        if self.shout_method == 'Keyboard':
+            shout_to_keyboard(value)
+
+    def change_backlighting_level(self, value: int):
+        if value == 1 and self.board_state.backlighting_level < MAX_BACKLIGHTING_LEVEL:
+            self.board_state.backlighting_level += 25
+            if self.board_state.backlighting_level > MAX_BACKLIGHTING_LEVEL:
+                self.board_state.backlighting_level = MAX_BACKLIGHTING_LEVEL
+            self.c_set_backlighting_level(self.board_state.backlighting_level)
+
+        if value == -1 and self.board_state.backlighting_level > MIN_BACKLIGHTING_LEVEL:
+            self.board_state.backlighting_level += -25
+            if self.board_state.backlighting_level < MIN_BACKLIGHTING_LEVEL:
+                self.board_state.backlighting_level = MIN_BACKLIGHTING_LEVEL
+            self.c_set_backlighting_level(self.board_state.backlighting_level)
 
     def handle_command(self):
         logging.info('Command Handler Initiated')
         while self.listening is True:
-            if len(self.received_queue) > 0:
-                logging.info(f"Send_Queue: {self.send_queue}")
-                logging.info(f"Expected_Queue: {self.expected_message_queue}")
-                logging.info(f"Received_Queue: {self.received_queue}")
+            if not self.received_queue.empty():
                 isvalid = False
-                received = self.received_queue.pop(0)
-                expected = None
-                while expected is None:
-                    expected = self.expected_message_queue.pop(0)
-                logging.info(rf'Received: {[received]}, Expected: {[expected]}')
+                received = self.received_queue.get()
+                expected = self.expected_message_queue.get()
+                logging.info(f'Received: {[received]}, Expected: {[expected]}')
+
                 if "regex_" in expected:
-                   # match = re.findall("(" + expected[7:] + ")", received)[0]
-                   # if len(match) > 0:
-                   #     isvalid = True
+                    # match = re.findall("(" + expected[7:] + ")", received)[0]
+                    # if len(match) > 0:
+                    #     isvalid = True
                     pass
 
                 elif received == expected:
@@ -308,7 +385,7 @@ class Dcs5Controller(Dcs5BoardState):
                         pass  # TODO something
 
                     elif 'mode activated' in received:
-                        logging.info(f'Mode activated...{received}')
+                        logging.info(f'{received}')
                         pass
 
                     elif "sn" in received:
@@ -345,10 +422,10 @@ class Dcs5Controller(Dcs5BoardState):
                     elif expected == 'regex_%u:\d#':
                         if received == '%u:0#\r':
                             logging.info('Board is not calibrated.')
-                            self.calibrated = False
+                            self.board_state.calibrated = False
                         elif received == '%u:1#\r':
                             logging.info('Board is calibrated.')
-                            self.calibrated = True
+                            self.board_state.calibrated = True
                         else:
                             logging.error(f'Calibration state {self.client.buffer}')
 
@@ -370,13 +447,19 @@ class Dcs5Controller(Dcs5BoardState):
                         #        msg += self.client.buffer  # FIXME
                         #    logging.info(f'Point {pt} calibrated.')
                 else:
-                    logging.error(f'Invalid: Command received: {received}, Command expected: {expected}')
+                    logging.error(f'Invalid: Command received: {[received]}, Command expected: {[expected]}')
+                self.received_queue.task_done()
+                self.expected_message_queue.task_done()
 
-            if len(self.send_queue) > 0:
-                #  logging.info(f'Send_Queue: {self.send_queue}')
-                command = self.send_queue.pop(0)
-                self.client.send(command)
-                logging.info(f'command sent: {command}')
+            if not self.send_queue.empty():
+                self._send_command()
+
+            time.sleep(0.1)
+
+    def _send_command(self):
+        command = self.send_queue.get()
+        self.client.send(command)
+        self.send_queue.task_done()
 
     def c_board_initialization(self):
         self.queue_command("&init#", "Rebooting in 2 seconds...")
@@ -387,7 +470,7 @@ class Dcs5Controller(Dcs5BoardState):
     def c_ping(self):
         """This could use for something more useful. Like checking at regular interval if the board is still active:
         """
-        self.queue_command("a#", "%a:e#\r")
+        self.queue_command("a#", "%a:e#")
 
     def c_get_board_stats(self):
         self.queue_command("b#", "regex_%.*#")
@@ -406,29 +489,29 @@ class Dcs5Controller(Dcs5BoardState):
         """
         self.queue_command(f"&fm,{value}#", None)
         if value == 0:
-            self.board_interface = "DCSLinkstream"
+            self.board_state.board_interface = "DCSLinkstream"
         elif value == 1:
-            self.board_interface = "FEED"
+            self.board_state.board_interface = "FEED"
 
     def c_set_backlighting_level(self, value: int):
         """0-95"""
         self.queue_command(f'&o,{value}#', None)
-        self.backlighting_level = value
+        self.board_state.backlighting_level = value
 
     def c_set_backlighting_auto_mode(self, value: int):
         self.queue_command(f"&oa,{value}", None)
-        self.backlighting_auto_mode = value
+        self.board_state.backlighting_auto_mode = value
 
     def c_set_backlighting_sensitivity(self, value: int):
         """0-7"""
         self.queue_command(f"&os,{value}", None)
-        self.backlighting_sensitivity = {True: 'auto', False: 'manual'}
+        self.board_state.backlighting_sensitivity = {True: 'auto', False: 'manual'}
 
     def c_set_stylus_detection_message(self, value: bool):
         """
         When disabled (false): %t0 %t1 are not sent
         """
-        self.queue_command(f'&sn,{value}', f'%sn:{int(value)}#\r')
+        self.queue_command(f'&sn,{int(value)}', f'%sn:{int(value)}#\r')
 
     def c_set_stylus_settling_delay(self, value: int = 1):
         self.queue_command(f"&di,{value}#", f"%di:{value}#\r")
@@ -462,25 +545,18 @@ class Dcs5Listener:
 
     def __init__(self, controller: Dcs5Controller):
         self.controller = controller
-        self.message_queue: list = []
+        self.message_queue = Queue()
 
-        self.stylus_output_mode: str = 'center'  # [top, center, bottom]
-        self.swipe_triggered: bool = False
-        self.swipe_value: str = ''
-
-        #self.keyboard_controller = keyboard.Controller()
         self.stdout_value: str = None
 
     def listen(self):
-        self.controller.client.receive()
         logging.info('Listening started')
+        self.controller.client.receive()
         while self.controller.listening is True:
-            try:
-                self.controller.client.receive()
+            self.controller.client.receive()
+            if len(self.controller.client.buffer) > 0:
                 self.split_board_message()
                 self.process_board_message()
-            except socket.timeout:
-                pass
         logging.info('Listening stopped')
 
     def split_board_message(self):
@@ -489,59 +565,58 @@ class Dcs5Listener:
             msg = self.controller.client.buffer.split(d)
             if len(msg) > 1:
                 self.controller.client.buffer = msg[-1]
-                self.message_queue.append(msg[0] + d)
-                logging.info(rf"messages received: {self.message_queue}")
+                self.message_queue.put(msg[0] + d)
 
     def process_board_message(self):
         """ANALYZE SOLICITED VS UNSOLICITED MESSAGE"""
-        while len(self.message_queue) > 0:
-            message = self.message_queue.pop(0)
-            self.stdout_value = None
+        while not self.message_queue.empty():
+            message = self.message_queue.get()
+            stdout_value = None
             msg_type, msg_value = self.decode_board_message(message)
             if msg_type == "xt_key":
                 if msg_value in ['a1', 'a2', 'a3', 'a4', 'a5', 'a6']:
-                    self.stdout_value = f'f{msg_value[-1]}'
+                    stdout_value = f'f{msg_value[-1]}'
                 elif msg_value in ['b1', 'b2', 'b3', 'b4', 'b5', 'b6']:
                     if msg_value == 'b1':
-                        self.change_backlighting_level(1)
+                        self.controller.change_backlighting_level(1)
                     elif msg_value == 'b2':
-                        self.change_backlighting_level(-1)
+                        self.controller.change_backlighting_level(-1)
                     else:
                         logging.info(f'{msg_value} not mapped.')
                 elif msg_value == 'mode':
-                    self.cycle_stylus()
+                    self.controller.cycle_stylus()
                 elif msg_value == 'skip':
-                    self.stdout_value = 'space'
+                    stdout_value = 'space'
                 elif msg_value in ['c1']:
                     logging.info(f'{msg_value} not mapped.')
                 else:
-                    self.stdout_value = msg_value
+                    stdout_value = msg_value
 
             elif msg_type == 'swipe':
-                self.swipe_value = msg_value
+                self.controller.swipe_value = msg_value
                 if msg_value > SWIPE_THRESHOLD:
-                    self.swipe_triggered = True
+                    self.controller.swipe_triggered = True
 
             elif msg_type == 'length':
-                if self.swipe_triggered is True:
-                    self.check_for_stylus_swipe(msg_value)
-                    logging.info(f'Board entry: {self.stylus_output_mode}.')
+                if self.controller.swipe_triggered is True:
+                    self.controller.check_for_stylus_swipe(msg_value)
                 else:
-                    self.stdout_value = self.map_stylus_length_measure(msg_value)
+                    stdout_value = self.controller.map_stylus_length_measure(msg_value)
 
             elif msg_type == "unsolicited":
-                self.controller.received_queue.append(msg_value)
+                self.controller.received_queue.put(msg_value)
 
-            if self.stdout_value is not None:
-                logging.info(f'output value {self.stdout_value}')
+            self.message_queue.task_done()
+            if stdout_value is not None:
+                logging.info(f'output value {stdout_value}')
                 if self.controller.is_muted is False:
-                    self.stdout_to_keyboard(self.stdout_value)
+                    shout_to_keyboard(stdout_value)
+            time.sleep(0.001)
 
     @staticmethod
     def decode_board_message(value: str):
         pattern = "%t,([0-9])#|%l,([0-9]*)#|%s,([0-9]*)#|F,([0-9]{2})#"
         match = re.findall(pattern, value)
-        logging.info(match)
         if len(match) > 0:
             if match[0][1] != "":
                 return 'length', int(match[0][1])
@@ -551,60 +626,6 @@ class Dcs5Listener:
                 return 'xt_key', XT_KEY_MAP[match[0][3]]
         else:
             return 'unsolicited', value
-
-    def check_for_stylus_swipe(self, value: str):
-        self.swipe_triggered = False
-        if int(value) > 630:
-            self.change_stylus_entry_mode('center')
-        elif int(value) > 430:
-            self.change_stylus_entry_mode('bottom')
-        elif int(value) > 230:
-            self.change_stylus_entry_mode('top')
-
-    def change_stylus_entry_mode(self, value: str):
-        self.stylus_output_mode = value
-        mode = {'center': 'measure', 'bottom': 'typing', 'top': 'typing'}[value]
-        self.controller.c_set_stylus_settling_delay(self.controller.stylus_modes_settling_delay[mode])
-        self.controller.c_set_stylus_number_of_reading(self.controller.stylus_modes_number_of_reading[mode])
-        self.controller.c_set_stylus_max_deviation(self.controller.stylus_modes_max_deviation[mode])
-
-    def map_stylus_length_measure(self, value: int):
-        if self.stylus_output_mode == 'center':
-            return value - self.controller.stylus_offset
-        else:
-            index = int((value - BOARD_KEY_ZERO) / BOARD_KEY_RATIO)
-            logging.info(f'index {index}')
-            if index < BOARD_NUMBER_OF_KEYS:
-                return BOARD_KEYS_MAP[self.stylus_output_mode][index]
-
-    def stdout_to_keyboard(self, value: str):
-        if value in KEYBOARD_MAP:
-            pag.press(KEYBOARD_MAP[value])
-        elif isinstance(value, (int, float)):
-            pag.write(str(value))
-        elif value in ['f1', 'f2', 'f3', 'f4', 'f5', 'f6']:
-            pag.press(value)
-        elif str(value) in '.0123456789abcdefghijklmnopqrstuvwxyz':
-            pag.write(value)
-
-    def cycle_stylus(self):
-        if self.controller.stylus == 'pen':
-            self.controller.change_stylus('finger')
-        else:
-            self.controller.change_stylus('pen')
-
-    def change_backlighting_level(self, value: int):
-        if value == 1 and self.controller.backlighting_level < MAX_BACKLIGHTING_LEVEL:
-            self.controller.backlighting_level += 15
-            if self.controller.backlighting_level > MAX_BACKLIGHTING_LEVEL:
-                self.controller.backlighting_level = MAX_BACKLIGHTING_LEVEL
-            self.controller.c_set_backlighting_level(self.controller.backlighting_level)
-
-        if value == -1 and self.controller.backlighting_level > MIN_BACKLIGHTING_LEVEL:
-            self.controller.backlighting_level += -15
-            if self.controller.backlighting_level < MIN_BACKLIGHTING_LEVEL:
-                self.controller.backlighting_level = MIN_BACKLIGHTING_LEVEL
-            self.controller.c_set_backlighting_level(self.controller.backlighting_level)
 
 
 def init_dcs5_board(c: Dcs5Controller):
@@ -617,9 +638,9 @@ def init_dcs5_board(c: Dcs5Controller):
     c.c_set_interface(1)
     c.c_set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
     c.c_set_stylus_detection_message(False)
-    c.c_set_stylus_settling_delay(50)#DEFAULT_SETTLING_DELAY)
-    c.c_set_stylus_max_deviation(DEFAULT_MAX_DEVIATION)
-    c.c_set_stylus_number_of_reading(DEFAULT_NUMBER_OF_READING)
+    c.c_set_stylus_settling_delay(1)  # DEFAULT_SETTLING_DELAY['measured'])
+    c.c_set_stylus_max_deviation(DEFAULT_MAX_DEVIATION['measure'])
+    c.c_set_stylus_number_of_reading(DEFAULT_NUMBER_OF_READING['measure'])
 
 
 def launch_dcs5_board(scan: bool):
@@ -630,7 +651,6 @@ def launch_dcs5_board(scan: bool):
         if c.client_isconnected is True:
             try:
                 c.start_listening()
-                time.sleep(1)
                 c.mute_board()
                 init_dcs5_board(c)
                 c.unmute_board()
@@ -653,18 +673,19 @@ def main(scan: bool = False):
         default="info",
         help="Provide logging level: [debug, info, warning, error, critical]",
     )
-    #    parser.add_argument(
-    #        "-log",
-    #        "--logfile",
-    #        nargs=1,
-    #        default="./lod/dcs5.log",
-    #        help=("Filename to print the logs to."),
-    #    )
+    parser.add_argument(
+            "-log",
+            "--logfile",
+            nargs=1,
+            default='logs/dcs5',
+            help=("Filename to print the logs to."),
+        )
     args = parser.parse_args()
+
+    log_path = resolve_relative_path(args.logfile, __file__)
 
     log_name = 'dcs5_log_' + time.strftime("%y%m%dT%H%M%S", time.gmtime())
 
-    log_path = PurePath(PurePath(__file__).parent, 'logs', log_name)
 
     logging.basicConfig(
         level=args.verbose.upper(),
@@ -684,5 +705,6 @@ if __name__ == "__main__":
     try:
         c = main()
     except KeyboardInterrupt:
-        c.close_client()
-
+        pass
+    finally:
+        socket.close(0)
