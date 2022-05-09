@@ -31,11 +31,6 @@ MIN_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['MIN_BACKLIGHTING_SENSITIVITY']
 MAX_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['MAX_BACKLIGHTING_SENSITIVITY']
 
 
-#threading.Thread.__init__(self)
-#self.listen_thread: threading.Thread = None
-#self.listen_thread = threading.Thread(target=self.listen)
-#self.listen_thread.start()
-
 def make_window(controller: Dcs5Controller):
     width_col1 = 20
     width_col2 = 10
@@ -146,7 +141,7 @@ def make_window(controller: Dcs5Controller):
             controller.stop_listening()
             window['-active-indicator-'].update(value=active_status[0][0], text_color=active_status[0][1])
         elif event == '-init-':
-            controller.set_default_board_settings()
+            controller.initialize_board()
         elif event == '-update_row_m-':
             if values['-m_delay_input-'].isnumeric():
                 delay = int(values['-m_delay_input-'])
@@ -158,7 +153,7 @@ def make_window(controller: Dcs5Controller):
                     controller.stylus_modes_max_deviation['measure'] = values['-m_max_deviation_input-']
             if values['-m_number_of_reading_input-'].isnumeric():
                 controller.stylus_modes_number_of_reading['measure'] = values['-m_number_of_reading_input-']
-            if controller.stylus_output_mode == 'measure':
+            if controller.board_output_mode == 'measure':
                 controller.change_board_output_mode('measure')
             window['-m_delay_input-'].update('')
             window['-m_max_deviation_input-'].update('')
@@ -175,7 +170,7 @@ def make_window(controller: Dcs5Controller):
                     controller.stylus_modes_max_deviation['typing'] = values['-t_max_deviation_input-']
             if values['-t_number_of_reading_input-'].isnumeric():
                 controller.stylus_modes_number_of_reading['typing'] = values['-t_number_of_reading_input-']
-            if controller.stylus_output_mode == 'typing':
+            if controller.board_output_mode == 'typing':
                 controller.change_board_output_mode('typing')
             window['-t_delay_input-'].update('')
             window['-t_max_deviation_input-'].update('')
@@ -186,7 +181,7 @@ def make_window(controller: Dcs5Controller):
         elif event == sg.WIN_CLOSED:
             break
 
-      #  controller_values = get_controller_values(controller)
+        controller_values = get_controller_values(controller)
         for key, cvalue in controller_values.items():
             if window[key].get() != cvalue:
                 window[key].update(cvalue)
@@ -194,14 +189,14 @@ def make_window(controller: Dcs5Controller):
     window.close()
 
 
-#def get_controller_values(controller: Dcs5Listener):
-#    return {'-m_delay-': controller.stylus_modes_settling_delay['measure'],
-#            '-m_max_deviation-': controller.stylus_modes_max_deviation['measure'],
-#            '-m_number_of_reading-': controller.stylus_modes_number_of_reading['measure'],
-#            '-t_delay-': controller.stylus_modes_settling_delay['typing'],
-#            '-t_max_deviation-': controller.stylus_modes_max_deviation['typing'],
-#            '-t_number_of_reading-': controller.stylus_modes_number_of_reading['typing']
-#            }
+def get_controller_values(controller: Dcs5Controller):
+    return {'-m_delay-': controller.stylus_modes_settling_delay['measure'],
+            '-m_max_deviation-': controller.stylus_modes_max_deviation['measure'],
+            '-m_number_of_reading-': controller.stylus_modes_number_of_reading['measure'],
+            '-t_delay-': controller.stylus_modes_settling_delay['typing'],
+            '-t_max_deviation-': controller.stylus_modes_max_deviation['typing'],
+            '-t_number_of_reading-': controller.stylus_modes_number_of_reading['typing']
+            }
 
 def main():
     parser = argparse.ArgumentParser()

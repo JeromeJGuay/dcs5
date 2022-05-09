@@ -33,10 +33,8 @@ from utils import json2dict, resolve_relative_path
 from dataclasses import dataclass
 from queue import Queue
 
-
 ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
-TERMINATION_CHARACTER = '#'
 
 SETTINGS = json2dict(PurePath(PurePath(__file__).parent, 'src_files/default_settings.json'))
 
@@ -123,13 +121,12 @@ KEYBOARD_MAP = {
 }
 
 # STYLUS SETTINGS
+
 STYLUS_OFFSET = {'pen': 6, 'finger': 1}  # mm -> check calibration procedure. TODO
 BOARD_KEY_RATIO = 15.385  # ~200/13
 BOARD_KEY_DETECTION_RANGE = 2
 BOARD_KEY_ZERO = -3.695 - BOARD_KEY_DETECTION_RANGE
 BOARD_NUMBER_OF_KEYS = 49
-
-
 
 
 def shout_to_keyboard(value: str):
@@ -142,15 +139,18 @@ def shout_to_keyboard(value: str):
     elif str(value) in '.0123456789abcdefghijklmnopqrstuvwxyz':
         pag.write(value)
 
+
 def scan_bluetooth_device():
     devices = {}
     logging.info("Scanning for bluetooth devices ...")
     _devices = bluetooth.discover_devices(lookup_names=True, lookup_class=True)
     number_of_devices = len(_devices)
-    logging.info(number_of_devices, " devices found")
+    logging.info(f"{number_of_devices} devices found")
     for addr, name, device_class in _devices:
         devices[name] = {'address': addr, 'class': device_class}
-        logging.info(f"Devices: \n Name: {name}\n MAC Address: {addr}\n Class: {device_class}")
+        logging.info(f"Devices Name: {name}")
+        logging.info(f"Devices MAC Address: {addr}")
+        logging.info(f"Devices Class: {device_class}\n")
     return devices
 
 
@@ -171,7 +171,7 @@ class Dcs5Client:
     Both socket and bluetooth methods(socket package) seems to be equivalent.
     """
 
-    def __init__(self, method: str = 'socket'):
+    def __init__(self):
         self.dcs5_address: str = None
         self.port: int = None
         self.buffer: str = ''
@@ -265,14 +265,16 @@ class Dcs5Controller:
             self.client.socket.settimeout(30)
             self.client.connect(address, port)
             self.client_isconnected = True
-            logging.info('Connection Successful.')
+            logging.info('Connection Successful.\n')
         except socket.timeout:
-            logging.info('Could not connect. Time Out')
+            logging.info('Socket.timeout, could not connect. Time Out')
         except OSError as err:
-            logging.error(err)
+            logging.error('Start_Client, OSError: '+str(err))
         self.client.socket.settimeout(self.client.default_timeout)
 
     def close_client(self):
+        if self.listening is True:
+            self.stop_listening()
         self.client.close()
         logging.info('Client Closed.')
 
@@ -362,6 +364,20 @@ class Dcs5Controller:
                 self.board_state.backlighting_level = MIN_BACKLIGHTING_LEVEL
             self.c_set_backlighting_level(self.board_state.backlighting_level)
 
+    def initialize_board(self):
+        logging.info('Initializing Board.')
+
+        self.start_listening()
+        self.c_set_sensor_mode(1)
+        self.c_set_interface(1)
+        self.c_set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
+        self.c_set_stylus_detection_message(False)
+        self.c_set_stylus_settling_delay(DEFAULT_SETTLING_DELAY['measure'])
+        self.c_set_stylus_max_deviation(DEFAULT_MAX_DEVIATION['measure'])
+        self.c_set_stylus_number_of_reading(DEFAULT_NUMBER_OF_READING['measure'])
+
+        logging.info('Board Initiatializing Successful')
+
     def handle_command(self):
         logging.info('Command Handler Initiated')
         while self.listening is True:
@@ -372,10 +388,10 @@ class Dcs5Controller:
                 logging.info(f'Received: {[received]}, Expected: {[expected]}')
 
                 if "regex_" in expected:
-                    # match = re.findall("(" + expected[7:] + ")", received)[0]
-                    # if len(match) > 0:
-                    #     isvalid = True
-                    pass
+                    match = re.findall("(" + expected[6:] + ")", received)[0]
+                    if len(match) > 0:
+                        isvalid = True
+                        logging.info(f'Match {match}') # TODO REMOVE
 
                 elif received == expected:
                     isvalid = True
@@ -416,16 +432,25 @@ class Dcs5Controller:
                         # self.number_of_reading = value
                         logging.info(f"Number of reading set to {value}")
 
-                    elif received == "BATTERY":
-                        string = "%q:(-*\d*,\d*)#"
+                    elif "%b" in received:
+                        match = re.findall("%b:(.*)#", received)[0]
+                        if len(match)>0:
+                            logging.info(f'Board State: {match}')
 
-                    elif expected == 'regex_%u:\d#':
-                        if received == '%u:0#\r':
-                            logging.info('Board is not calibrated.')
-                            self.board_state.calibrated = False
-                        elif received == '%u:1#\r':
-                            logging.info('Board is calibrated.')
-                            self.board_state.calibrated = True
+                    elif "%q" in received:
+                        match = re.findall("%q:(-*\d*,\d*)#", received)[0]
+                        if len(match) > 0:
+                            logging.info(f'Battery level: {match}')
+
+                    elif "%u:" in received:
+                        match = re.findall("%u:(\d)#", received)[0]
+                        if len(match) > 0:
+                            if match == '0':
+                                logging.info('Board is not calibrated.')
+                                self.board_state.calibrated = False
+                            elif match == '1':
+                                logging.info('Board is calibrated.')
+                                self.board_state.calibrated = True
                         else:
                             logging.error(f'Calibration state {self.client.buffer}')
 
@@ -473,7 +498,7 @@ class Dcs5Controller:
         self.queue_command("a#", "%a:e#")
 
     def c_get_board_stats(self):
-        self.queue_command("b#", "regex_%.*#")
+        self.queue_command("b#", "regex_%b.*#")
 
     def c_get_battery_level(self):
         self.queue_command('&q#', "regex_%q:.*#")
@@ -628,40 +653,14 @@ class Dcs5Listener:
             return 'unsolicited', value
 
 
-def init_dcs5_board(c: Dcs5Controller):
-    """
-    init a board object
-    change default settings with settings
-    applies them
-    """
-    c.c_set_sensor_mode(1)
-    c.c_set_interface(1)
-    c.c_set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
-    c.c_set_stylus_detection_message(False)
-    c.c_set_stylus_settling_delay(1)  # DEFAULT_SETTLING_DELAY['measured'])
-    c.c_set_stylus_max_deviation(DEFAULT_MAX_DEVIATION['measure'])
-    c.c_set_stylus_number_of_reading(DEFAULT_NUMBER_OF_READING['measure'])
-
-
-def launch_dcs5_board(scan: bool):
-    c = Dcs5Controller()
-    address = search_for_dcs5board() if scan is True else DCS5_ADDRESS
-    try:
-        c.start_client(address, PORT)
-        if c.client_isconnected is True:
-            try:
-                c.start_listening()
-                c.mute_board()
-                init_dcs5_board(c)
-                c.unmute_board()
-            except socket.error as err:
-                logging.info(err)
-    except (KeyboardInterrupt, SystemExit) as err:
-        logging.info(err)
-        if c.client_isconnected is True:
-            c.close_client()
-
-    return c
+def launch_dcs5_board(port=PORT, address=DCS5_ADDRESS, scan=False):
+    _address = search_for_dcs5board() if scan is True else address
+    controller = Dcs5Controller()
+    controller.start_client(_address, port)
+    if controller.client_isconnected is True:
+        controller.start_listening()
+        #controller.initialize_board()
+    return controller
 
 
 def main(scan: bool = False):
@@ -669,23 +668,20 @@ def main(scan: bool = False):
     parser.add_argument(
         "-v",
         "--verbose",
-        nargs=1,
         default="info",
         help="Provide logging level: [debug, info, warning, error, critical]",
     )
     parser.add_argument(
-            "-log",
-            "--logfile",
-            nargs=1,
-            default='logs/dcs5',
-            help=("Filename to print the logs to."),
-        )
+        "-log",
+        "--logfile",
+        default='logs/dcs5_log',
+        help=("Filename to print the logs to."),
+    )
     args = parser.parse_args()
 
-    log_path = resolve_relative_path(args.logfile, __file__)
+    log_path = str(resolve_relative_path(args.logfile, __file__))
 
-    log_name = 'dcs5_log_' + time.strftime("%y%m%dT%H%M%S", time.gmtime())
-
+    log_path += "_" + time.strftime("%y%m%dT%H%M%S", time.gmtime()) + ".log"
 
     logging.basicConfig(
         level=args.verbose.upper(),
@@ -696,15 +692,23 @@ def main(scan: bool = False):
         ]
     )
     logging.info('Starting')
-    c = launch_dcs5_board(scan)
+
+    c = launch_dcs5_board(scan=scan)
 
     return c
 
 
 if __name__ == "__main__":
-    try:
-        c = main()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        socket.close(0)
+#    try:
+    c=main(scan=False)
+#        while True:
+#            pass
+#    except (KeyboardInterrupt, SystemExit):
+#        pass
+#    finally:
+#        c.close_client()
+
+
+""" POssible error
+ESError
+"""
