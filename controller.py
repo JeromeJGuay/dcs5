@@ -206,8 +206,8 @@ class Dcs5BoardState:
     number_of_reading: int = None
 
     battery_level: str = None
-    humidity: int = None
-    temperature: int = None
+    #humidity: int = None
+    #temperature: int = None
     board_stats: str = None
     board_interface: str = None
     calibrated: bool = None
@@ -299,6 +299,12 @@ class Dcs5Controller:
         self.listening = False
         self.listen_thread.join()
         self.command_thread.join()
+        self.clear_queues()
+
+    def clear_queues(self):
+        self.send_queue.queue.clear()
+        self.received_queue.queue.clear()
+        self.expected_message_queue.queue.cleart()
 
     def unmute_board(self):
         self.is_muted = False
@@ -375,6 +381,9 @@ class Dcs5Controller:
         self.c_set_stylus_settling_delay(DEFAULT_SETTLING_DELAY['measure'])
         self.c_set_stylus_max_deviation(DEFAULT_MAX_DEVIATION['measure'])
         self.c_set_stylus_number_of_reading(DEFAULT_NUMBER_OF_READING['measure'])
+        self.c_get_board_stats()
+        self.c_get_battery_level()
+        self.c_check_calibration_state()
 
         logging.info('Board Initiatializing Successful')
 
@@ -397,6 +406,7 @@ class Dcs5Controller:
                     isvalid = True
 
                 if isvalid is True:
+                    logging.info('Command Valid')
                     if received == "....":
                         pass  # TODO something
 
@@ -436,11 +446,13 @@ class Dcs5Controller:
                         match = re.findall("%b:(.*)#", received)[0]
                         if len(match)>0:
                             logging.info(f'Board State: {match}')
+                            self.board_state.board_stats = match
 
                     elif "%q" in received:
                         match = re.findall("%q:(-*\d*,\d*)#", received)[0]
                         if len(match) > 0:
                             logging.info(f'Battery level: {match}')
+                            self.board_state.battery_level = match
 
                     elif "%u:" in received:
                         match = re.findall("%u:(\d)#", received)[0]
@@ -462,15 +474,17 @@ class Dcs5Controller:
                         # else:
                         #    logging.error(f'Calibration point {self.client.buffer}')
 
-                    elif ' &Xr#: X=' in received:
+                    elif '&Xr#' in received:
                         logging.info(f'Set stylus down for point TODO ...')
-                        # if self.client.buffer == f'&Xr#: X={pt}\r':
-                        #    logging.info(f'Set stylus down for point {pt} ...')
-                        #    msg = ""
-                        #    while f'&{pt}c' not in msg457347:
-                        #        self.client.receive()
-                        #        msg += self.client.buffer  # FIXME
-                        #    logging.info(f'Point {pt} calibrated.')
+                        logging.info(f"CAL : {self.received_queue.get()}")
+                        time.sleep(0.5)
+                        msg=""
+                        while self.received_queue.qsize() > 0:
+                            print(1)
+                            msg += self.received_queue.get()
+
+                        logging.info(f"Point TODO calibrated {msg}")
+
                 else:
                     logging.error(f'Invalid: Command received: {[received]}, Command expected: {[expected]}')
                 self.received_queue.task_done()
@@ -483,11 +497,12 @@ class Dcs5Controller:
 
     def _send_command(self):
         command = self.send_queue.get()
+        print(command)
         self.client.send(command)
         self.send_queue.task_done()
 
     def c_board_initialization(self):
-        self.queue_command("&init#", "Rebooting in 2 seconds...")
+        self.queue_command("&init#", "Setting EEPROM init flag.\r")
 
     def c_reboot(self):  # FIXME NOT WORKING
         self.queue_command("&rr#", "%rebooting")
@@ -515,8 +530,11 @@ class Dcs5Controller:
         self.queue_command(f"&fm,{value}#", None)
         if value == 0:
             self.board_state.board_interface = "DCSLinkstream"
+            logging.log(f'Interface set to {self.board_state.board_interface}')
         elif value == 1:
             self.board_state.board_interface = "FEED"
+            logging.log(f'Interface set to {self.board_state.board_interface}')
+
 
     def c_set_backlighting_level(self, value: int):
         """0-95"""
@@ -562,6 +580,7 @@ class Dcs5Controller:
 
     def c_calibrate(self, pt: int):
         self.queue_command(f"&{pt}r#", f'&Xr#: X={pt}\r')
+
 
 
 class Dcs5Listener:
@@ -659,7 +678,7 @@ def launch_dcs5_board(port=PORT, address=DCS5_ADDRESS, scan=False):
     controller.start_client(_address, port)
     if controller.client_isconnected is True:
         controller.start_listening()
-        #controller.initialize_board()
+        controller.initialize_board()
     return controller
 
 
