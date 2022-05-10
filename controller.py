@@ -36,7 +36,7 @@ from queue import Queue
 ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
 
-SETTINGS = json2dict(PurePath(PurePath(__file__).parent, 'src_files/default_settings.json'))
+SETTINGS = json2dict(resolve_relative_path('src_files/default_settings.json', __file__))
 
 CLIENT_SETTINGS = SETTINGS['client_settings']
 DEVICE_NAME = CLIENT_SETTINGS["DEVICE_NAME"]
@@ -193,6 +193,10 @@ class Dcs5Client:
         except socket.timeout:
             pass
 
+    def clear(self):
+        self.receive()
+        self.buffer = ""
+
     def close(self):
         self.socket.close()
 
@@ -206,8 +210,6 @@ class Dcs5BoardState:
     number_of_reading: int = None
 
     battery_level: str = None
-    #humidity: int = None
-    #temperature: int = None
     board_stats: str = None
     board_interface: str = None
     calibrated: bool = None
@@ -285,26 +287,33 @@ class Dcs5Controller:
         self.send_queue.put(command)
 
     def start_listening(self):
-        self.client.receive()
-        logging.info('starting threads')
-        listener = Dcs5Listener(self)
-        self.listening = True
-        self.command_thread = threading.Thread(target=self.handle_command)
-        self.command_thread.start()
+        if self.listening is False:
+            self.client.receive()
+            logging.info('starting threads')
+            listener = Dcs5Listener(self)
+            self.listening = True
+            self.command_thread = threading.Thread(target=self.handle_command)
+            self.command_thread.start()
 
-        self.listen_thread = threading.Thread(target=listener.listen)
-        self.listen_thread.start()
+            self.listen_thread = threading.Thread(target=listener.listen)
+            self.listen_thread.start()
+        logging.log('Board is Active')
 
     def stop_listening(self):
-        self.listening = False
-        self.listen_thread.join()
-        self.command_thread.join()
-        self.clear_queues()
+        if self.listening is True:
+            self.listening = False
+            self._join_threads()
+            self._clear_queues()
+        logging.info('Board is not Active.')
 
-    def clear_queues(self):
+    def _clear_queues(self):
         self.send_queue.queue.clear()
         self.received_queue.queue.clear()
         self.expected_message_queue.queue.cleart()
+
+    def _join_threads(self):
+        self.listen_thread.join()
+        self.command_thread.join()
 
     def unmute_board(self):
         self.is_muted = False
@@ -385,7 +394,7 @@ class Dcs5Controller:
         self.c_get_battery_level()
         self.c_check_calibration_state()
 
-        logging.info('Board Initiatializing Successful')
+        logging.info('Board Initiatializing Done')
 
     def handle_command(self):
         logging.info('Command Handler Initiated')
@@ -415,32 +424,32 @@ class Dcs5Controller:
                         pass
 
                     elif "sn" in received:
-                        value = 'TODO'
-                        # f'%sn:{int(value)}#\r'
-                        # self.number_of_reading = value
-                        logging.info('Stylus Status Message Enable')
-                    # self.stylus_status_msg = 'Enable'
-                    # logging.info('Stylus Status Message Disable')
-                    # self.stylus_status_msg = 'Disable'
+                        match = re.findall(f"%sn:(\d)#\r", received)[0]
+                        if len(match) > 0:
+                            if match == "1":
+                                self.board_state.stylus_status_msg = "Enable"
+                                logging.info('Stylus Status Message Enable')
+                            else:
+                                self.board_state.stylus_status_msg = "Disable"
+                                logging.info('Stylus Status Message Disable')
 
                     elif "di" in received:
-                        value = 'TODO'
-                        # f"%di:{value}#\r"
-                        # self.number_of_reading = value
-                        # self.stylus_settling_delay = value
-                        logging.info(f"Stylus settling delay set to {value}")
+                        match = re.findall(f"%di:(\d)#\r", received)[0]
+                        if len(match) > 0:
+                            self.board_state.stylus_settling_delay = int(match)
+                            logging.info(f"Stylus settling delay set to {match}")
 
                     elif "dm" in received:
-                        value = "TODO"
-                        # f"%dm:{value}#\r":
-                        logging.info(f"Stylus max deviation set to {value}")
-                        # self.stylus_max_deviation = value
+                        match = re.findall(f"%dm:(\d)#\r", received)[0]
+                        if len(match) > 0:
+                            self.board_state.stylus_max_deviation = int(match)
+                            logging.info(f"Stylus max deviation set to {int(match)}")
 
                     elif "dn" in received:
-                        value = 'TODO'
-                        # f"%dn:{value}#\r":
-                        # self.number_of_reading = value
-                        logging.info(f"Number of reading set to {value}")
+                        match = re.findall(f"%dn:(\d)#\r", received)[0]
+                        if len(match) > 0:
+                            self.board_state.number_of_reading = int(match)
+                            logging.info(f"Stylus number set to {int(match)}")
 
                     elif "%b" in received:
                         match = re.findall("%b:(.*)#", received)[0]
@@ -467,14 +476,17 @@ class Dcs5Controller:
                             logging.error(f'Calibration state {self.client.buffer}')
 
                     elif 'Cal Pt' in received:
-                        logging.info(f'Calibration point todo set to todo mm')
-                        # if self.client.buffer == f'Cal Pt {pt} set to: {pos}\r':
-                        #    self.cal_pt[pt - 1] = pos
-                        #    logging.info(f'Calibration point {pt} set to {pos} mm')
-                        # else:
-                        #    logging.error(f'Calibration point {self.client.buffer}')
+                        logging.info(received.strip("\r")+" mm")
+                        match = re.findall("Cal Pt (\d) set to: (\d)", received)[0]
+                        if len(match) > 0:
+                            self.board_state.__dict__[f'cal_pt_{match[0]}'] = int(match[1])
 
                     elif '&Xr#' in received:
+                        """
+                        ['&Xr#: X=1\r']
+                        ['&Xr#', '1\r']
+                        
+                        """
                         logging.info(f'Set stylus down for point TODO ...')
                         logging.info(f"CAL : {self.received_queue.get()}")
                         time.sleep(0.5)
@@ -535,7 +547,6 @@ class Dcs5Controller:
             self.board_state.board_interface = "FEED"
             logging.log(f'Interface set to {self.board_state.board_interface}')
 
-
     def c_set_backlighting_level(self, value: int):
         """0-95"""
         self.queue_command(f'&o,{value}#', None)
@@ -581,6 +592,26 @@ class Dcs5Controller:
     def c_calibrate(self, pt: int):
         self.queue_command(f"&{pt}r#", f'&Xr#: X={pt}\r')
 
+    def calibrate(self, pt: int):
+        current_state = self.listening
+        self.stop_listening()
+        logging.info("Calibration Mode Enable.")
+        self.client.clear()
+
+        self.client.send(f"&{pt}r#")
+        self.client.socket.settimeout(5)
+        self.client.receive()
+
+        if f'&Xr#: X={pt}\r' in self.client.buffer:
+            pt_value = self.board_state.__dict__[f"cal_pt_{[pt]}"]
+            logging.info(f"Calibration for point {pt}. Set stylus down at {pt_value} mm ...")
+            msg = ""
+            while f'&{pt}c' not in msg:
+                self.client.receive()
+                msg += self.client.buffer  # FIXME
+            logging.info(f'Point {pt} calibrated.')
+        if current_state is True:
+            self.start_listening()
 
 
 class Dcs5Listener:
@@ -731,3 +762,4 @@ if __name__ == "__main__":
 """ POssible error
 ESError
 """
+
