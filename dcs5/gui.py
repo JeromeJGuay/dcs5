@@ -7,7 +7,7 @@ import logging
 import argparse
 import time
 
-DEFAULT_SETTINGS = json2dict(PurePath(PurePath(__file__).parent, 'src_files/default_settings.json'))
+DEFAULT_SETTINGS = json2dict(PurePath(PurePath(__file__).parent, '../src_files/default_settings.json'))
 
 CLIENT_SETTINGS = DEFAULT_SETTINGS['client_settings']
 DEVICE_NAME = CLIENT_SETTINGS["DEVICE_NAME"]
@@ -218,7 +218,7 @@ def main():
 
     log_name = 'dcs5_log_' + time.strftime("%y%m%dT%H%M%S", time.gmtime())
 
-    log_path = PurePath(PurePath(__file__).parent, 'logs', log_name)
+    log_path = PurePath(PurePath(__file__).parent, '../logs', log_name)
 
     logging.basicConfig(
         level=args.verbose.upper(),

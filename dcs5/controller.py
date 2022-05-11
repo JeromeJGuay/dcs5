@@ -22,7 +22,6 @@ References
 import argparse
 import logging
 import socket
-import bluetooth
 import threading
 import re
 from typing import *
@@ -37,7 +36,7 @@ from queue import Queue
 BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
 ### Turn this into a data class ?
-SETTINGS = json2dict(resolve_relative_path('src_files/default_settings.json', __file__))
+SETTINGS = json2dict(resolve_relative_path('../src_files/default_settings.json', __file__))
 
 
 CLIENT_SETTINGS = SETTINGS['client_settings']
@@ -140,30 +139,6 @@ def shout_to_keyboard(value: str):
         pag.press(value)
     elif str(value) in '.0123456789abcdefghijklmnopqrstuvwxyz':
         pag.write(value)
-
-
-def scan_bluetooth_device():
-    devices = {}
-    logging.info("Scanning for bluetooth devices ...")
-    _devices = bluetooth.discover_devices(lookup_names=True, lookup_class=True)
-    number_of_devices = len(_devices)
-    logging.info(f"{number_of_devices} devices found")
-    for addr, name, device_class in _devices:
-        devices[name] = {'address': addr, 'class': device_class}
-        logging.info(f"Devices Name: {name}")
-        logging.info(f"Devices MAC Address: {addr}")
-        logging.info(f"Devices Class: {device_class}\n")
-    return devices
-
-
-def search_for_dcs5board() -> str:
-    devices = scan_bluetooth_device()
-    if DEVICE_NAME in devices:
-        logging.info(f'{DEVICE_NAME}, found.')
-        return devices[DEVICE_NAME]['address']
-    else:
-        logging.info(f'{DEVICE_NAME}, not found.')
-        return None
 
 
 class Dcs5Client:
@@ -615,7 +590,7 @@ class Dcs5Controller:
     def c_set_sensor_mode(self, value):
         """ 'length', 'alpha', 'shortcut', 'numeric' """
         self._queue_command(f'&m,{value}#', ['length mode activated\r', 'alpha mode activated\r',
-                                            'shortcut mode activated\r', 'numeric mode activated\r'][value])
+                                             'shortcut mode activated\r', 'numeric mode activated\r'][value])
 
     def c_set_interface(self, value: int):
         """
@@ -683,9 +658,6 @@ class Dcs5Controller:
 
 
 class Dcs5Listener:
-    """
-    """
-
     def __init__(self, controller: Dcs5Controller):
         self.controller = controller
         self.message_queue = Queue()
@@ -771,65 +743,4 @@ class Dcs5Listener:
         else:
             return 'unsolicited', value
 
-
-def launch_dcs5_board(port=PORT, address=DCS5_ADDRESS, scan=False):
-    _address = search_for_dcs5board() if scan is True else address
-    controller = Dcs5Controller()
-    controller.start_client(_address, port)
-    if controller.client_isconnected is True:
-        controller.start_listening()
-        controller.sync_controller_and_board()
-    return controller
-
-
-def main(scan: bool = False):
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        default="info",
-        help="Provide logging level: [debug, info, warning, error, critical]",
-    )
-    parser.add_argument(
-        "-log",
-        "--logfile",
-        default='logs/dcs5_log',
-        help=("Filename to print the logs to."),
-    )
-    args = parser.parse_args()
-
-    log_path = str(resolve_relative_path(args.logfile, __file__))
-
-    log_path += "_" + time.strftime("%y%m%dT%H%M%S", time.gmtime()) + ".log"
-
-    logging.basicConfig(
-        level=args.verbose.upper(),
-        format="%(asctime)s {%(threadName)s} [%(levelname)s] %(message)s",
-        handlers=[
-            logging.FileHandler(log_path),
-            logging.StreamHandler()
-        ]
-    )
-    logging.info('Starting')
-
-    c = launch_dcs5_board(scan=scan)
-
-    return c
-
-
-if __name__ == "__main__":
-#    try:
-    c=main(scan=False)
-#        while True:
-#            pass
-#    except (KeyboardInterrupt, SystemExit):
-#        pass
-#    finally:
-#        c.close_client()
-
-
-""" Possible error
-ESError
-OSError: [Errno 107] Transport endpoint is not connected
-"""
 
