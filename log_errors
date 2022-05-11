@@ -1,0 +1,54 @@
+"""Calibration problems.
+2022-05-09 16:35:49,068 [INFO] Queued: ['&1r#'], ['&Xr#: X=1\r']
+2022-05-09 16:35:49,270 [INFO] Received: ['&Xr#: X=1\r'], Expected: ['&Xr#: X=1\r']
+2022-05-09 16:35:49,270 [INFO] Command Valid
+2022-05-09 16:35:49,270 [INFO] Set stylus down for point TODO ...
+2022-05-09 16:35:55,520 [INFO] CAL : &1c,5328#
+2022-05-09 16:35:56,021 [INFO] Point TODO calibrated
+2022-05-09 16:36:04,796 [INFO] output value 93
+2022-05-09 16:36:13,003 [INFO] Queued: ['&2r#'], ['&Xr#: X=2\r']
+2022-05-09 16:36:13,262 [INFO] Received: ['&Xr#: X=2\r'], Expected: ['&Xr#: X=2\r']
+2022-05-09 16:36:13,262 [INFO] Command Valid
+2022-05-09 16:36:13,262 [INFO] Set stylus down for point TODO ...
+2022-05-09 16:36:20,017 [INFO] CAL : &2c,19584#
+2022-05-09 16:36:20,517 [INFO] Point TODO calibrated
+
+2022-05-09 16:50:32,130 [INFO] Queued: ['&1r#'], ['&Xr#: X=1\r']
+2022-05-09 16:50:32,344 [INFO] Received: ['&Xr#'], Expected: ['&Xr#: X=1\r']
+2022-05-09 16:50:32,344 [ERROR] Invalid: Command received: ['&Xr#'], Command expected: ['&Xr#: X=1\r']
+2022-05-09 16:50:36,650 [INFO] Queued: ['&1r#'], ['&Xr#: X=1\r']
+2022-05-09 16:50:36,651 [INFO] Received: ['1\r'], Expected: ['&Xr#: X=1\r']
+2022-05-09 16:50:36,651 [ERROR] Invalid: Command received: ['1\r'], Command expected: ['&Xr#: X=1\r']
+2022-05-09 16:50:37,784 [INFO] Queued: ['&1r#'], ['&Xr#: X=1\r']
+2022-05-09 16:50:37,785 [INFO] Received: ['&Xr#: X=1\r'], Expected: ['&Xr#: X=1\r']
+2022-05-09 16:50:37,786 [INFO] Command Valid
+
+
+2022-05-09 16:30:22,703 [INFO] Queued: ['&1r#'], ['&Xr#: X=1\r']
+2022-05-09 16:30:22,766 [INFO] Received: ['&Xr#: X=1\r'], Expected: ['&Xr#: X=1\r']
+2022-05-09 16:30:22,767 [INFO] Command Valid
+2022-05-09 16:30:22,767 [INFO] Set stylus down for point TODO ...
+2022-05-09 16:30:35,313 [INFO] CAL : &1c,5344#
+2022-05-09 16:30:48,820 [INFO] output value 1158
+2022-05-09 16:31:03,183 [INFO] Queued: ['&2r#'], ['&Xr#: X=2\r']
+2022-05-09 16:31:03,379 [INFO] CAL : &Xr#: X=2
+2022-05-09 16:31:08,991 [INFO] Received: ['&2c,19552#'], Expected: ['&Xr#: X=2\r']
+2022-05-09 16:31:08,992 [ERROR] Invalid: Command received: ['&2c,19552#'], Command expected: ['&Xr#: X=2\r']
+
+
+2022-05-09 17:03:57,238 [INFO] Board Initiatializing Successful
+2022-05-09 17:03:57,337 [INFO] Received: ['ST,255\r'], Expected: ['alpha mode activated\r']
+2022-05-09 17:03:57,337 [ERROR] Invalid: Command received: ['ST,255\r'], Command expected: ['alpha mode activated\r']
+2022-05-09 17:03:57,385 [INFO] Received: ['SQ,16\r'], Expected: ['%sn:0#\r']
+2022-05-09 17:03:57,385 [ERROR] Invalid: Command received: ['SQ,16\r'], Command expected: ['%sn:0#\r']
+2022-05-09 17:03:57,486 [INFO] Received: ['R,1\r'], Expected: ['%di:1#\r']
+2022-05-09 17:03:57,486 [ERROR] Invalid: Command received: ['R,1\r'], Command expected: ['%di:1#\r']
+2022-05-09 17:03:58,990 [INFO] Received: ['---\r'], Expected: ['%dm:6#\r']
+2022-05-09 17:03:58,990 [ERROR] Invalid: Command received: ['---\r'], Command expected: ['%dm:6#\r']
+2022-05-09 17:03:59,142 [INFO] Received: ['\r'], Expected: ['%dn:5#\r']
+2022-05-09 17:03:59,142 [ERROR] Invalid: Command received: ['\r'], Command expected: ['%dn:5#\r']
+2022-05-09 17:03:59,343 [INFO] Received: ['alpha mode activated\r'], Expected: ['regex_%b.*#']
+2022-05-09 17:03:59,491 [INFO] Received: ['%sn:0#\r'], Expected: ['regex_%q:.*#']
+2022-05-09 17:04:16,060 [INFO] output value 196
+
+"""
