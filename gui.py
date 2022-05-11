@@ -141,7 +141,7 @@ def make_window(controller: Dcs5Controller):
             controller.stop_listening()
             window['-active-indicator-'].update(value=active_status[0][0], text_color=active_status[0][1])
         elif event == '-init-':
-            controller.initialize_board()
+            controller.sync_controller_and_board()
         elif event == '-update_row_m-':
             if values['-m_delay_input-'].isnumeric():
                 delay = int(values['-m_delay_input-'])

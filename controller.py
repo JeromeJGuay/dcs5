@@ -15,8 +15,9 @@ References
     https://bigfinllc.com/wp-content/uploads/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf?fbclid=IwAR0tJMwvN7jkqxgEhRQABS0W3HLLntpOflg12bMEwM5YrDOwcHStznJJNQM
 
 
-# ASK FOR CALIBRATION ON BOARD CONNECTION
-# ADD STYLUS OFFSETS TO CONFIG FILE
+# MAKE THE CALIBRATION FILE EDITABLE (.dcs5board.conf)
+# CLEAR EVERYTHING AFTER IDLING FOR MORE THAN X seconds.
+# PERIODICALLY CHECK BATTERY LEVELS
 """
 import argparse
 import logging
@@ -33,7 +34,7 @@ from utils import json2dict, resolve_relative_path
 from dataclasses import dataclass
 from queue import Queue
 
-ENCODING = 'UTF-8'
+BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
 
 SETTINGS = json2dict(resolve_relative_path('src_files/default_settings.json', __file__))
@@ -185,15 +186,15 @@ class Dcs5Client:
         self.socket.connect((self.dcs5_address, self.port))
 
     def send(self, command: str):
-        self.socket.send(command.encode(ENCODING))
+        self.socket.send(command.encode(BOARD_MSG_ENCODING))
 
     def receive(self):
         try:
-            self.buffer += self.socket.recv(BUFFER_SIZE).decode(ENCODING)
+            self.buffer += self.socket.recv(BUFFER_SIZE).decode(BOARD_MSG_ENCODING)
         except socket.timeout:
             pass
 
-    def clear(self):
+    def clear_all(self):
         self.receive()
         self.buffer = ""
 
@@ -221,6 +222,16 @@ class Dcs5BoardState:
     backlighting_sensitivity: int = None
 
 
+def interrupt_listening(method):
+    def inner(self):
+        current_sate = self.listening
+        self.stop_listening()
+        method(self)
+        if current_sate is True:
+            self.start_listening()
+    return inner
+
+
 class Dcs5Controller:
     """
     Notes
@@ -228,9 +239,12 @@ class Dcs5Controller:
     Firmware update command could be added:
         %h,VER,BR#
         see documentations
+
+    TODO
+    QUEUES SHOULD AUTO CLEAR AFTER SOME DELAYS
     """
 
-    def __init__(self):
+    def __init__(self, shout_method='Keyboard'):
         Dcs5BoardState.__init__(self)
         threading.Thread.__init__(self)
 
@@ -238,6 +252,8 @@ class Dcs5Controller:
 
         self.listen_thread: threading.Thread = None
         self.command_thread: threading.Thread = None
+        self.battery_thread: threading.Thread = None
+        self.idle_check_thread: threading.Thread = None
 
         self.client = Dcs5Client()
         self.client_isconnected = False
@@ -256,7 +272,7 @@ class Dcs5Controller:
         self.stylus_modes_number_of_reading: Dict[str: int] = DEFAULT_NUMBER_OF_READING
         self.stylus_modes_max_deviation: Dict[str: int] = DEFAULT_MAX_DEVIATION
 
-        self.shout_method = 'keyboard'
+        self.shout_method = shout_method
         self.board_output_mode = 'center'
         self.swipe_triggered = False
 
@@ -280,46 +296,100 @@ class Dcs5Controller:
         self.client.close()
         logging.info('Client Closed.')
 
-    def queue_command(self, command, message=None):
-        logging.info(f'Queued: {[command]}, {[message]}')
-        if message is not None:
-            self.expected_message_queue.put(message)
-        self.send_queue.put(command)
-
-    def start_listening(self):
+    def start_listening(self, clear_queues=False):
         if self.listening is False:
-            self.client.receive()
-            logging.info('starting threads')
-            listener = Dcs5Listener(self)
-            self.listening = True
-            self.command_thread = threading.Thread(target=self.handle_command)
-            self.command_thread.start()
+            self.client.clear_all()
+            if clear_queues is True:
+                self._clear_queues()
 
-            self.listen_thread = threading.Thread(target=listener.listen)
+            logging.info('starting threads')
+            self.listening = True
+            self.command_thread = threading.Thread(target=self._handle_commands)
+            self.listen_thread = threading.Thread(target=Dcs5Listener(self).listen)
+            self.command_thread.start()
             self.listen_thread.start()
+
         logging.log('Board is Active')
 
     def stop_listening(self):
         if self.listening is True:
             self.listening = False
-            self._join_threads()
-            self._clear_queues()
+            self._join_active_threads()
         logging.info('Board is not Active.')
 
     def _clear_queues(self):
         self.send_queue.queue.clear()
         self.received_queue.queue.clear()
-        self.expected_message_queue.queue.cleart()
+        self.expected_message_queue.queue.clear()
+        logging.info("Controller Queues cleared")
 
-    def _join_threads(self):
+    def _join_active_threads(self):
+        """Join the listen and command thread."""
         self.listen_thread.join()
         self.command_thread.join()
+        logging.info("Controller Queues joined.")
 
     def unmute_board(self):
-        self.is_muted = False
+        """Unmute board shout output"""
+        if self.is_muted is True:
+            self.is_muted = False
+            logging.info('Board unmuted')
 
     def mute_board(self):
-        self.is_muted = True
+        """Mute board shout output"""
+        if self.is_muted is False:
+            self.is_muted = True
+            logging.info('Board muted')
+
+    @interrupt_listening
+    def sync_controller_and_board(self):
+        """Init board to default settings.
+        TODO have the default settings comme from an attributes. Json file maybe
+        """
+        logging.info('Syncing Controller and Board.')
+        self.start_listening(clear_queues=True)
+
+        self.c_set_interface(1)
+        self.c_set_sensor_mode(0)
+        self.c_set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
+        self.c_set_stylus_detection_message(False)
+        self.c_set_stylus_settling_delay(DEFAULT_SETTLING_DELAY['measure'])
+        self.c_set_stylus_max_deviation(DEFAULT_MAX_DEVIATION['measure'])
+        self.c_set_stylus_number_of_reading(DEFAULT_NUMBER_OF_READING['measure'])
+        self.c_get_board_stats()
+        self.c_get_battery_level()
+        self.c_check_calibration_state()
+
+        if (self.board_state.sensor_mode == "length" and
+            self.board_state.stylus_status_msg == "disable" and
+            self.board_state.stylus_settling_delay == DEFAULT_SETTLING_DELAY["measure"] and
+            self.board_state.stylus_max_deviation == DEFAULT_MAX_DEVIATION["measure"] and
+            self.board_state.number_of_reading == DEFAULT_NUMBER_OF_READING["measure"]
+        ):
+            logging.info("Syncing failed.")
+            return "failed"
+        else:
+            logging.info("Syncing successful.")
+            return ""
+
+    @interrupt_listening
+    def calibrate(self, pt: int):
+
+        logging.info("Calibration Mode Enable.")
+        self.client.clear_all()
+
+        self.client.send(f"&{pt}r#")
+        self.client.socket.settimeout(5)
+        self.client.receive()
+
+        if f'&Xr#: X={pt}\r' in self.client.buffer:
+            pt_value = self.board_state.__dict__[f"cal_pt_{[pt]}"]
+            logging.info(f"Calibration for point {pt}. Set stylus down at {pt_value} mm ...")
+            msg = ""
+            while f'&{pt}c' not in msg:
+                self.client.receive()
+                msg += self.client.buffer  # FIXME
+            logging.info(f'Point {pt} calibrated.')
 
     def change_stylus(self, value: str):
         """Stylus must be one of [pen, finger]"""
@@ -379,24 +449,7 @@ class Dcs5Controller:
                 self.board_state.backlighting_level = MIN_BACKLIGHTING_LEVEL
             self.c_set_backlighting_level(self.board_state.backlighting_level)
 
-    def initialize_board(self):
-        logging.info('Initializing Board.')
-
-        self.start_listening()
-        self.c_set_sensor_mode(1)
-        self.c_set_interface(1)
-        self.c_set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
-        self.c_set_stylus_detection_message(False)
-        self.c_set_stylus_settling_delay(DEFAULT_SETTLING_DELAY['measure'])
-        self.c_set_stylus_max_deviation(DEFAULT_MAX_DEVIATION['measure'])
-        self.c_set_stylus_number_of_reading(DEFAULT_NUMBER_OF_READING['measure'])
-        self.c_get_board_stats()
-        self.c_get_battery_level()
-        self.c_check_calibration_state()
-
-        logging.info('Board Initiatializing Done')
-
-    def handle_command(self):
+    def _handle_commands(self):
         logging.info('Command Handler Initiated')
         while self.listening is True:
             if not self.received_queue.empty():
@@ -416,21 +469,21 @@ class Dcs5Controller:
 
                 if isvalid is True:
                     logging.info('Command Valid')
-                    if received == "....":
-                        pass  # TODO something
-
-                    elif 'mode activated' in received:
+                    if 'mode activated' in received:
+                        for i in ["length", "alpha", "shortcut", "numeric"]:
+                            if i in received:
+                                self.board_state.sensor_mode = i
+                                break
                         logging.info(f'{received}')
-                        pass
 
                     elif "sn" in received:
                         match = re.findall(f"%sn:(\d)#\r", received)[0]
                         if len(match) > 0:
                             if match == "1":
-                                self.board_state.stylus_status_msg = "Enable"
+                                self.board_state.stylus_status_msg = "enable"
                                 logging.info('Stylus Status Message Enable')
                             else:
-                                self.board_state.stylus_status_msg = "Disable"
+                                self.board_state.stylus_status_msg = "disable"
                                 logging.info('Stylus Status Message Disable')
 
                     elif "di" in received:
@@ -480,32 +533,21 @@ class Dcs5Controller:
                         match = re.findall("Cal Pt (\d) set to: (\d)", received)[0]
                         if len(match) > 0:
                             self.board_state.__dict__[f'cal_pt_{match[0]}'] = int(match[1])
-
-                    elif '&Xr#' in received:
-                        """
-                        ['&Xr#: X=1\r']
-                        ['&Xr#', '1\r']
-                        
-                        """
-                        logging.info(f'Set stylus down for point TODO ...')
-                        logging.info(f"CAL : {self.received_queue.get()}")
-                        time.sleep(0.5)
-                        msg=""
-                        while self.received_queue.qsize() > 0:
-                            print(1)
-                            msg += self.received_queue.get()
-
-                        logging.info(f"Point TODO calibrated {msg}")
-
                 else:
                     logging.error(f'Invalid: Command received: {[received]}, Command expected: {[expected]}')
+
                 self.received_queue.task_done()
                 self.expected_message_queue.task_done()
 
             if not self.send_queue.empty():
                 self._send_command()
-
             time.sleep(0.1)
+
+    def _queue_command(self, command, message=None):
+        logging.info(f'Queued: {[command]}, {[message]}')
+        if message is not None:
+            self.expected_message_queue.put(message)
+        self.send_queue.put(command)
 
     def _send_command(self):
         command = self.send_queue.get()
@@ -514,32 +556,32 @@ class Dcs5Controller:
         self.send_queue.task_done()
 
     def c_board_initialization(self):
-        self.queue_command("&init#", "Setting EEPROM init flag.\r")
+        self._queue_command("&init#", "Setting EEPROM init flag.\r")
 
     def c_reboot(self):  # FIXME NOT WORKING
-        self.queue_command("&rr#", "%rebooting")
+        self._queue_command("&rr#", "%rebooting")
 
     def c_ping(self):
         """This could use for something more useful. Like checking at regular interval if the board is still active:
         """
-        self.queue_command("a#", "%a:e#")
+        self._queue_command("a#", "%a:e#")
 
     def c_get_board_stats(self):
-        self.queue_command("b#", "regex_%b.*#")
+        self._queue_command("b#", "regex_%b.*#")
 
     def c_get_battery_level(self):
-        self.queue_command('&q#', "regex_%q:.*#")
+        self._queue_command('&q#', "regex_%q:.*#")
 
     def c_set_sensor_mode(self, value):
         """ 'length', 'alpha', 'shortcut', 'numeric' """
-        self.queue_command(f'&m,{value}#', ['length mode activated\r', 'alpha mode activated\r',
+        self._queue_command(f'&m,{value}#', ['length mode activated\r', 'alpha mode activated\r',
                                             'shortcut mode activated\r', 'numeric mode activated\r'][value])
 
     def c_set_interface(self, value: int):
         """
         FEED seems to enable box key strokes.
         """
-        self.queue_command(f"&fm,{value}#", None)
+        self._queue_command(f"&fm,{value}#", None)
         if value == 0:
             self.board_state.board_interface = "DCSLinkstream"
             logging.log(f'Interface set to {self.board_state.board_interface}')
@@ -548,70 +590,56 @@ class Dcs5Controller:
             logging.log(f'Interface set to {self.board_state.board_interface}')
 
     def c_set_backlighting_level(self, value: int):
-        """0-95"""
-        self.queue_command(f'&o,{value}#', None)
-        self.board_state.backlighting_level = value
+        if 0 <= value <= MAX_BACKLIGHTING_LEVEL:
+            self._queue_command(f'&o,{value}#', None)
+            self.board_state.backlighting_level = value
+        else:
+            logging.warning(f"Backlighting level range: (0, {MAX_BACKLIGHTING_LEVEL})")
 
     def c_set_backlighting_auto_mode(self, value: int):
-        self.queue_command(f"&oa,{value}", None)
-        self.board_state.backlighting_auto_mode = value
+        self._queue_command(f"&oa,{value}", None)
+        self.board_state.backlighting_auto_mode = {True: 'auto', False: 'manual'}
 
     def c_set_backlighting_sensitivity(self, value: int):
-        """0-7"""
-        self.queue_command(f"&os,{value}", None)
-        self.board_state.backlighting_sensitivity = {True: 'auto', False: 'manual'}
+        if 0 <= value <= MAX_BACKLIGHTING_SENSITIVITY:
+            self._queue_command(f"&os,{value}", None)
+            self.board_state.backlighting_sensitivity = value
+        else:
+            logging.warning(f"Backlighting sensitivity range: (0, {MAX_BACKLIGHTING_SENSITIVITY})")
 
     def c_set_stylus_detection_message(self, value: bool):
         """
         When disabled (false): %t0 %t1 are not sent
         """
-        self.queue_command(f'&sn,{int(value)}', f'%sn:{int(value)}#\r')
+        self._queue_command(f'&sn,{int(value)}', f'%sn:{int(value)}#\r')
 
     def c_set_stylus_settling_delay(self, value: int = 1):
-        self.queue_command(f"&di,{value}#", f"%di:{value}#\r")
+        if 0 <= value <= MAX_SETTLING_DELAY:
+            self._queue_command(f"&di,{value}#", f"%di:{value}#\r")
+        else:
+            logging.warning(f"Settling delay value range: (0, {MAX_SETTLING_DELAY})")
 
     def c_set_stylus_max_deviation(self, value: int):
-        self.queue_command(f"&dm,{value}#", f"%dm:{value}#\r")
+        if 0 <= value <= MAX_MAX_DEVIATION:
+            self._queue_command(f"&dm,{value}#", f"%dm:{value}#\r")
+        else:
+            logging.warning(f"Settling delay value range: (0, {MAX_MAX_DEVIATION})")
 
     def c_set_stylus_number_of_reading(self, value: int = 5):
-        self.queue_command(f"&dn,{value}#", f"%dn:{value}#\r")
+        self._queue_command(f"&dn,{value}#", f"%dn:{value}#\r")
 
     def c_restore_cal_data(self):
-        self.queue_command("&cr,m1,m2,raw1,raw2#", None)
+        self._queue_command("&cr,m1,m2,raw1,raw2#", None)
 
     def _clear_cal_data(self):
-        self.queue_command("&ca#", None)
+        self._queue_command("&ca#", None)
         self.calibrated = False
 
     def c_check_calibration_state(self):  # TODO, to be tested
-        self.queue_command('&u#', 'regex_%u:\d#\r')
+        self._queue_command('&u#', 'regex_%u:\d#\r')
 
     def c_set_calibration_points_mm(self, pt: int, pos: int):
-        self.queue_command(f'&{pt}mm,{pos}#', f'Cal Pt {pt} set to: {pos}\r')
-
-    def c_calibrate(self, pt: int):
-        self.queue_command(f"&{pt}r#", f'&Xr#: X={pt}\r')
-
-    def calibrate(self, pt: int):
-        current_state = self.listening
-        self.stop_listening()
-        logging.info("Calibration Mode Enable.")
-        self.client.clear()
-
-        self.client.send(f"&{pt}r#")
-        self.client.socket.settimeout(5)
-        self.client.receive()
-
-        if f'&Xr#: X={pt}\r' in self.client.buffer:
-            pt_value = self.board_state.__dict__[f"cal_pt_{[pt]}"]
-            logging.info(f"Calibration for point {pt}. Set stylus down at {pt_value} mm ...")
-            msg = ""
-            while f'&{pt}c' not in msg:
-                self.client.receive()
-                msg += self.client.buffer  # FIXME
-            logging.info(f'Point {pt} calibrated.')
-        if current_state is True:
-            self.start_listening()
+        self._queue_command(f'&{pt}mm,{pos}#', f'Cal Pt {pt} set to: {pos}\r')
 
 
 class Dcs5Listener:
@@ -632,6 +660,7 @@ class Dcs5Listener:
             if len(self.controller.client.buffer) > 0:
                 self.split_board_message()
                 self.process_board_message()
+                self.controller.idle_timer.start()
         logging.info('Listening stopped')
 
     def split_board_message(self):
@@ -709,7 +738,7 @@ def launch_dcs5_board(port=PORT, address=DCS5_ADDRESS, scan=False):
     controller.start_client(_address, port)
     if controller.client_isconnected is True:
         controller.start_listening()
-        controller.initialize_board()
+        controller.sync_controller_and_board()
     return controller
 
 
@@ -735,7 +764,7 @@ def main(scan: bool = False):
 
     logging.basicConfig(
         level=args.verbose.upper(),
-        format="%(asctime)s [%(levelname)s] %(message)s",
+        format="%(asctime)s {%(threadName)s} [%(levelname)s] %(message)s",
         handlers=[
             logging.FileHandler(log_path),
             logging.StreamHandler()
