@@ -7,7 +7,7 @@ import logging
 import argparse
 import time
 
-DEFAULT_SETTINGS = json2dict(PurePath(PurePath(__file__).parent, '../src_files/default_settings.json'))
+DEFAULT_SETTINGS = json2dict(PurePath(PurePath(__file__).parent, 'src_files/default_settings.json'))
 
 CLIENT_SETTINGS = DEFAULT_SETTINGS['client_settings']
 DEVICE_NAME = CLIENT_SETTINGS["DEVICE_NAME"]

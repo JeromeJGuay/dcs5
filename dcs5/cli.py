@@ -1,16 +1,17 @@
 import time
 import logging
 import argparse
+import pathlib
 from dataclasses import dataclass
 from utils import resolve_relative_path, json2dict
 from controller import Dcs5Controller
 from dcs5 import DEFAULT_SETTINGS_PATH
 
 
-settings = json2dict(resolve_relative_path('../src_files/default_settings.json', __file__))
+settings = json2dict(resolve_relative_path(DEFAULT_SETTINGS_PATH, __file__))
 
 
-CLIENT_SETTINGS = settings['client_settings']
+CLIENT_SETTINGS = settings['bluetooth']
 DEVICE_NAME = CLIENT_SETTINGS["DEVICE_NAME"]
 PORT = CLIENT_SETTINGS["PORT"]
 DCS5_ADDRESS = CLIENT_SETTINGS["DCS5_ADDRESS"]
@@ -22,8 +23,11 @@ class BluetoothSetting:
     port: int = None
     mac_address: str = None
 
-    def load_settings(self, filename):
-        json2dict(resolve_relative_path(DEFAULT_SETTINGS_PATH, __file__))
+    def load_settings(self, filename: str = None):
+        settings = json2dict(resolve_relative_path(DEFAULT_SETTINGS_PATH, __file__))['bluetooth']
+        self.device_name = settings['DEVICE_NAME']
+        self.port = settings['PORT']
+        self.mac_address = settings['MAC_ADDRESS']
 
 
 def init_logging(verbose: str, log_path: str):

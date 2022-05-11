@@ -36,7 +36,7 @@ from queue import Queue
 BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
 ### Turn this into a data class ?
-SETTINGS = json2dict(resolve_relative_path('../src_files/default_settings.json', __file__))
+SETTINGS = json2dict(resolve_relative_path('src_files/default_settings.json', __file__))
 
 
 CLIENT_SETTINGS = SETTINGS['client_settings']
