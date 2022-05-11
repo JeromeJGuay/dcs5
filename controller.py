@@ -36,8 +36,9 @@ from queue import Queue
 
 BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
-
+### Turn this into a data class ?
 SETTINGS = json2dict(resolve_relative_path('src_files/default_settings.json', __file__))
+
 
 CLIENT_SETTINGS = SETTINGS['client_settings']
 DEVICE_NAME = CLIENT_SETTINGS["DEVICE_NAME"]
@@ -59,6 +60,8 @@ DEFAULT_BACKLIGHTING_AUTO_MODE = BOARD_SETTINGS['DEFAULT_BACKLIGHTING_AUTO_MODE'
 DEFAULT_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['DEFAULT_BACKLIGHTING_SENSITIVITY']
 MIN_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['MIN_BACKLIGHTING_SENSITIVITY']
 MAX_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['MAX_BACKLIGHTING_SENSITIVITY']
+
+SWIPE_THRESHOLD = 5
 
 XT_KEY_MAP = {
     "01": "a1",
@@ -95,8 +98,6 @@ XT_KEY_MAP = {
     "32": "mode",
 }
 
-SWIPE_THRESHOLD = 5
-
 BOARD_KEYS_MAP = {
     'top': 7 * ['space'] + \
            list('abcdefghijklmnopqrstuvwxyz') + \
@@ -110,18 +111,18 @@ BOARD_KEYS_MAP = {
               6 * ['space'] + 2 * ['del_last'], }
 
 KEYBOARD_MAP = {
-    'space': 'space',  # keyboard.Key.space,
-    'enter': 'enter',  # keyboard.Key.enter,
-    'del_last': 'backspace',  # keyboard.Key.backspace,
-    'del': 'delete',  # keyboard.Key.delete,
-    'up': 'up',  # keyboard.Key.up,
-    'down': 'down',  # keyboard.Key.down,
-    'left': 'left',  # keyboard.Key.left,
-    'right': 'right',  # keyboard.Key.right,
+    'space': 'space',
+    'enter': 'enter',
+    'del_last': 'backspace',
+    'del': 'delete',
+    'up': 'up',
+    'down': 'down',
+    'left': 'left',
+    'right': 'right',
     '1B': '-'
 }
 
-# STYLUS SETTINGS
+# STYLUS PHYSICAL MEASUREMENTS.
 
 STYLUS_OFFSET = {'pen': 6, 'finger': 1}  # mm -> check calibration procedure. TODO
 BOARD_KEY_RATIO = 15.385  # ~200/13
@@ -177,7 +178,7 @@ class Dcs5Client:
         self.port: int = None
         self.buffer: str = ''
         self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
-        self.default_timeout = .05
+        self.default_timeout = .5
         self.socket.settimeout(self.default_timeout)
 
     def connect(self, address: str, port: int):
@@ -223,10 +224,10 @@ class Dcs5BoardState:
 
 
 def interrupt_listening(method):
-    def inner(self):
-        current_sate = self.listening
+    def inner(self, *args, **kwargs):
+        current_sate = self.is_listening
         self.stop_listening()
-        method(self)
+        method(self, *args, **kwargs)
         if current_sate is True:
             self.start_listening()
     return inner
@@ -254,6 +255,7 @@ class Dcs5Controller:
         self.command_thread: threading.Thread = None
         self.battery_thread: threading.Thread = None
         self.idle_check_thread: threading.Thread = None
+        self.idle_timer: float = None
 
         self.client = Dcs5Client()
         self.client_isconnected = False
@@ -262,7 +264,7 @@ class Dcs5Controller:
         self.received_queue = Queue()
         self.expected_message_queue = Queue()
 
-        self.listening = False
+        self.is_listening = False
         self.is_muted = False
 
         self.stylus: str = 'pen'  # [finger/pen]
@@ -290,30 +292,45 @@ class Dcs5Controller:
             logging.error('Start_Client, OSError: '+str(err))
         self.client.socket.settimeout(self.client.default_timeout)
 
+    def monitor_battery_life(self, interval=60):
+        self.battery_thread = threading.Thread(target=self._monitor_battery_life,
+                                               name='battery',
+                                               args={'interval': interval})
+        self.battery_thread.start()
+
+    def _monitor_battery_life(self, interval):
+        while True:
+            self.c_get_battery_level()
+            time.sleep(interval)
+
     def close_client(self):
-        if self.listening is True:
+        if self.is_listening:
             self.stop_listening()
+        if self.battery_thread.is_alive():
+            self.battery_thread.join()
         self.client.close()
         logging.info('Client Closed.')
 
     def start_listening(self, clear_queues=False):
-        if self.listening is False:
+        if not self.is_listening:
             self.client.clear_all()
             if clear_queues is True:
                 self._clear_queues()
 
-            logging.info('starting threads')
-            self.listening = True
-            self.command_thread = threading.Thread(target=self._handle_commands)
-            self.listen_thread = threading.Thread(target=Dcs5Listener(self).listen)
+            logging.info('Starting active threads')
+            self.is_listening = True
+            self.command_thread = threading.Thread(target=self._handle_commands, name='command')
+            self.listen_thread = threading.Thread(target=Dcs5Listener(self).listen, name='listen')
+            self.idle_check_thread = threading.Thread(target=self.check_idling, name='idle_check')
             self.command_thread.start()
             self.listen_thread.start()
+            self.idle_check_thread.start()
 
         logging.log('Board is Active')
 
     def stop_listening(self):
-        if self.listening is True:
-            self.listening = False
+        if self.is_listening:
+            self.is_listening = False
             self._join_active_threads()
         logging.info('Board is not Active.')
 
@@ -327,17 +344,32 @@ class Dcs5Controller:
         """Join the listen and command thread."""
         self.listen_thread.join()
         self.command_thread.join()
+        self.idle_check_thread.join()
         logging.info("Controller Queues joined.")
+
+    def reset_idle_timer(self):
+        self.idle_timer = time.time()
+
+    def check_idling(self, interval=60):
+        """Clears everything in the board is idling"""
+        self.reset_idle_timer()
+        while True:
+            if time.time() - self.idle_timer > interval - 5:
+                logging.info('Idling delay reached. Restarting the active threads.')
+                self.stop_listening()
+                self.start_listening()
+                self.reset_idle_timer()
+            time.sleep(interval)
 
     def unmute_board(self):
         """Unmute board shout output"""
-        if self.is_muted is True:
+        if self.is_muted:
             self.is_muted = False
             logging.info('Board unmuted')
 
     def mute_board(self):
         """Mute board shout output"""
-        if self.is_muted is False:
+        if not self.is_muted:
             self.is_muted = True
             logging.info('Board muted')
 
@@ -450,98 +482,106 @@ class Dcs5Controller:
             self.c_set_backlighting_level(self.board_state.backlighting_level)
 
     def _handle_commands(self):
-        logging.info('Command Handler Initiated')
-        while self.listening is True:
+        logging.info('Command Handling Started')
+        while self.is_listening is True:
             if not self.received_queue.empty():
-                isvalid = False
-                received = self.received_queue.get()
-                expected = self.expected_message_queue.get()
-                logging.info(f'Received: {[received]}, Expected: {[expected]}')
-
-                if "regex_" in expected:
-                    match = re.findall("(" + expected[6:] + ")", received)[0]
-                    if len(match) > 0:
-                        isvalid = True
-                        logging.info(f'Match {match}') # TODO REMOVE
-
-                elif received == expected:
-                    isvalid = True
-
-                if isvalid is True:
-                    logging.info('Command Valid')
-                    if 'mode activated' in received:
-                        for i in ["length", "alpha", "shortcut", "numeric"]:
-                            if i in received:
-                                self.board_state.sensor_mode = i
-                                break
-                        logging.info(f'{received}')
-
-                    elif "sn" in received:
-                        match = re.findall(f"%sn:(\d)#\r", received)[0]
-                        if len(match) > 0:
-                            if match == "1":
-                                self.board_state.stylus_status_msg = "enable"
-                                logging.info('Stylus Status Message Enable')
-                            else:
-                                self.board_state.stylus_status_msg = "disable"
-                                logging.info('Stylus Status Message Disable')
-
-                    elif "di" in received:
-                        match = re.findall(f"%di:(\d)#\r", received)[0]
-                        if len(match) > 0:
-                            self.board_state.stylus_settling_delay = int(match)
-                            logging.info(f"Stylus settling delay set to {match}")
-
-                    elif "dm" in received:
-                        match = re.findall(f"%dm:(\d)#\r", received)[0]
-                        if len(match) > 0:
-                            self.board_state.stylus_max_deviation = int(match)
-                            logging.info(f"Stylus max deviation set to {int(match)}")
-
-                    elif "dn" in received:
-                        match = re.findall(f"%dn:(\d)#\r", received)[0]
-                        if len(match) > 0:
-                            self.board_state.number_of_reading = int(match)
-                            logging.info(f"Stylus number set to {int(match)}")
-
-                    elif "%b" in received:
-                        match = re.findall("%b:(.*)#", received)[0]
-                        if len(match)>0:
-                            logging.info(f'Board State: {match}')
-                            self.board_state.board_stats = match
-
-                    elif "%q" in received:
-                        match = re.findall("%q:(-*\d*,\d*)#", received)[0]
-                        if len(match) > 0:
-                            logging.info(f'Battery level: {match}')
-                            self.board_state.battery_level = match
-
-                    elif "%u:" in received:
-                        match = re.findall("%u:(\d)#", received)[0]
-                        if len(match) > 0:
-                            if match == '0':
-                                logging.info('Board is not calibrated.')
-                                self.board_state.calibrated = False
-                            elif match == '1':
-                                logging.info('Board is calibrated.')
-                                self.board_state.calibrated = True
-                        else:
-                            logging.error(f'Calibration state {self.client.buffer}')
-
-                    elif 'Cal Pt' in received:
-                        logging.info(received.strip("\r")+" mm")
-                        match = re.findall("Cal Pt (\d) set to: (\d)", received)[0]
-                        if len(match) > 0:
-                            self.board_state.__dict__[f'cal_pt_{match[0]}'] = int(match[1])
-                else:
-                    logging.error(f'Invalid: Command received: {[received]}, Command expected: {[expected]}')
-
-                self.received_queue.task_done()
-                self.expected_message_queue.task_done()
+                self._validate_commands()
 
             if not self.send_queue.empty():
                 self._send_command()
             time.sleep(0.1)
+        logging.info('Command Handling Stopped')
+
+    def _validate_commands(self):
+        command_is_valid = False
+        received = self.received_queue.get()
+        expected = self.expected_message_queue.get()
+        logging.info(f'Received: {[received]}, Expected: {[expected]}')
+
+        if "regex_" in expected:
+            match = re.findall("(" + expected[6:] + ")", received)[0]
+            if len(match) > 0:
+                command_is_valid = True
+                logging.info(f'Match {match}')  # TODO REMOVE
+
+        elif received == expected:
+            command_is_valid = True
+
+        if command_is_valid:
+            self._process_valid_commands(received)
+
+        else:
+            logging.error(f'Invalid: Command received: {[received]}, Command expected: {[expected]}')
+
+        self.received_queue.task_done()
+        self.expected_message_queue.task_done()
+
+    def _process_valid_commands(self, received):
+        logging.info('Command Valid')
+        if 'mode activated' in received:
+            for i in ["length", "alpha", "shortcut", "numeric"]:
+                if i in received:
+                    self.board_state.sensor_mode = i
+                    break
+            logging.info(f'{received}')
+
+        elif "sn" in received:
+            match = re.findall(f"%sn:(\d)#\r", received)[0]
+            if len(match) > 0:
+                if match == "1":
+                    self.board_state.stylus_status_msg = "enable"
+                    logging.info('Stylus Status Message Enable')
+                else:
+                    self.board_state.stylus_status_msg = "disable"
+                    logging.info('Stylus Status Message Disable')
+
+        elif "di" in received:
+            match = re.findall(f"%di:(\d)#\r", received)[0]
+            if len(match) > 0:
+                self.board_state.stylus_settling_delay = int(match)
+                logging.info(f"Stylus settling delay set to {match}")
+
+        elif "dm" in received:
+            match = re.findall(f"%dm:(\d)#\r", received)[0]
+            if len(match) > 0:
+                self.board_state.stylus_max_deviation = int(match)
+                logging.info(f"Stylus max deviation set to {int(match)}")
+
+        elif "dn" in received:
+            match = re.findall(f"%dn:(\d)#\r", received)[0]
+            if len(match) > 0:
+                self.board_state.number_of_reading = int(match)
+                logging.info(f"Stylus number set to {int(match)}")
+
+        elif "%b" in received:
+            match = re.findall("%b:(.*)#", received)[0]
+            if len(match) > 0:
+                logging.info(f'Board State: {match}')
+                self.board_state.board_stats = match
+
+        elif "%q" in received:
+            match = re.findall("%q:(-*\d*,\d*)#", received)[0]
+            if len(match) > 0:
+                logging.info(f'Battery level: {match}')
+                self.board_state.battery_level = match
+
+        elif "%u:" in received:
+            match = re.findall("%u:(\d)#", received)[0]
+            if len(match) > 0:
+                if match == '0':
+                    logging.info('Board is not calibrated.')
+                    self.board_state.calibrated = False
+                elif match == '1':
+                    logging.info('Board is calibrated.')
+                    self.board_state.calibrated = True
+            else:
+                logging.error(f'Calibration state {self.client.buffer}')
+
+        elif 'Cal Pt' in received:
+            logging.info(received.strip("\r") + " mm")
+            match = re.findall("Cal Pt (\d) set to: (\d)", received)[0]
+            if len(match) > 0:
+                self.board_state.__dict__[f'cal_pt_{match[0]}'] = int(match[1])
 
     def _queue_command(self, command, message=None):
         logging.info(f'Queued: {[command]}, {[message]}')
@@ -655,12 +695,12 @@ class Dcs5Listener:
     def listen(self):
         logging.info('Listening started')
         self.controller.client.receive()
-        while self.controller.listening is True:
+        while self.controller.is_listening:
             self.controller.client.receive()
             if len(self.controller.client.buffer) > 0:
+                self.controller.reset_idle_timer()
                 self.split_board_message()
                 self.process_board_message()
-                self.controller.idle_timer.start()
         logging.info('Listening stopped')
 
     def split_board_message(self):
@@ -788,7 +828,8 @@ if __name__ == "__main__":
 #        c.close_client()
 
 
-""" POssible error
+""" Possible error
 ESError
+OSError: [Errno 107] Transport endpoint is not connected
 """
 
