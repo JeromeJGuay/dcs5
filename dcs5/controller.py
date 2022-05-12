@@ -210,7 +210,7 @@ class Dcs5Controller:
     QUEUES SHOULD AUTO CLEAR AFTER SOME DELAYS
     """
 
-    def __init__(self, shout_method='Keyboard', battery_check_interval=60):
+    def __init__(self, shout_method='Keyboard'):
         """
         :param shout_method: Not used yet.
         :param battery_check_interval: In seconds.
@@ -222,12 +222,9 @@ class Dcs5Controller:
 
         self.listen_thread: threading.Thread = None
         self.command_thread: threading.Thread = None
-        self.battery_thread: threading.Thread = None
-        self.battery_check_interval: Union[int, float] = battery_check_interval
 
         self.is_sync = False
 
-        self.is_battery_monitoring = False
         self.is_listening = False
         self.is_muted = False
 
@@ -269,7 +266,7 @@ class Dcs5Controller:
         self.client.close()
         logging.info('Client Closed.')
 
-    def start_listening(self, monitor_battery=True):
+    def start_listening(self):
         if not self.is_listening:
             logging.info('Starting active threads.')
             self.is_listening = True
@@ -279,13 +276,9 @@ class Dcs5Controller:
             self.listen_thread = threading.Thread(target=Dcs5Listener(self).listen, name='listen')
             self.listen_thread.start()
 
-            time.sleep(1)
+            time.sleep(0.5)
             self.client.clear_all()
             self._clear_queues()
-
-            if monitor_battery is True:
-                self.battery_thread = threading.Thread(target=self._monitor_battery_life, name='battery', daemon=True)
-                self.battery_thread.start()
 
         logging.info('Board is Active.')
 
@@ -297,22 +290,15 @@ class Dcs5Controller:
             logging.info("Active Threads joined.")
         logging.info('Board is Inactive.')
 
-    def restart_listening(self, monitor_battery=True):
+    def restart_listening(self):
         self.stop_listening()
-        self.start_listening(monitor_battery=True)
+        self.start_listening()
 
     def _clear_queues(self):
         self.send_queue.queue.clear()
         self.received_queue.queue.clear()
         self.expected_message_queue.queue.clear()
         logging.info("Controller Queues cleared.")
-
-    def _monitor_battery_life(self):
-        while self.is_listening:
-            time.sleep(self.battery_check_interval)
-            if self.is_listening:
-                self.c_get_battery_level()
-        logging.info("Battery Monitoring Stopped")
 
     def unmute_board(self):
         """Unmute board shout output"""
@@ -333,7 +319,7 @@ class Dcs5Controller:
         logging.info('Syncing Controller and Board.')
 
         was_listening = self.is_listening
-        self.restart_listening(monitor_battery=False)
+        self.restart_listening()
 
         self.c_set_interface(1)
         self.c_set_sensor_mode(0)
@@ -346,11 +332,9 @@ class Dcs5Controller:
         self.c_get_battery_level()
         self.c_check_calibration_state()
 
-        time.sleep(2)
+        time.sleep(1)
         if not was_listening:
             self.stop_listening()
-        else:
-            self.restart_listening('')
 
         if (self.board_state.sensor_mode == "length" and
             self.board_state.stylus_status_msg == "disable" and
