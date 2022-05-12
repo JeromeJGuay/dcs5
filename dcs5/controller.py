@@ -324,7 +324,7 @@ class Dcs5Controller:
         self.c_set_interface(1)
         self.c_set_sensor_mode(0)
         self.c_set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
-        self.c_set_stylus_detection_message(False)
+        self.c_set_stylus_detection_message(True)
         self.c_set_stylus_settling_delay(DEFAULT_SETTLING_DELAY['measure'])
         self.c_set_stylus_max_deviation(DEFAULT_MAX_DEVIATION['measure'])
         self.c_set_stylus_number_of_reading(DEFAULT_NUMBER_OF_READING['measure'])
@@ -349,21 +349,33 @@ class Dcs5Controller:
             self.is_sync = False
 
     def calibrate(self, pt: int):
+        #FIXME CRASHES IF NOT SET
         logging.info("Calibration Mode Enable.")
-        self.client.clear_all()
 
+        was_listening = self.is_listening
+        self.stop_listening()
+
+        self.client.clear_all()
         self.client.send(f"&{pt}r#")
         self.client.socket.settimeout(5)
         self.client.receive()
+        self.stop_listening()
+        try:
+            if f'&Xr#: X={pt}\r' in self.client.buffer:
+                pt_value = self.board_state.__dict__[f"cal_pt_{pt}"]
+                logging.info(f"Calibration for point {pt}. Set stylus down at {pt_value} mm ...")
+                msg = ""
+                while f'&{pt}c' not in msg:
+                    self.client.receive()
+                    msg += self.client.buffer  # FIXME
+                logging.info(f'Point {pt} calibrated.')
+        except KeyError:
+            logging.info('Calibration Failed.')
+        finally:
+            self.client.socket.settimeout(self.client.default_timeout)
 
-        if f'&Xr#: X={pt}\r' in self.client.buffer:
-            pt_value = self.board_state.__dict__[f"cal_pt_{[pt]}"]
-            logging.info(f"Calibration for point {pt}. Set stylus down at {pt_value} mm ...")
-            msg = ""
-            while f'&{pt}c' not in msg:
-                self.client.receive()
-                msg += self.client.buffer  # FIXME
-            logging.info(f'Point {pt} calibrated.')
+        if not was_listening:
+            self.stop_listening()
 
     def change_stylus(self, value: str):
         """Stylus must be one of [pen, finger]"""
@@ -463,7 +475,7 @@ class Dcs5Controller:
             for i in ["length", "alpha", "shortcut", "numeric"]:
                 if i in received:
                     self.board_state.sensor_mode = i
-                    break
+
             logging.info(f'{received}')
 
         elif "sn" in received:
