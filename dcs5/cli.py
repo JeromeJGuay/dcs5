@@ -8,16 +8,14 @@ from controller import Dcs5Controller
 from dcs5 import DEFAULT_SETTINGS_PATH
 
 
-settings = json2dict(resolve_relative_path(DEFAULT_SETTINGS_PATH, __file__))
-
-
-CLIENT_SETTINGS = settings['bluetooth']
+CLIENT_SETTINGS = json2dict(resolve_relative_path(DEFAULT_SETTINGS_PATH, __file__))['bluetooth']
 DEVICE_NAME = CLIENT_SETTINGS["DEVICE_NAME"]
 PORT = CLIENT_SETTINGS["PORT"]
-DCS5_ADDRESS = CLIENT_SETTINGS["DCS5_ADDRESS"]
+DCS5_ADDRESS = CLIENT_SETTINGS["MAC_ADDRESS"]
 
 
 @dataclass(unsafe_hash=True, init=True)
+#TODO MAKE A MOTE GLOBAL DATACLASS
 class BluetoothSetting:
     device_name:str = None
     port: int = None
@@ -25,6 +23,9 @@ class BluetoothSetting:
 
     def load_settings(self, filename: str = None):
         settings = json2dict(resolve_relative_path(DEFAULT_SETTINGS_PATH, __file__))['bluetooth']
+        if filename is not None:
+            if pathlib.Path(filename).exists():
+                settings = json2dict(filename) #FIXME
         self.device_name = settings['DEVICE_NAME']
         self.port = settings['PORT']
         self.mac_address = settings['MAC_ADDRESS']
@@ -49,8 +50,8 @@ def launch_dcs5_board(port, address):
     controller = Dcs5Controller()
     controller.start_client(address, port)
     if controller.client_isconnected:
-        controller.start_listening()
         controller.sync_controller_and_board()
+        controller.start_listening()
     return controller
 
 
@@ -79,9 +80,7 @@ def main(scan: bool = False):
     )
     args = parser.parse_args()
 
-
     init_logging(args.verbose, args.logfile)
-
 
     controller = launch_dcs5_board(args.port, args.address)
 
