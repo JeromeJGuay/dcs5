@@ -218,8 +218,8 @@ class Dcs5Controller:
         threading.Thread.__init__(self)
 
         self.board_state = Dcs5BoardState()
-        self.listener = Dcs5Listener()
-        self.handler = Dcs5Handler()
+        self.listener = Dcs5Listener(self)
+        self.handler = Dcs5Handler(self)
         self.is_listening = False
         self.is_muted = False
 
