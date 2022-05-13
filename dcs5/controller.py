@@ -207,7 +207,7 @@ class Dcs5Controller:
         see documentations
 
     TODO
-    QUEUES SHOULD AUTO CLEAR AFTER SOME DELAYS
+    QUEUES SHOULD AUTO CLEAR AFTER SOME DELAYS... Maybe not...
     """
 
     def __init__(self, shout_method='Keyboard'):
@@ -219,21 +219,21 @@ class Dcs5Controller:
         threading.Thread.__init__(self)
 
         self.board_state = Dcs5BoardState()
+        self.listener = Dcs5Listener()
+        self.is_listening = False
+        self.is_muted = False
+
+        self.send_queue = Queue()
+        self.received_queue = Queue()
+        self.expected_message_queue = Queue()
 
         self.listen_thread: threading.Thread = None
         self.command_thread: threading.Thread = None
 
         self.is_sync = False
 
-        self.is_listening = False
-        self.is_muted = False
-
         self.client = Dcs5Client()
         self.client_isconnected = False
-
-        self.send_queue = Queue()
-        self.received_queue = Queue()
-        self.expected_message_queue = Queue()
 
         self.stylus: str = 'pen'  # [finger/pen]
         self.stylus_offset: str = STYLUS_OFFSET['pen']
@@ -268,17 +268,16 @@ class Dcs5Controller:
 
     def start_listening(self):
         if not self.is_listening:
-            logging.info('Starting active threads.')
+            self._clear_queues()
+            logging.info('Queues Cleared... Starting Threads.')
             self.is_listening = True
-            self.command_thread = threading.Thread(target=self._handle_commands, name='command')
+            self.command_thread = threading.Thread(target=self._processes_queues, name='command')
             self.command_thread.start()
 
-            self.listen_thread = threading.Thread(target=Dcs5Listener(self).listen, name='listen')
+            self.listen_thread = threading.Thread(target=self.listener.listen, name='listen')
             self.listen_thread.start()
 
-            time.sleep(0.5)
-            self.client.clear_all()
-            self._clear_queues()
+            time.sleep(0.1) #TODO check if nescessary
 
         logging.info('Board is Active.')
 
@@ -288,6 +287,9 @@ class Dcs5Controller:
             self.listen_thread.join()
             self.command_thread.join()
             logging.info("Active Threads joined.")
+            self._clear_queues()
+            self.client.clear_all()
+            logging.info("Queues and Socket Buffer Cleared.")
         logging.info('Board is Inactive.')
 
     def restart_listening(self):
@@ -349,7 +351,7 @@ class Dcs5Controller:
             self.is_sync = False
 
     def calibrate(self, pt: int):
-        #FIXME CRASHES IF NOT SET
+        #TODO test again
         logging.info("Calibration Mode Enable.")
 
         was_listening = self.is_listening
@@ -389,38 +391,16 @@ class Dcs5Controller:
         else:
             self.change_stylus('pen')
 
-    def change_board_output_mode(self, value: str):
+    def change_board_output_mode(self, value: str, change_stylus_settings=True):
         """
         value must be one of  [center, bottom, top]
         """
         self.board_output_mode = value
         mode = {'center': 'measure', 'bottom': 'typing', 'top': 'typing'}[value]
-        self.c_set_stylus_settling_delay(self.stylus_modes_settling_delay[mode])
-        self.c_set_stylus_number_of_reading(self.stylus_modes_number_of_reading[mode])
-        self.c_set_stylus_max_deviation(self.stylus_modes_max_deviation[mode])
-
-    def map_stylus_length_measure(self, value: int):
-        if self.board_output_mode == 'center':
-            return value - self.stylus_offset
-        else:
-            index = int((value - BOARD_KEY_ZERO) / BOARD_KEY_RATIO)
-            logging.info(f'index {index}')
-            if index < BOARD_NUMBER_OF_KEYS:
-                return BOARD_KEYS_MAP[self.board_output_mode][index]
-
-    def check_for_stylus_swipe(self, value: str):
-        self.swipe_triggered = False
-        if int(value) > 630:
-            self.change_board_output_mode('center')
-        elif int(value) > 430:
-            self.change_board_output_mode('bottom')
-        elif int(value) > 230:
-            self.change_board_output_mode('top')
-        logging.info(f'Board entry: {self.board_output_mode}.')
-
-    def shout(self, value: Union[int, float, str]):
-        if self.shout_method == 'Keyboard':
-            shout_to_keyboard(value)
+        if change_stylus_settings is True:
+            self.c_set_stylus_settling_delay(self.stylus_modes_settling_delay[mode])
+            self.c_set_stylus_number_of_reading(self.stylus_modes_number_of_reading[mode])
+            self.c_set_stylus_max_deviation(self.stylus_modes_max_deviation[mode])
 
     def change_backlighting_level(self, value: int):
         if value == 1 and self.board_state.backlighting_level < MAX_BACKLIGHTING_LEVEL:
@@ -435,14 +415,38 @@ class Dcs5Controller:
                 self.board_state.backlighting_level = MIN_BACKLIGHTING_LEVEL
             self.c_set_backlighting_level(self.board_state.backlighting_level)
 
-    def _handle_commands(self):
+    def _map_stylus_length_measure(self, value: int):
+        if self.board_output_mode == 'center':
+            return value - self.stylus_offset
+        else:
+            index = int((value - BOARD_KEY_ZERO) / BOARD_KEY_RATIO)
+            logging.info(f'index {index}')
+            if index < BOARD_NUMBER_OF_KEYS:
+                return BOARD_KEYS_MAP[self.board_output_mode][index]
+
+    def _check_for_stylus_swipe(self, value: str):
+        self.swipe_triggered = False
+        if int(value) > 630:
+            self.change_board_output_mode('center')
+        elif int(value) > 430:
+            self.change_board_output_mode('bottom')
+        elif int(value) > 230:
+            self.change_board_output_mode('top')
+        logging.info(f'Board entry: {self.board_output_mode}.')
+
+    def _shout(self, value: Union[int, float, str]):
+        if self.shout_method == 'Keyboard':
+            shout_to_keyboard(value)
+
+    def _processes_queues(self):
         logging.info('Command Handling Started')
         while self.is_listening is True:
             if not self.received_queue.empty():
                 self._validate_commands()
             if not self.send_queue.empty():
                 self._send_command()
-            time.sleep(0.1)
+                time.sleep(0.08)
+            time.sleep(0.02)
         logging.info('Command Handling Stopped')
 
     def _validate_commands(self):
@@ -450,24 +454,17 @@ class Dcs5Controller:
         received = self.received_queue.get()
         expected = self.expected_message_queue.get()
         logging.info(f'Received: {[received]}, Expected: {[expected]}')
-
         if "regex_" in expected:
             match = re.findall("(" + expected.strip('regex_') + ")", received)
             if len(match) > 0:
                 command_is_valid = True
-                #logging.info(f'Match {match[0]}')  # TODO REMOVE
-
         elif received == expected:
             command_is_valid = True
 
         if command_is_valid:
             self._process_valid_commands(received)
-
         else:
             logging.error(f'Invalid: Command received: {[received]}, Command expected: {[expected]}')
-
-        self.received_queue.task_done()
-        self.expected_message_queue.task_done()
 
     def _process_valid_commands(self, received):
         logging.info('Command Valid')
@@ -545,7 +542,6 @@ class Dcs5Controller:
     def _send_command(self):
         command = self.send_queue.get()
         self.client.send(command)
-        self.send_queue.task_done()
         logging.info(f'Command Sent: {[command]}')
 
     def c_board_initialization(self):
@@ -640,11 +636,11 @@ class Dcs5Listener:
         self.controller = controller
         self.message_queue = Queue()
 
-        self.stdout_value: str = None
-
     def listen(self):
-        logging.info('Listening started')
         self.controller.client.clear_all()
+        self.message_queue.queue.clear()
+        logging.info('Listener Queue cleared & Client Buffer Clear.')
+        logging.info('Listening started')
         while self.controller.is_listening:
             self.controller.client.receive()
             if len(self.controller.client.buffer) > 0:
@@ -692,9 +688,9 @@ class Dcs5Listener:
 
             elif msg_type == 'length':
                 if self.controller.swipe_triggered is True:
-                    self.controller.check_for_stylus_swipe(msg_value)
+                    self.controller._check_for_stylus_swipe(msg_value)
                 else:
-                    stdout_value = self.controller.map_stylus_length_measure(msg_value)
+                    stdout_value = self.controller._map_stylus_length_measure(msg_value)
 
             elif msg_type == "unsolicited":
                 self.controller.received_queue.put(msg_value)
