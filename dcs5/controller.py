@@ -129,7 +129,8 @@ BOARD_KEY_DETECTION_RANGE = 2
 BOARD_KEY_ZERO = -3.695 - BOARD_KEY_DETECTION_RANGE
 BOARD_NUMBER_OF_KEYS = 49
 
-barrier = threading.Barrier(2)
+active_thread_sync_barrier = threading.Barrier(2)
+
 
 def shout_to_keyboard(value: str):
     if value in KEYBOARD_MAP:
@@ -150,30 +151,51 @@ class Dcs5Client:
     """
 
     def __init__(self):
-        self.dcs5_address: str = None
-        self.port: int = None
-        self.buffer: str = ''
+        self._mac_address: str = None
+        self._port: int = None
+        self._buffer: str = ''
         self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
         self.default_timeout = .5
         self.socket.settimeout(self.default_timeout)
 
     def connect(self, address: str, port: int):
-        self.dcs5_address = address
-        self.port = port
-        self.socket.connect((self.dcs5_address, self.port))
+        self._mac_address = address
+        self._port = port
+        self.socket.connect((self._mac_address, self._port))
+
+    @property
+    def mac_address(self):
+        return self._mac_address
+
+    @property
+    def port(self):
+        return self._port
+
+    @property
+    def buffer(self):
+        return self._buffer
 
     def send(self, command: str):
         self.socket.send(command.encode(BOARD_MSG_ENCODING))
 
     def receive(self):
         try:
-            self.buffer += self.socket.recv(BUFFER_SIZE).decode(BOARD_MSG_ENCODING)
+            self._buffer += self.socket.recv(BUFFER_SIZE).decode(BOARD_MSG_ENCODING)
         except socket.timeout:
             pass
 
     def clear_all(self):
         self.receive()
-        self.buffer = ""
+        self._buffer = ""
+
+    def pop(self, i=None):
+        """Return and clear the client buffer."""
+        buffer, self._buffer = self._buffer[:i], self._buffer[i:]
+        return buffer
+
+    def put_back(self, msg):
+        """Appends at the begining of the buffer."""
+        self._buffer = msg + self._buffer
 
     def close(self):
         self.socket.close()
@@ -198,6 +220,7 @@ class Dcs5UserSettings:
     backlighting_level: int = None
     backlighting_auto_mode: bool = None
     backlighting_sensitivity: int = None
+
 
 @dataclass(unsafe_hash=True, init=True)
 class Dcs5BoardState:
@@ -226,9 +249,6 @@ class Dcs5Controller:
     Firmware update command could be added:
         %h,VER,BR#
         see documentations
-
-    TODO
-    QUEUES SHOULD AUTO CLEAR AFTER SOME DELAYS... Maybe not...
     """
 
     def __init__(self, shout_method='Keyboard'):
@@ -331,7 +351,7 @@ class Dcs5Controller:
         self.c_set_interface(1)
         self.c_set_sensor_mode(0)
         self.c_set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
-        self.c_set_stylus_detection_message(True)
+        self.c_set_stylus_detection_message(False)
         self.c_set_stylus_settling_delay(DEFAULT_SETTLING_DELAY['measure'])
         self.c_set_stylus_max_deviation(DEFAULT_MAX_DEVIATION['measure'])
         self.c_set_stylus_number_of_reading(DEFAULT_NUMBER_OF_READING['measure'])
@@ -408,17 +428,25 @@ class Dcs5Controller:
             self.c_set_stylus_max_deviation(self.stylus_modes_max_deviation[mode])
 
     def change_backlighting_level(self, value: int):
-        if value == 1 and self.board_state.backlighting_level < MAX_BACKLIGHTING_LEVEL:
-            self.board_state.backlighting_level += 25
-            if self.board_state.backlighting_level > MAX_BACKLIGHTING_LEVEL:
-                self.board_state.backlighting_level = MAX_BACKLIGHTING_LEVEL
-            self.c_set_backlighting_level(self.board_state.backlighting_level)
+        if value == 1:
+            if self.board_state.backlighting_level < MAX_BACKLIGHTING_LEVEL:
+                self.board_state.backlighting_level += 25
+                if self.board_state.backlighting_level > MAX_BACKLIGHTING_LEVEL:
+                    self.board_state.backlighting_level = MAX_BACKLIGHTING_LEVEL
+                self.c_set_backlighting_level(self.board_state.backlighting_level)
+            else:
+                logging.info("Backlighting is already at maximum.")
 
-        if value == -1 and self.board_state.backlighting_level > MIN_BACKLIGHTING_LEVEL:
-            self.board_state.backlighting_level += -25
-            if self.board_state.backlighting_level < MIN_BACKLIGHTING_LEVEL:
-                self.board_state.backlighting_level = MIN_BACKLIGHTING_LEVEL
-            self.c_set_backlighting_level(self.board_state.backlighting_level)
+        elif value == -1:
+            if self.board_state.backlighting_level > MIN_BACKLIGHTING_LEVEL:
+                self.board_state.backlighting_level += -25
+                if self.board_state.backlighting_level < MIN_BACKLIGHTING_LEVEL:
+                    self.board_state.backlighting_level = MIN_BACKLIGHTING_LEVEL
+                self.c_set_backlighting_level(self.board_state.backlighting_level)
+            else:
+                logging.info("Backlighting is already at minimum.")
+        else:
+            raise ValueError(value)
 
     def _shout(self, value: Union[int, float, str]):
         if self.shout_method == 'Keyboard':
@@ -426,9 +454,12 @@ class Dcs5Controller:
 
     def c_board_initialization(self):
         self.handler.queue_command("&init#", "Setting EEPROM init flag.\r")
+        time.sleep(1)
+        self.close_client()
 
-    def c_reboot(self):  # FIXME NOT WORKING
-        self.handler.queue_command("&rr#", "%rebooting")
+#    #FIXME
+#    def c_reboot(self):  # FIXME NOT WORKING NOT A XT COMMAND
+#        self.handler.queue_command("&rr#", "%rebooting")
 
     def c_ping(self):
         """This could use for something more useful. Like checking at regular interval if the board is still active:
@@ -527,7 +558,7 @@ class Dcs5Handler:
 
     def processes_queues(self):
         self.clear_queues()
-        barrier.wait()
+        active_thread_sync_barrier.wait()
         logging.info('Command Handling Started')
         while self.controller.is_listening is True:
             if not self.received_queue.empty():
@@ -644,7 +675,7 @@ class Dcs5Listener:
         self.controller.client.clear_all()
         self.message_queue.queue.clear()
         logging.info("Listener Queue and Client Buffers Cleared.")
-        barrier.wait()
+        active_thread_sync_barrier.wait()
         logging.info('Listener Queue cleared & Client Buffer Clear.')
         logging.info('Listening started')
         while self.controller.is_listening:
@@ -655,19 +686,20 @@ class Dcs5Listener:
         logging.info('Listening stopped')
 
     def _split_board_message(self):
-        delimiters = ["\n", "\r", "#", "%rebooting", "Rebooting in 2 seconds ..."]
+        delimiters = ["\n", "\r", "#", "Rebooting in 2 seconds ..."] #"%rebooting",
         for d in delimiters:
             msg = self.controller.client.buffer.split(d)
             if len(msg) > 1:
-                self.controller.client.buffer = msg[-1]
-                self.message_queue.put(msg[0] + d)
+                self.message_queue.put(self.controller.client.pop(len(msg[0] + d)))
 
     def _process_board_message(self):
         """ANALYZE SOLICITED VS UNSOLICITED MESSAGE"""
         while not self.message_queue.empty():
             message = self.message_queue.get()
+            logging.info(f'Received Message: {message}')
             stdout_value = None
             msg_type, msg_value = self._decode_board_message(message)
+            logging.info(f"Message Type: {msg_type}, Message Value: {msg_value}")
             if msg_type == "xt_key":
                 if msg_value in ['a1', 'a2', 'a3', 'a4', 'a5', 'a6']:
                     stdout_value = f'f{msg_value[-1]}'
@@ -688,12 +720,12 @@ class Dcs5Listener:
                     stdout_value = msg_value
 
             elif msg_type == 'swipe':
-                self.controller.swipe_value = msg_value
+                self.swipe_value = msg_value
                 if msg_value > SWIPE_THRESHOLD:
-                    self.controller.swipe_triggered = True
+                    self.swipe_triggered = True
 
             elif msg_type == 'length':
-                if self.controller.swipe_triggered is True:
+                if self.swipe_triggered is True:
                     self._check_for_stylus_swipe(msg_value)
                 else:
                     stdout_value = self._map_stylus_length_measure(msg_value)

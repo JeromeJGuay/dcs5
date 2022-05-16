@@ -2,6 +2,7 @@ from typing import *
 import logging
 import bluetooth
 
+
 def scan_bluetooth_device():
     devices = {}
     logging.info("Scanning for bluetooth devices ...")
