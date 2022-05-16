@@ -231,6 +231,7 @@ class Dcs5UserSettings:
     stylus_settling_delay: int = None
     stylus_max_deviation: int = None
     number_of_reading: int = None
+    offset = int = None
 
 
 @dataclass(unsafe_hash=True, init=True)
@@ -262,7 +263,12 @@ class Dcs5Controller:
         see documentations
     """
 
-    def __init__(self, shout_method='Keyboard', dynamic_stylus_settings=False):
+    def __init__(self, shout_method='Keyboard', dynamic_stylus_settings=False, length_untis = "mm"):
+        """
+        :param shout_method: ['keyboard', ]
+        :param dynamic_stylus_settings: [True, False]
+        :param length_untis: ['cm', 'mm',]
+        """
         Dcs5BoardState.__init__(self)
         threading.Thread.__init__(self)
 
@@ -290,6 +296,7 @@ class Dcs5Controller:
         self.shout_method = shout_method
         self.dynamic_stylus_settings = dynamic_stylus_settings
         self.board_output_mode = 'center'
+        self.length_units = length_untis
 
     def start_client(self, address: str = None, port: int = None):
         logging.info(f'Attempting to connect to board via port {port}.')
@@ -428,6 +435,11 @@ class Dcs5Controller:
 
         if not was_listening:
             self.stop_listening()
+
+    def change_length_units(self, value: str):
+        if value in ['cm', 'mm']:
+            self.length_units = value
+        logging.error("Length Units are either 'mm' or 'cm'.")
 
     def change_stylus(self, value: str):
         """Stylus must be one of [pen, finger]"""
@@ -742,9 +754,9 @@ class Dcs5Listener:
                 else:
                     mapped_msg = self._map_stylus_length_measure(msg_value)
                     if mapped_msg == '1G':
-                        self.controller.change_backlighting_level(1)
-                    elif mapped_msg == '2G':
                         self.controller.change_backlighting_level(-1)
+                    elif mapped_msg == '2G':
+                        self.controller.change_backlighting_level(1)
                     else:
                         shout_value = mapped_msg
 
@@ -774,7 +786,10 @@ class Dcs5Listener:
 
     def _map_stylus_length_measure(self, value: int):
         if self.controller.board_output_mode == 'center':
-            return value - self.controller.stylus_offset
+            out_value = value - self.controller.stylus_offset
+            if self.controller.length_units == 'cm':
+                out_value /= 10
+            return out_value
         else:
             index = int((value - BOARD_KEY_ZERO) / BOARD_KEY_RATIO)
             logging.info(f'index {index}')
