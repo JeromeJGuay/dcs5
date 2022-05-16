@@ -129,6 +129,7 @@ BOARD_KEY_DETECTION_RANGE = 2
 BOARD_KEY_ZERO = -3.695 - BOARD_KEY_DETECTION_RANGE
 BOARD_NUMBER_OF_KEYS = 49
 
+barrier = threading.Barrier(2)
 
 def shout_to_keyboard(value: str):
     if value in KEYBOARD_MAP:
@@ -177,6 +178,26 @@ class Dcs5Client:
     def close(self):
         self.socket.close()
 
+
+@dataclass(unsafe_hash=True, init=True)
+class Dcs5UserSettings:
+    #TODO
+    sensor_mode: str = None
+    stylus_status_msg: str = None
+    stylus_settling_delay: int = None
+    stylus_max_deviation: int = None
+    number_of_reading: int = None
+
+    battery_level: str = None
+    board_stats: str = None
+    board_interface: str = None
+    calibrated: bool = None
+    cal_pt_1: int = None
+    cal_pt_2: int = None
+
+    backlighting_level: int = None
+    backlighting_auto_mode: bool = None
+    backlighting_sensitivity: int = None
 
 @dataclass(unsafe_hash=True, init=True)
 class Dcs5BoardState:
@@ -263,15 +284,13 @@ class Dcs5Controller:
 
     def start_listening(self):
         if not self.is_listening:
-            logging.info('Queues Cleared... Starting Threads.')
+            logging.info('Starting Threads.')
             self.is_listening = True
             self.command_thread = threading.Thread(target=self.handler.processes_queues, name='command')
             self.command_thread.start()
 
             self.listen_thread = threading.Thread(target=self.listener.listen, name='listen')
             self.listen_thread.start()
-
-            time.sleep(0.1) #TODO check if nescessary
 
         logging.info('Board is Active.')
 
@@ -461,7 +480,7 @@ class Dcs5Controller:
         """
         When disabled (false): %t0 %t1 are not sent
         """
-        self.handler.queue_command(f'&sn,{int(value)}', f'%sn:{int(value)}#\r')
+        self.handler.queue_command(f'&sn,{int(value)}#', f'%sn:{int(value)}#\r')
 
     def c_set_stylus_settling_delay(self, value: int = 1):
         if 0 <= value <= MAX_SETTLING_DELAY:
@@ -504,10 +523,11 @@ class Dcs5Handler:
         self.send_queue.queue.clear()
         self.received_queue.queue.clear()
         self.expected_message_queue.queue.clear()
-        logging.info("Controller Queues cleared.")
+        logging.info("Handler Queues Cleared.")
 
     def processes_queues(self):
         self.clear_queues()
+        barrier.wait()
         logging.info('Command Handling Started')
         while self.controller.is_listening is True:
             if not self.received_queue.empty():
@@ -623,6 +643,8 @@ class Dcs5Listener:
     def listen(self):
         self.controller.client.clear_all()
         self.message_queue.queue.clear()
+        logging.info("Listener Queue and Client Buffers Cleared.")
+        barrier.wait()
         logging.info('Listener Queue cleared & Client Buffer Clear.')
         logging.info('Listening started')
         while self.controller.is_listening:
