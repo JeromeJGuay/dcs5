@@ -154,14 +154,18 @@ class Dcs5Client:
         self._mac_address: str = None
         self._port: int = None
         self._buffer: str = ''
-        self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
+        self.socket: socket.socket = None
         self.default_timeout = .5
-        self.socket.settimeout(self.default_timeout)
 
-    def connect(self, address: str, port: int):
-        self._mac_address = address
-        self._port = port
+    def connect(self, address: str = None, port: int = None, timeout: int = None):
+        self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
+        self.socket.settimeout(timeout if timeout is not None else self.default_timeout)
+
+        self._mac_address = address if address is not None else self._mac_address
+        self._port = port if port is not None else self._port
         self.socket.connect((self._mac_address, self._port))
+
+        self.socket.settimeout(self.default_timeout)
 
     @property
     def mac_address(self):
@@ -190,6 +194,7 @@ class Dcs5Client:
 
     def pop(self, i=None):
         """Return and clear the client buffer."""
+        i = len(self._buffer) if i is None else i
         buffer, self._buffer = self._buffer[:i], self._buffer[i:]
         return buffer
 
@@ -268,6 +273,7 @@ class Dcs5Controller:
         self.command_thread: threading.Thread = None
 
         self.is_sync = False
+        self.ping_received = False
 
         self.client = Dcs5Client()
         self.client_isconnected = False
@@ -284,23 +290,37 @@ class Dcs5Controller:
 
     def start_client(self, address: str = None, port: int = None):
         logging.info(f'Attempting to connect to board via port {port}.')
-        try:
+        if self.client_isconnected:
+            logging.info("Client Already Connected.")
+        else:
+            #try:
             logging.info('Trying to connect for 30 s.')
-            self.client.socket.settimeout(30)
-            self.client.connect(address, port)
+            self.client.connect(address, port, timeout=30)
             self.client_isconnected = True
             logging.info('Connection Successful.\n')
-        except socket.timeout:
-            logging.info('Socket.timeout, could not connect. Time Out')
-        except OSError as err:
-            logging.error('Start_Client, OSError: '+str(err))
-        self.client.socket.settimeout(self.client.default_timeout)
+            #except socket.timeout:
+            #    logging.info('Socket.timeout, could not connect. Time Out')
+            #except OSError as err:
+            #    logging.error('Start_Client, OSError: '+str(err))
 
     def close_client(self):
-        if self.is_listening:
-            self.stop_listening()
-        self.client.close()
-        logging.info('Client Closed.')
+        if self.client_isconnected:
+            if self.is_listening:
+                self.stop_listening()
+            self.client.close()
+            self.client_isconnected = False
+            logging.info('Client Closed.')
+        else:
+            logging.info('Client Already Closed')
+
+    def restart_client(self):
+        self.close_client()
+        try:
+            self.start_client()
+        except OSError as err:
+            logging.error(f'Start_Client, OSError: {str(err)}. Trying again ...')
+            time.sleep(0.5)
+            self.restart_client()
 
     def start_listening(self):
         if not self.is_listening:
@@ -358,8 +378,10 @@ class Dcs5Controller:
         self.c_get_board_stats()
         self.c_get_battery_level()
         self.c_check_calibration_state()
+        self.c_ping()
 
-        time.sleep(1)
+        self.wait_for_ping()
+
         if not was_listening:
             self.stop_listening()
 
@@ -374,6 +396,15 @@ class Dcs5Controller:
         else:
             logging.info("Syncing  failed.")
             self.is_sync = False
+
+    def wait_for_ping(self, timeout=2):
+        count = 0
+        while True:
+            if self.ping_received or count > timeout/0.2:
+                break
+            count += 1
+            time.sleep(0.2)
+        self.ping_received = False
 
     def calibrate(self, pt: int):
         #TODO test again
