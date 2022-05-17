@@ -282,7 +282,7 @@ class Dcs5Controller:
         self.command_thread: threading.Thread = None
 
         self.is_sync = False
-        self.ping_received = False
+        self.ping_event_check = threading.Event()
 
         self.client = Dcs5Client()
         self.client_isconnected = False
@@ -401,13 +401,17 @@ class Dcs5Controller:
 
     def wait_for_ping(self, timeout=2):
         self.c_ping()
+        self.ping_event_check.set()
+        logging.info('Ping Event Set.')
         count = 0
-        while True:
-            if self.ping_received or count > timeout/0.2:
+        while self.ping_event_check.is_set():
+            if count > timeout/0.2:
+                logging.info('Ping Event Not Received')
+                self.ping_event_check.clear()
                 break
             count += 1
             time.sleep(0.2)
-        self.ping_received = False
+
 
     def calibrate(self, pt: int):
         #TODO test again
@@ -629,6 +633,10 @@ class Dcs5Handler:
 
             logging.info(f'{received}')
 
+        elif "a:e" in received:
+            self.controller.ping_event_check.clear()
+            logging.info('Ping Event Received.')
+
         elif "sn" in received:
             match = re.findall(f"%sn:(\d)#\r", received)
             if len(match) > 0:
@@ -722,7 +730,10 @@ class Dcs5Listener:
             logging.info('Listening stopped')
         except TimeoutError:
             logging.error("Connection timeout. Board Disconnected.")
-            self.controller.close_client()
+            try:
+                self.controller.close_client()
+            except RuntimeError:
+                pass
 
     def _split_board_message(self):
         delimiters = ["\n", "\r", "#", "Rebooting in 2 seconds ..."]
