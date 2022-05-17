@@ -62,7 +62,7 @@ MAX_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['MAX_BACKLIGHTING_SENSITIVITY']
 
 SWIPE_THRESHOLD = 5
 
-XT_KEYS_MAP = {
+XT_KEYS_NAME_MAP = {
     "01": "a1",
     "02": "a2",
     "03": "a3",
@@ -97,20 +97,21 @@ XT_KEYS_MAP = {
     "32": "mode",
 }
 
-BOARD_KEYS_MAP = {
-    'top': 7 * ['space'] + \
+BOARD_KEYS_NAME_MAP = {
+    'top': 7 * ['lspace'] + \
            list('abcdefghijklmnopqrstuvwxyz') + \
            [f'{i + 1}B' for i in range(8)] + \
-           6 * ['space'] + 2 * ['del_last'],
-    'bottom': 7 * ['space'] + \
+           6 * ['rspace'] + 2 * ['del_last'],
+    'bottom': 7 * ['lspace'] + \
               list('01234.56789') + \
               ['view', 'batch', 'tab', 'histo', 'summary', 'dismiss', 'fish', 'sample',
                'sex', 'size', 'light_bulb', 'scale', 'location', 'pit_pwr', 'settings'] + \
               [f'{i + 1}G' for i in range(8)] + \
-              6 * ['space'] + 2 * ['del_last'], }
+              6 * ['rspace'] + 2 * ['del_last'], }
 
 #seperate file json config TODO
-SHOUT_MAPPING = {
+
+KEYS_OUT_MAP = {
     'a1': 'f1',
     'a2': 'f3',
     'a3': 'f4',
@@ -123,7 +124,7 @@ SHOUT_MAPPING = {
     'b4': 'escape',
     'b5': ['Y', 'enter'],
     'b6': 'backspace',
-    'space': 'space',
+    'c1': 'ctrl',
     'skip': 'pagedown',
     'enter': 'enter',
     'del_last': 'backspace',
@@ -132,8 +133,42 @@ SHOUT_MAPPING = {
     'down': 'down',
     'left': 'left',
     'right': 'right',
-    '1B': '-'
+    'mode': 'CHANGE_STYLUS',
+    'lspace': 'space',
+    'view': None,
+    'batch': None,
+    'tab': None,
+    'histo': None,
+    'summary': None,
+    'dismiss': None,
+    'fish': None,
+    'sample': None,
+    'sex': None,
+    'size': None,
+    'light_bulb': None,
+    'scale': None,
+    'location': None,
+    'pit_pwr': None,
+    'settings': None,
+    '1B': '-',
+    '2B': '(',
+    '3B': ')',
+    '4B': None,
+    '5B': None,
+    '6B': None,
+    '7B': 'alt',
+    '8B': 'shift',
+    '1G': 'BACKLIGHT_DOWN',
+    '2G': 'BACKLIGHT_UP',
+    '3G': None,
+    '4G': None,
+    '5G': None,
+    '6G': None,
+    '7G': 'UNITS_mm',
+    '8G': 'UNITS_cm',
+    'rspace': 'space',
 }
+COMMANDS = ['BACKLIGHT_UP', 'BACKLIGHT_DOWN', 'CHANGE_STYLUS', 'UNITS_mm', "UNITS_cm"]
 
 # STYLUS PHYSICAL MEASUREMENTS.
 
@@ -146,20 +181,42 @@ BOARD_NUMBER_OF_KEYS = 49
 active_thread_sync_barrier = threading.Barrier(2)
 
 
-def shout_to_keyboard(value: str, with_control=False):
-    if value in SHOUT_MAPPING:
-        key = SHOUT_MAPPING[value]
-        if with_control is True:
-            with pag.hold('ctrl'):
-                pag.press(key)
+class Shouter:
+    def __init__(self):
+        self._with_control = False
+        self._with_shift = False
+        self._with_alt = False
+
+        self.combo = []
+
+    def shout_to_keyboard(self, value: str):
+        if value == 'ctrl':
+            self._with_control = not self._with_control
+        elif value == 'shift':
+            self._with_shift = not self._with_shift
+        elif value == 'alt':
+            self._with_alt = not self._with_alt
         else:
-            pag.press(key)
-    elif isinstance(value, (int, float)):
-        pag.write(str(value))
-    elif str(value) in '.0123456789abcdefghijklmnopqrstuvwxyz':
-        pag.press(value)
-    else:
-        logging.info('Key not mapped to keyboard.')
+            self._shout_to_keyboard(value)
+
+    def _shout_to_keyboard(self, value):
+        if self._with_control:
+            self.combo.append('ctrl')
+            self._with_control = False
+        if self._with_alt:
+            self.combo.append('alt')
+            self._with_alt = False
+        if self._with_shift:
+            self.combo.append('shift')
+            self._with_shift = False
+
+        with pag.hold(self.combo):
+            logging.info(f"Keyboard out: {'+'.join(self.combo)} {value}")
+            if pag.isValidKey(value):
+                pag.press(value)
+            else:
+                pag.write(str(value))
+            self.combo = []
 
 
 class Dcs5Client:
@@ -263,7 +320,7 @@ class Dcs5Controller:
         see documentations
     """
 
-    def __init__(self, shout_method='Keyboard', dynamic_stylus_settings=False, length_untis = "mm"):
+    def __init__(self, dynamic_stylus_settings=False, length_untis="mm"):
         """
         :param shout_method: ['keyboard', ]
         :param dynamic_stylus_settings: [True, False]
@@ -293,7 +350,7 @@ class Dcs5Controller:
         self.stylus_modes_number_of_reading: Dict[str: int] = DEFAULT_NUMBER_OF_READING
         self.stylus_modes_max_deviation: Dict[str: int] = DEFAULT_MAX_DEVIATION
 
-        self.shout_method = shout_method
+        self.Shouter = Shouter()
         self.dynamic_stylus_settings = dynamic_stylus_settings
         self.board_output_mode = 'center'
         self.length_units = length_untis
@@ -412,7 +469,6 @@ class Dcs5Controller:
             count += 1
             time.sleep(0.2)
 
-
     def calibrate(self, pt: int):
         #TODO test again
         logging.info("Calibration Mode Enable.")
@@ -469,30 +525,26 @@ class Dcs5Controller:
             self.c_set_stylus_number_of_reading(self.stylus_modes_number_of_reading[mode])
             self.c_set_stylus_max_deviation(self.stylus_modes_max_deviation[mode])
 
-    def change_backlighting_level(self, value: int):
-        if value == 1:
-            if self.board_state.backlighting_level < MAX_BACKLIGHTING_LEVEL:
-                self.board_state.backlighting_level += 25
-                if self.board_state.backlighting_level > MAX_BACKLIGHTING_LEVEL:
-                    self.board_state.backlighting_level = MAX_BACKLIGHTING_LEVEL
-                self.c_set_backlighting_level(self.board_state.backlighting_level)
-            else:
-                logging.info("Backlighting is already at maximum.")
-
-        elif value == -1:
-            if self.board_state.backlighting_level > MIN_BACKLIGHTING_LEVEL:
-                self.board_state.backlighting_level += -25
-                if self.board_state.backlighting_level < MIN_BACKLIGHTING_LEVEL:
-                    self.board_state.backlighting_level = MIN_BACKLIGHTING_LEVEL
-                self.c_set_backlighting_level(self.board_state.backlighting_level)
-            else:
-                logging.info("Backlighting is already at minimum.")
+    def backlight_up(self):
+        if self.board_state.backlighting_level < MAX_BACKLIGHTING_LEVEL:
+            self.board_state.backlighting_level += 25
+            if self.board_state.backlighting_level > MAX_BACKLIGHTING_LEVEL:
+                self.board_state.backlighting_level = MAX_BACKLIGHTING_LEVEL
+            self.c_set_backlighting_level(self.board_state.backlighting_level)
         else:
-            raise ValueError(value)
+            logging.info("Backlighting is already at maximum.")
 
-    def shout(self, value: Union[int, float, str], with_ctrl=False):
-        if self.shout_method == 'Keyboard':
-            shout_to_keyboard(value, with_ctrl)
+    def backlight_down(self):
+        if self.board_state.backlighting_level > MIN_BACKLIGHTING_LEVEL:
+            self.board_state.backlighting_level += -25
+            if self.board_state.backlighting_level < MIN_BACKLIGHTING_LEVEL:
+                self.board_state.backlighting_level = MIN_BACKLIGHTING_LEVEL
+            self.c_set_backlighting_level(self.board_state.backlighting_level)
+        else:
+            logging.info("Backlighting is already at minimum.")
+
+    def shout(self, value: Union[int, float, str]):
+        self.Shouter.shout_to_keyboard(value)
 
     def c_board_initialization(self):
         self.handler.queue_command("&init#", "Setting EEPROM init flag.\r")
@@ -747,17 +799,11 @@ class Dcs5Listener:
         while not self.message_queue.empty():
             message = self.message_queue.get()
             logging.info(f'Received Message: {message}')
-            shout_value = None
+            out_value = None
             msg_type, msg_value = self._decode_board_message(message)
             logging.info(f"Message Type: {msg_type}, Message Value: {msg_value}")
             if msg_type == "xt_key":
-                if msg_value == 'mode':
-                    self.controller.cycle_stylus()
-                elif msg_value == 'c1':
-                    self.with_ctrl = True
-                    logging.info('With Control True.')
-                else:
-                    shout_value = msg_value
+                out_value = msg_value
 
             elif msg_type == 'swipe':
                 self.swipe_value = msg_value
@@ -768,23 +814,40 @@ class Dcs5Listener:
                 if self.swipe_triggered is True:
                     self._check_for_stylus_swipe(msg_value)
                 else:
-                    mapped_msg = self._map_stylus_length_measure(msg_value)
-                    if mapped_msg == '1G':
-                        self.controller.change_backlighting_level(-1)
-                    elif mapped_msg == '2G':
-                        self.controller.change_backlighting_level(1)
-                    else:
-                        shout_value = mapped_msg
+                    out_value = self._map_stylus_length_measurent(msg_value)
 
             elif msg_type == "unsolicited":
                 self.controller.handler.received_queue.put(msg_value)
 
-            if shout_value is not None:
-                logging.info(f'output value {shout_value}')
-                if not self.controller.is_muted:
-                    self.controller.shout(shout_value, with_ctrl=self.with_ctrl)
-                    self.with_ctrl = False
+            if out_value is not None:
+                self._process_output(out_value)
+
             time.sleep(0.001)
+
+    def _process_output(self, value):
+        shout_value = None
+        if value in KEYS_OUT_MAP:
+            mapped_value = KEYS_OUT_MAP[value]
+            if mapped_value == "BACKLIGHT_UP":
+                self.controller.backlight_up()
+            elif mapped_value == "BACKLIGHT_DOWN":
+                self.controller.backlight_down()
+            elif mapped_value == "CHANGE_STYLUS":
+                self.controller.cycle_stylus()
+            elif mapped_value == "UNITS_mm":
+                self.controller.change_length_units('mm')
+            elif mapped_value == "UNITS_cm":
+                self.controller.change_length_units('cm')
+            else:
+                shout_value = mapped_value
+        else:
+            shout_value = value
+
+        if not self.controller.is_muted and shout_value is not None:
+            logging.info(f"Mapped value {shout_value}")
+            self.controller.shout(shout_value)
+        else:
+            logging.info(f'Key {value} not mapped')
 
     @staticmethod
     def _decode_board_message(value: str):
@@ -796,11 +859,11 @@ class Dcs5Listener:
             elif match[0][2] != "":
                 return 'swipe', int(match[0][2])
             elif match[0][3] != "":
-                return 'xt_key', XT_KEYS_MAP[match[0][3]]
+                return 'xt_key', XT_KEYS_NAME_MAP[match[0][3]]
         else:
             return 'unsolicited', value
 
-    def _map_stylus_length_measure(self, value: int):
+    def _map_stylus_length_measurent(self, value: int):
         if self.controller.board_output_mode == 'center':
             out_value = value - self.controller.stylus_offset
             if self.controller.length_units == 'cm':
@@ -810,7 +873,7 @@ class Dcs5Listener:
             index = int((value - BOARD_KEY_ZERO) / BOARD_KEY_RATIO)
             logging.info(f'index {index}')
             if index < BOARD_NUMBER_OF_KEYS:
-                return BOARD_KEYS_MAP[self.controller.board_output_mode][index]
+                return BOARD_KEYS_NAME_MAP[self.controller.board_output_mode][index]
 
     def _check_for_stylus_swipe(self, value: str):
         self.swipe_triggered = False
