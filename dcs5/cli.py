@@ -31,17 +31,16 @@ class BluetoothSetting:
         self.mac_address = settings['MAC_ADDRESS']
 
 
-def init_logging(verbose: str, log_path: str):
+def init_logging(verbose: str, log_path: str, save_log=False):
     log_path = str(resolve_relative_path(log_path, __file__)) + \
                "_" + time.strftime("%y%m%dT%H%M%S", time.gmtime()) + ".log"
-
+    handlers = [logging.StreamHandler]
+    if save_log is True:
+        handlers.append(logging.FileHandler(log_path))
     logging.basicConfig(
         level=verbose.upper(),
         format="%(asctime)s {%(threadName)s} [%(levelname)s] %(message)s",
-        handlers=[
-            logging.FileHandler(log_path),
-            logging.StreamHandler()
-        ]
+        handlers=handlers
     )
     logging.info('Starting')
 
