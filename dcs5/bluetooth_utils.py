@@ -1,3 +1,8 @@
+"""
+Author : JeromeJGuay
+Date : May 2022
+This Module Contains functions de Scan Bluetooth devices and Find a specific device.
+"""
 from typing import *
 import logging
 import bluetooth

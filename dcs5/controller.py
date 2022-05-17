@@ -1,7 +1,10 @@
 """
-TODO
-----
-Class to handle interfacing error.
+Author : JeromeJGuay
+Date : May 2022
+
+This module contains the Class relative to the DCS5_XT Board Controller and Client.
+
+Valid Board Commands for key mapping : 'BACKLIGHT_UP', 'BACKLIGHT_DOWN', 'CHANGE_STYLUS', 'UNITS_mm', 'UNITS_cm'
 
 Notes
 -----
@@ -16,8 +19,7 @@ References
 
 
 # MAKE THE CALIBRATION FILE EDITABLE (.dcs5board.conf)
-# CLEAR EVERYTHING AFTER IDLING FOR MORE THAN X seconds.
-# PERIODICALLY CHECK BATTERY LEVELS
+
 """
 import argparse
 import logging
@@ -35,6 +37,7 @@ from queue import Queue
 
 BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
+
 ### Turn this into a data class ?
 SETTINGS = json2dict(resolve_relative_path('src_files/default_settings.json', __file__))
 
@@ -60,7 +63,7 @@ DEFAULT_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['DEFAULT_BACKLIGHTING_SENSITIV
 MIN_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['MIN_BACKLIGHTING_SENSITIVITY']
 MAX_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['MAX_BACKLIGHTING_SENSITIVITY']
 
-SWIPE_THRESHOLD = 5
+SWIPE_THRESHOLD = 5 # Config File
 
 XT_KEYS_NAME_MAP = {
     "01": "a1",
@@ -112,16 +115,16 @@ BOARD_KEYS_NAME_MAP = {
 #seperate file json config TODO
 
 KEYS_OUT_MAP = {
-    'a1': 'f1',
-    'a2': 'f3',
-    'a3': 'f4',
-    'a4': 'f5',
-    'a5': 'f8',
-    'a6': 'f9',
-    'b1': 'f10',
-    'b2': 'f11',
-    'b3': 'f12',
-    'b4': 'escape',
+    'a1': 'escape',
+    'a2': 'f1',
+    'a3': 'f2',
+    'a4': 'f3',
+    'a5': 'f4',
+    'a6': 'f5',
+    'b1': 'f8',
+    'b2': 'f9',
+    'b3': 'f10',
+    'b4': '11',
     'b5': ['Y', 'enter'],
     'b6': 'backspace',
     'c1': 'ctrl',
@@ -167,12 +170,11 @@ KEYS_OUT_MAP = {
     '7G': 'UNITS_mm',
     '8G': 'UNITS_cm',
     'rspace': 'space',
-}
-COMMANDS = ['BACKLIGHT_UP', 'BACKLIGHT_DOWN', 'CHANGE_STYLUS', 'UNITS_mm', "UNITS_cm"]
+} # Config File
 
 # STYLUS PHYSICAL MEASUREMENTS.
 
-STYLUS_OFFSET = {'pen': 6, 'finger': 1}  # mm -> check calibration procedure. TODO
+STYLUS_OFFSET = {'pen': 6, 'finger': 1}  # mm -> check calibration procedure. TODO Config File
 BOARD_KEY_RATIO = 15.385  # ~200/13
 BOARD_KEY_DETECTION_RANGE = 2
 BOARD_KEY_ZERO = -3.695 - BOARD_KEY_DETECTION_RANGE
@@ -212,11 +214,18 @@ class Shouter:
 
         with pag.hold(self.combo):
             logging.info(f"Keyboard out: {'+'.join(self.combo)} {value}")
-            if pag.isValidKey(value):
+            if self.is_valid_key(value):
                 pag.press(value)
             else:
                 pag.write(str(value))
             self.combo = []
+
+    @staticmethod
+    def is_valid_key(value):
+        if isinstance(value, list):
+            return all(map(pag.isValidKey, value))
+        else:
+            return pag.isValidKey(value)
 
 
 class Dcs5Client:
@@ -499,6 +508,7 @@ class Dcs5Controller:
     def change_length_units(self, value: str):
         if value in ['cm', 'mm']:
             self.length_units = value
+            logging.info(f"Length Units Change to {self.length_units}")
         else:
             logging.error("Length Units are either 'mm' or 'cm'.")
 

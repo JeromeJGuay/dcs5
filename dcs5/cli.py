@@ -64,6 +64,11 @@ def main(scan: bool = False):
         help="Provide logging level: [debug, info, warning, error, critical]",
     )
     parser.add_argument(
+        '--save_log',
+        default=False,
+        help='Use this command to save the logging. Use --logfile to specify a path/to/file')
+
+    parser.add_argument(
         "--logfile",
         default='../logs/dcs5_log',
         help="Filename to print the logs to.",
