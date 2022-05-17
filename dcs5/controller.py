@@ -439,7 +439,8 @@ class Dcs5Controller:
     def change_length_units(self, value: str):
         if value in ['cm', 'mm']:
             self.length_units = value
-        logging.error("Length Units are either 'mm' or 'cm'.")
+        else:
+            logging.error("Length Units are either 'mm' or 'cm'.")
 
     def change_stylus(self, value: str):
         """Stylus must be one of [pen, finger]"""
@@ -711,13 +712,17 @@ class Dcs5Listener:
         logging.info("Listener Queue and Client Buffers Cleared.")
         active_thread_sync_barrier.wait()
         logging.info('Listener Queue cleared & Client Buffer Clear.')
-        logging.info('Listening started')
-        while self.controller.is_listening:
-            self.controller.client.receive()
-            if len(self.controller.client.buffer) > 0:
-                self._split_board_message()
-                self._process_board_message()
-        logging.info('Listening stopped')
+        try:
+            logging.info('Listening started')
+            while self.controller.is_listening:
+                self.controller.client.receive()
+                if len(self.controller.client.buffer) > 0:
+                    self._split_board_message()
+                    self._process_board_message()
+            logging.info('Listening stopped')
+        except TimeoutError:
+            logging.error("Connection timeout. Board Disconnected.")
+            self.controller.close_client()
 
     def _split_board_message(self):
         delimiters = ["\n", "\r", "#", "Rebooting in 2 seconds ..."]
