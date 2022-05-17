@@ -2,6 +2,8 @@
 Author : JeromeJGuay
 Date : May 2022
 
+wine /home/jeromejguay/.wine/drive_c/users/jeromejguay/AppData/Local/Programs/Python/Python38/Script/pyinstaller.exe --onefile cli.py
+
 This module contains the Class relative to the DCS5_XT Board Controller and Client.
 
 Valid Board Commands for key mapping : 'BACKLIGHT_UP', 'BACKLIGHT_DOWN', 'CHANGE_STYLUS', 'UNITS_mm', 'UNITS_cm'
@@ -113,6 +115,16 @@ BOARD_KEYS_NAME_MAP = {
               6 * ['rspace'] + 2 * ['del_last'], }
 
 #seperate file json config TODO
+
+MAPPABLE_KEYS = [
+    'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'c1',
+    'skip', 'enter', 'del_last', 'del', 'up', 'down', 'left', 'right', 'mode',
+    'lspace', 'view', 'batch', 'tab', 'histo', 'summary', 'dismiss', 'fish', 'sample',
+    'sex', 'size', 'light_bulb', 'scale', 'location', 'pit_pwr', 'settings',
+    '1B', '2B', '3B', '4B', '5B', '6B', '7B', '8B',
+    '1G', '2G', '3G', '4G', '5G', '6G', '7G', '8G', 'rspace'
+]
+
 
 KEYS_OUT_MAP = {
     'a1': 'escape',
@@ -836,7 +848,7 @@ class Dcs5Listener:
 
     def _process_output(self, value):
         shout_value = None
-        if value in KEYS_OUT_MAP:
+        if value in MAPPABLE_KEYS:
             mapped_value = KEYS_OUT_MAP[value]
             if mapped_value == "BACKLIGHT_UP":
                 self.controller.backlight_up()
