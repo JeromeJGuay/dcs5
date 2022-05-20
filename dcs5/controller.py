@@ -2,7 +2,7 @@
 Author : JeromeJGuay
 Date : May 2022
 
-wine /home/jeromejguay/.wine/drive_c/users/jeromejguay/AppData/Local/Programs/Python/Python38/Script/pyinstaller.exe --onefile cli.py
+wine /home/jeromejguay/.wine/drive_c/users/jeromejguay/AppData/Local/Programs/Python/Python38/Script/pyinstaller.exe --onefile dcs5/gui.py
 
 This module contains the Class relative to the DCS5_XT Board Controller and Client.
 
@@ -37,18 +37,22 @@ from utils import json2dict, resolve_relative_path
 from dataclasses import dataclass
 from queue import Queue
 
+
 BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
+
+active_thread_sync_barrier = threading.Barrier(2)
 
 ### Turn this into a data class ?
 SETTINGS = json2dict(resolve_relative_path('src_files/default_settings.json', __file__))
 
-
+##### CLIENT SETTING #####
 CLIENT_SETTINGS = SETTINGS['bluetooth']
 DEVICE_NAME = CLIENT_SETTINGS["DEVICE_NAME"]
 PORT = CLIENT_SETTINGS["PORT"]
 DCS5_ADDRESS = CLIENT_SETTINGS["MAC_ADDRESS"]
 
+##### SOFTWARE SETTINGS #####
 BOARD_SETTINGS = SETTINGS['board']
 DEFAULT_SETTLING_DELAY = {'measure': BOARD_SETTINGS['DEFAULT_SETTLING_DELAY'], 'typing': 1}
 DEFAULT_MAX_DEVIATION = {'measure': BOARD_SETTINGS['DEFAULT_MAX_DEVIATION'], 'typing': 1}
@@ -102,31 +106,39 @@ XT_KEYS_NAME_MAP = {
     "32": "mode",
 }
 
-BOARD_KEYS_NAME_MAP = {
-    'top': 7 * ['lspace'] + \
+##### HARDWARE SETTINGS #####
+
+STYLUS_OFFSET = {'pen': 6, 'finger': 1}  # mm -> check calibration procedure. TODO Config File
+DECAL_KEY_DETECTION_RANGE = 2
+DECAL_KEY_RATIO = 15.385  # ~200/13
+DECAL_KEY_ZERO = -3.695
+DECAL_KEY_DETECTION_ZERO = DECAL_KEY_ZERO - DECAL_KEY_DETECTION_RANGE
+DECAL_NUMBER_OF_KEYS = 49
+DECAL_KEYS_LAYOUT = { # config
+    'top': 7 * ['left_space'] + \
            list('abcdefghijklmnopqrstuvwxyz') + \
            [f'{i + 1}B' for i in range(8)] + \
-           6 * ['rspace'] + 2 * ['del_last'],
-    'bottom': 7 * ['lspace'] + \
+           6 * ['right_space'] + 2 * ['del_last'],
+    'bottom': 7 * ['left_space'] + \
               list('01234.56789') + \
               ['view', 'batch', 'tab', 'histo', 'summary', 'dismiss', 'fish', 'sample',
                'sex', 'size', 'light_bulb', 'scale', 'location', 'pit_pwr', 'settings'] + \
               [f'{i + 1}G' for i in range(8)] + \
-              6 * ['rspace'] + 2 * ['del_last'], }
+              6 * ['right_space'] + 2 * ['del_last']}
 
 #seperate file json config TODO
 
 MAPPABLE_KEYS = [
     'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'c1',
     'skip', 'enter', 'del_last', 'del', 'up', 'down', 'left', 'right', 'mode',
-    'lspace', 'view', 'batch', 'tab', 'histo', 'summary', 'dismiss', 'fish', 'sample',
+    'left_space', 'view', 'batch', 'tab', 'histo', 'summary', 'dismiss', 'fish', 'sample',
     'sex', 'size', 'light_bulb', 'scale', 'location', 'pit_pwr', 'settings',
     '1B', '2B', '3B', '4B', '5B', '6B', '7B', '8B',
-    '1G', '2G', '3G', '4G', '5G', '6G', '7G', '8G', 'rspace'
+    '1G', '2G', '3G', '4G', '5G', '6G', '7G', '8G', 'right_space'
 ]
 
 
-KEYS_OUT_MAP = {
+KEYS_MAP = {
     'a1': 'escape',
     'a2': 'f1',
     'a3': 'f2',
@@ -149,7 +161,7 @@ KEYS_OUT_MAP = {
     'left': 'left',
     'right': 'right',
     'mode': 'CHANGE_STYLUS',
-    'lspace': 'space',
+    'left_space': 'space',
     'view': None,
     'batch': None,
     'tab': None,
@@ -181,18 +193,44 @@ KEYS_OUT_MAP = {
     '6G': None,
     '7G': 'UNITS_mm',
     '8G': 'UNITS_cm',
-    'rspace': 'space',
-} # Config File
+    'right_space': 'space',
+}
 
-# STYLUS PHYSICAL MEASUREMENTS.
 
-STYLUS_OFFSET = {'pen': 6, 'finger': 1}  # mm -> check calibration procedure. TODO Config File
-BOARD_KEY_RATIO = 15.385  # ~200/13
-BOARD_KEY_DETECTION_RANGE = 2
-BOARD_KEY_ZERO = -3.695 - BOARD_KEY_DETECTION_RANGE
-BOARD_NUMBER_OF_KEYS = 49
+@dataclass(unsafe_hash=True, init=True)
+class Dcs5UserSettings:
+    #TODO
+    stylus_settling_delay: int = None
+    stylus_max_deviation: int = None
+    number_of_reading: int = None
+    offset = int = None
 
-active_thread_sync_barrier = threading.Barrier(2)
+
+@dataclass(unsafe_hash=True, init=True)
+class Dcs5BoardState:
+    sensor_mode: str = None
+    stylus_status_msg: str = None
+    stylus_settling_delay: int = None
+    stylus_max_deviation: int = None
+    number_of_reading: int = None
+
+    battery_level: str = None
+    board_stats: str = None
+    board_interface: str = None
+    calibrated: bool = None
+    cal_pt_1: int = None
+    cal_pt_2: int = None
+
+    backlighting_level: int = None
+    backlighting_auto_mode: bool = None
+    backlighting_sensitivity: int = None
+
+
+@dataclass(unsafe_hash=True, init=True)
+class DecalParameter:
+    number_of_keys: float = None
+    keys_ratio: float = None # Ratio between Y mm to X keys Y/X
+    key_zero: float = None # solving (Y/X) * key + b  | key ∈ {0, 1, 2, ... number_of_keys - 1}
 
 
 class Shouter:
@@ -303,33 +341,6 @@ class Dcs5Client:
         self.socket.close()
 
 
-@dataclass(unsafe_hash=True, init=True)
-class Dcs5UserSettings:
-    #TODO
-    stylus_settling_delay: int = None
-    stylus_max_deviation: int = None
-    number_of_reading: int = None
-    offset = int = None
-
-
-@dataclass(unsafe_hash=True, init=True)
-class Dcs5BoardState:
-    sensor_mode: str = None
-    stylus_status_msg: str = None
-    stylus_settling_delay: int = None
-    stylus_max_deviation: int = None
-    number_of_reading: int = None
-
-    battery_level: str = None
-    board_stats: str = None
-    board_interface: str = None
-    calibrated: bool = None
-    cal_pt_1: int = None
-    cal_pt_2: int = None
-
-    backlighting_level: int = None
-    backlighting_auto_mode: bool = None
-    backlighting_sensitivity: int = None
 
 
 class Dcs5Controller:
@@ -350,7 +361,12 @@ class Dcs5Controller:
         Dcs5BoardState.__init__(self)
         threading.Thread.__init__(self)
 
-        self.board_state = Dcs5BoardState()
+        self.board_state = Dcs5BoardState() # BoardCurrentState
+        # self.board_settings = Dcs5BoardSettings()
+        # self.key_out_map = Dcs5KeyOutMap()
+        # self.stylus_spec = StylusSpecs()
+        # self.decal_map = DecalMap()
+
         self.listener = Dcs5Listener(self)
         self.handler = Dcs5Handler(self)
         self.is_listening = False
@@ -849,7 +865,7 @@ class Dcs5Listener:
     def _process_output(self, value):
         shout_value = None
         if value in MAPPABLE_KEYS:
-            mapped_value = KEYS_OUT_MAP[value]
+            mapped_value = KEYS_MAP[value]
             if mapped_value == "BACKLIGHT_UP":
                 self.controller.backlight_up()
             elif mapped_value == "BACKLIGHT_DOWN":
@@ -892,10 +908,10 @@ class Dcs5Listener:
                 out_value /= 10
             return out_value
         else:
-            index = int((value - BOARD_KEY_ZERO) / BOARD_KEY_RATIO)
+            index = int((value - DECAL_KEY_DETECTION_ZERO) / DECAL_KEY_RATIO)
             logging.info(f'index {index}')
-            if index < BOARD_NUMBER_OF_KEYS:
-                return BOARD_KEYS_NAME_MAP[self.controller.board_output_mode][index]
+            if index < DECAL_NUMBER_OF_KEYS:
+                return DECAL_KEYS_LAYOUT[self.controller.board_output_mode][index]
 
     def _check_for_stylus_swipe(self, value: str):
         self.swipe_triggered = False

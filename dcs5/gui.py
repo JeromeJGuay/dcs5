@@ -1,34 +1,34 @@
 #! /usr/bin/env python3
 import PySimpleGUI as sg
-from controller import Dcs5Listener, Dcs5Controller
+from controller import *
 from utils import json2dict, dict2json
 from pathlib import PurePath
 import logging
 import argparse
 import time
 
-DEFAULT_SETTINGS = json2dict(PurePath(PurePath(__file__).parent, 'src_files/default_settings.json'))
-
-CLIENT_SETTINGS = DEFAULT_SETTINGS['client_settings']
-DEVICE_NAME = CLIENT_SETTINGS["DEVICE_NAME"]
-PORT = CLIENT_SETTINGS["PORT"]
-DCS5_ADDRESS = CLIENT_SETTINGS["DCS5_ADDRESS"]
-
-BOARD_SETTINGS = DEFAULT_SETTINGS['board_settings']
-DEFAULT_SETTLING_DELAY = {'measure': BOARD_SETTINGS['DEFAULT_SETTLING_DELAY'], 'typing': 1}
-DEFAULT_MAX_DEVIATION = {'measure': BOARD_SETTINGS['DEFAULT_MAX_DEVIATION'], 'typing': 1}
-DEFAULT_NUMBER_OF_READING = {'measure': BOARD_SETTINGS['DEFAULT_NUMBER_OF_READING'], 'typing': 1}
-
-MAX_SETTLING_DELAY = BOARD_SETTINGS['MAX_SETTLING_DELAY']
-MAX_MAX_DEVIATION = BOARD_SETTINGS['MAX_MAX_DEVIATION']
-
-DEFAULT_BACKLIGHTING_LEVEL = BOARD_SETTINGS['DEFAULT_BACKLIGHTING_LEVEL']
-MIN_BACKLIGHTING_LEVEL = BOARD_SETTINGS['MIN_BACKLIGHTING_LEVEL']
-MAX_BACKLIGHTING_LEVEL = BOARD_SETTINGS['MAX_BACKLIGHTING_LEVEL']
-DEFAULT_BACKLIGHTING_AUTO_MODE = BOARD_SETTINGS['DEFAULT_BACKLIGHTING_AUTO_MODE']
-DEFAULT_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['DEFAULT_BACKLIGHTING_SENSITIVITY']
-MIN_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['MIN_BACKLIGHTING_SENSITIVITY']
-MAX_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['MAX_BACKLIGHTING_SENSITIVITY']
+# DEFAULT_SETTINGS = json2dict(PurePath(PurePath(__file__).parent, 'src_files/default_settings.json'))
+#
+# CLIENT_SETTINGS = DEFAULT_SETTINGS['client_settings']
+# DEVICE_NAME = CLIENT_SETTINGS["DEVICE_NAME"]
+# PORT = CLIENT_SETTINGS["PORT"]
+# DCS5_ADDRESS = CLIENT_SETTINGS["DCS5_ADDRESS"]
+#
+# BOARD_SETTINGS = DEFAULT_SETTINGS['board_settings']
+# DEFAULT_SETTLING_DELAY = {'measure': BOARD_SETTINGS['DEFAULT_SETTLING_DELAY'], 'typing': 1}
+# DEFAULT_MAX_DEVIATION = {'measure': BOARD_SETTINGS['DEFAULT_MAX_DEVIATION'], 'typing': 1}
+# DEFAULT_NUMBER_OF_READING = {'measure': BOARD_SETTINGS['DEFAULT_NUMBER_OF_READING'], 'typing': 1}
+#
+# MAX_SETTLING_DELAY = BOARD_SETTINGS['MAX_SETTLING_DELAY']
+# MAX_MAX_DEVIATION = BOARD_SETTINGS['MAX_MAX_DEVIATION']
+#
+# DEFAULT_BACKLIGHTING_LEVEL = BOARD_SETTINGS['DEFAULT_BACKLIGHTING_LEVEL']
+# MIN_BACKLIGHTING_LEVEL = BOARD_SETTINGS['MIN_BACKLIGHTING_LEVEL']
+# MAX_BACKLIGHTING_LEVEL = BOARD_SETTINGS['MAX_BACKLIGHTING_LEVEL']
+# DEFAULT_BACKLIGHTING_AUTO_MODE = BOARD_SETTINGS['DEFAULT_BACKLIGHTING_AUTO_MODE']
+# DEFAULT_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['DEFAULT_BACKLIGHTING_SENSITIVITY']
+# MIN_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['MIN_BACKLIGHTING_SENSITIVITY']
+# #MAX_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['MAX_BACKLIGHTING_SENSITIVITY']
 
 
 def make_window(controller: Dcs5Controller):
@@ -125,11 +125,13 @@ def make_window(controller: Dcs5Controller):
         # End program if user closes window or
         # presses the OK button
         if event == 'Connect':
-            controller.start_client(address=DCS5_ADDRESS, port=PORT)
-            window['-mac_address-'].update(controller.client.dcs5_address)
-            window['-port-'].update(controller.client.port)
-            if controller.client_isconnected is True:
+            try:
+                controller.start_client(address=DCS5_ADDRESS, port=PORT)
+                window['-mac_address-'].update(controller.client.dcs5_address)
+                window['-port-'].update(controller.client.port)
                 window['INDICATOR'].update(value=connection_status[1][0], text_color=connection_status[1][1])
+            except OSError:
+                pass
         elif event == 'Disconnect':
             controller.close_client()
             if controller.client_isconnected is True:

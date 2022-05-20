@@ -34,7 +34,7 @@ class BluetoothSetting:
 def init_logging(verbose: str, log_path: str, save_log=False):
     log_path = str(resolve_relative_path(log_path, __file__)) + \
                "_" + time.strftime("%y%m%dT%H%M%S", time.gmtime()) + ".log"
-    handlers = [logging.StreamHandler]
+    handlers = [logging.StreamHandler()]
     if save_log is True:
         handlers.append(logging.FileHandler(log_path))
     logging.basicConfig(
