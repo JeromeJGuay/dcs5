@@ -155,8 +155,8 @@ def make_window(controller: Dcs5Controller):
                     controller.stylus_modes_max_deviation['measure'] = values['-m_max_deviation_input-']
             if values['-m_number_of_reading_input-'].isnumeric():
                 controller.stylus_modes_number_of_reading['measure'] = values['-m_number_of_reading_input-']
-            if controller.board_output_mode == 'measure':
-                controller.change_board_output_mode('measure')
+            if controller.board_output_zone == 'measure':
+                controller.change_board_output_zone('measure')
             window['-m_delay_input-'].update('')
             window['-m_max_deviation_input-'].update('')
             window['-m_number_of_reading_input-'].update('')
@@ -172,8 +172,8 @@ def make_window(controller: Dcs5Controller):
                     controller.stylus_modes_max_deviation['typing'] = values['-t_max_deviation_input-']
             if values['-t_number_of_reading_input-'].isnumeric():
                 controller.stylus_modes_number_of_reading['typing'] = values['-t_number_of_reading_input-']
-            if controller.board_output_mode == 'typing':
-                controller.change_board_output_mode('typing')
+            if controller.board_output_zone == 'typing':
+                controller.change_board_output_zone('typing')
             window['-t_delay_input-'].update('')
             window['-t_max_deviation_input-'].update('')
             window['-t_number_of_reading_input-'].update('')
