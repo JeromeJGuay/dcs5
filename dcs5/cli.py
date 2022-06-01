@@ -15,7 +15,6 @@ DCS5_ADDRESS = CLIENT_SETTINGS["MAC_ADDRESS"]
 
 
 @dataclass(unsafe_hash=True, init=True)
-#TODO MAKE A MOTE GLOBAL DATACLASS
 class BluetoothSetting:
     device_name:str = None
     port: int = None
@@ -45,9 +44,9 @@ def init_logging(verbose: str, log_path: str, save_log=False):
     logging.info('Starting')
 
 
-def launch_dcs5_board(port, address):
+def launch_dcs5_board(address):
     controller = Dcs5Controller()
-    controller.start_client(address, port)
+    controller.start_client(address)
     if controller.client_isconnected:
         controller.sync_controller_and_board()
         controller.start_listening()
@@ -77,16 +76,11 @@ def main(scan: bool = False):
         default=DCS5_ADDRESS,
         help="Board Mac Address",
     )
-    parser.add_argument(
-        "--port",
-        default=PORT,
-        help="Board Mac Address",
-    )
     args = parser.parse_args()
 
     init_logging(args.verbose, args.logfile)
 
-    controller = launch_dcs5_board(args.port, args.address)
+    controller = launch_dcs5_board(args.address)
 
     return controller
 

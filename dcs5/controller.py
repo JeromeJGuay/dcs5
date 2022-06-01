@@ -45,6 +45,8 @@ active_thread_sync_barrier = threading.Barrier(2)
 ### Turn this into a data class ?
 SETTINGS = json2dict(resolve_relative_path('src_files/default_settings.json', __file__))
 
+
+
 ##### CLIENT SETTING ##### | BUILT IN COPY
 CLIENT_SETTINGS = SETTINGS['bluetooth']
 DEVICE_NAME = CLIENT_SETTINGS["DEVICE_NAME"]
@@ -331,7 +333,7 @@ class Shouter:
             return pag.isValidKey(value)
 
 
-class Dcs5Client:
+class BtClient:
     """
     Notes
     -----
@@ -340,19 +342,24 @@ class Dcs5Client:
 
     def __init__(self):
         self._mac_address: str = None
-        self._port: int = None
         self._buffer: str = ''
         self.socket: socket.socket = None
         self.default_timeout = .5
 
-    def connect(self, address: str = None, port: int = None, timeout: int = None):
+    def connect(self, address: str = None, timeout: int = None):
         self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
         self.socket.settimeout(timeout if timeout is not None else self.default_timeout)
 
         self._mac_address = address if address is not None else self._mac_address
-        self._port = port if port is not None else self._port
-        self.socket.connect((self._mac_address, self._port))
-
+        while True: # TODO test me
+            for port in range(65535):  # check for all available ports
+                try:
+                    self.socket.connect((self._mac_address, port))
+                    break
+                except (PermissionError, OSError):
+                    pass
+            logging.error('No available ports were found.')
+            break
         self.socket.settimeout(self.default_timeout)
 
     @property
@@ -429,7 +436,7 @@ class Dcs5Controller:
         self.is_sync = False
         self.ping_event_check = threading.Event()
 
-        self.client = Dcs5Client()
+        self.client = BtClient()
         self.client_isconnected = False
 
         self.stylus_type: str = 'pen'  # [finger/pen]
