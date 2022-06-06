@@ -7,7 +7,7 @@ import logging
 import argparse
 import time
 
-# DEFAULT_SETTINGS = json2dict(PurePath(PurePath(__file__).parent, 'src_files/default_settings.json'))
+# DEFAULT_SETTINGS = json2dict(PurePath(PurePath(__file__).parent, 'configs/default_settings.json'))
 #
 # CLIENT_SETTINGS = DEFAULT_SETTINGS['client_settings']
 # DEVICE_NAME = CLIENT_SETTINGS["DEVICE_NAME"]
@@ -155,7 +155,7 @@ def make_window(controller: Dcs5Controller):
                     controller.stylus_modes_max_deviation['measure'] = values['-m_max_deviation_input-']
             if values['-m_number_of_reading_input-'].isnumeric():
                 controller.stylus_modes_number_of_reading['measure'] = values['-m_number_of_reading_input-']
-            if controller.board_output_zone == 'measure':
+            if controller.board_output_mode == 'measure':
                 controller.change_board_output_zone('measure')
             window['-m_delay_input-'].update('')
             window['-m_max_deviation_input-'].update('')
@@ -172,7 +172,7 @@ def make_window(controller: Dcs5Controller):
                     controller.stylus_modes_max_deviation['typing'] = values['-t_max_deviation_input-']
             if values['-t_number_of_reading_input-'].isnumeric():
                 controller.stylus_modes_number_of_reading['typing'] = values['-t_number_of_reading_input-']
-            if controller.board_output_zone == 'typing':
+            if controller.board_output_mode == 'typing':
                 controller.change_board_output_zone('typing')
             window['-t_delay_input-'].update('')
             window['-t_max_deviation_input-'].update('')

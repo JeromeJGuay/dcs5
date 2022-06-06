@@ -1,1 +1,0 @@
-DEFAULT_SETTINGS_PATH = 'src_files/default_settings.json'

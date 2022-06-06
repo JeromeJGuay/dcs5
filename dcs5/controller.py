@@ -23,7 +23,7 @@ References
 # MAKE THE CALIBRATION FILE EDITABLE (.dcs5board.conf)
 
 """
-import argparse
+
 import logging
 import socket
 import threading
@@ -36,236 +36,47 @@ from utils import json2dict, resolve_relative_path
 from dataclasses import dataclass
 from queue import Queue
 
+from config import load_config
+from devices_specification import load_devices_specification
+from built_in_setting import load_built_in_settings
+
+XT_BUILTIN_SETTINGS = "./built_in_settings/built_in_settings.json"
+DEFAULT_DEVICES_SPECIFICATION_FILE = "./devices_specification/default_devices_specification.json"
+DEFAULT_CONTROLLER_CONFIGURATION_FILE = "configs/default_configuration.json"
 
 BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
 
 active_thread_sync_barrier = threading.Barrier(2)
 
-### Turn this into a data class ?
-SETTINGS = json2dict(resolve_relative_path('src_files/default_settings.json', __file__))
-
-
-
-##### CLIENT SETTING ##### | BUILT IN COPY
-CLIENT_SETTINGS = SETTINGS['bluetooth']
-DEVICE_NAME = CLIENT_SETTINGS["DEVICE_NAME"]
-PORT = CLIENT_SETTINGS["PORT"]
-DCS5_ADDRESS = CLIENT_SETTINGS["MAC_ADDRESS"]
-
-##### App Config ##### FIXME where to put this with general config
-SWIPE_THRESHOLD = 5
-READING_SETTINGS = {'top': 'key', 'middle': 'length', 'bottom': 'key'}
-
-
-##### SOFTWARE DEFAULT SETTINGS ##### | BUILT INT COPY ----HALF-READY----
-# Make a reading profile.
-# then a map from middle, top , bottom to profile
-BOARD_SETTINGS = SETTINGS['board']
-DEFAULT_SETTLING_DELAY = {'length': BOARD_SETTINGS['DEFAULT_SETTLING_DELAY'],
-                          'key': BOARD_SETTINGS['DEFAULT_SETTLING_DELAY']}
-DEFAULT_MAX_DEVIATION = {'length': BOARD_SETTINGS['DEFAULT_MAX_DEVIATION'],
-                         'key': BOARD_SETTINGS['DEFAULT_SETTLING_DELAY']}
-DEFAULT_NUMBER_OF_READING = {'length': BOARD_SETTINGS['DEFAULT_NUMBER_OF_READING'],
-                             'key': BOARD_SETTINGS['DEFAULT_SETTLING_DELAY']}
-
-DEFAULT_BACKLIGHTING_LEVEL = BOARD_SETTINGS['DEFAULT_BACKLIGHTING_LEVEL']
-DEFAULT_BACKLIGHTING_AUTO_MODE = BOARD_SETTINGS['DEFAULT_BACKLIGHTING_AUTO_MODE']
-DEFAULT_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['DEFAULT_BACKLIGHTING_SENSITIVITY']
-
-##### HARDWARE PARAMETERS ##### | BUILT IN COPY
-MAX_SETTLING_DELAY = BOARD_SETTINGS['MAX_SETTLING_DELAY']
-MAX_MAX_DEVIATION = BOARD_SETTINGS['MAX_MAX_DEVIATION']
-MIN_BACKLIGHTING_LEVEL = BOARD_SETTINGS['MIN_BACKLIGHTING_LEVEL']
-MAX_BACKLIGHTING_LEVEL = BOARD_SETTINGS['MAX_BACKLIGHTING_LEVEL']
-MIN_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['MIN_BACKLIGHTING_SENSITIVITY']
-MAX_BACKLIGHTING_SENSITIVITY = BOARD_SETTINGS['MAX_BACKLIGHTING_SENSITIVITY']
-
-
-STYLUS_OFFSET = {'pen': 6, 'finger': 1}  # mm -> check calibration procedure.----HALF-READY----
-
-##### DECAL SPECIFICATION json ##### | BUILT IN COPY ----READY----
-DECAL_KEY_DETECTION_RANGE = 2
-DECAL_KEY_RATIO = 15.385  # ~200/13
-DECAL_KEY_ZERO = -3.695
-DECAL_KEY_DETECTION_ZERO = DECAL_KEY_ZERO - DECAL_KEY_DETECTION_RANGE
-DECAL_NUMBER_OF_KEYS = 49
-
-#DECALS_LAYOUT | BUILT INT COPY
-DECAL_KEYS_LAYOUT = { # config
-    'top': 7 * ['left_space'] + \
-           list('abcdefghijklmnopqrstuvwxyz') + \
-           [f'{i + 1}B' for i in range(8)] + \
-           6 * ['right_space'] + 2 * ['del_last'],
-    'bottom': 7 * ['left_space'] + \
-              list('01234.56789') + \
-              ['view', 'batch', 'tab', 'histo', 'summary', 'dismiss', 'fish', 'sample',
-               'sex', 'size', 'light_bulb', 'scale', 'location', 'pit_pwr', 'settings'] + \
-              [f'{i + 1}G' for i in range(8)] + \
-              6 * ['right_space'] + 2 * ['del_last']}
-
-#seperate file json config | BUILT IN COPY
-XT_KEYS_NAME_MAP = {
-    "01": "a1",
-    "02": "a2",
-    "03": "a3",
-    "04": "a4",
-    "05": "a5",
-    "06": "a6",
-    "07": "b1",
-    "08": "b2",
-    "09": "b3",
-    "10": "b4",
-    "11": "b5",
-    "12": "b6",
-    "13": "1",
-    "14": "2",
-    "15": "3",
-    "16": "4",
-    "17": "5",
-    "18": "6",
-    "19": "7",
-    "20": "8",
-    "21": "9",
-    "22": ".",
-    "23": "0",
-    "24": "skip",
-    "25": "enter",
-    "26": "c1",
-    "27": "up",
-    "28": "left",
-    "29": "right",
-    "30": "down",
-    "31": "del",
-    "32": "mode",
-}
-
-##### mapable keys ##### json | BUIL INT COPY
-MAPPABLE_KEYS = [
-    'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'c1',
-    'skip', 'enter', 'del_last', 'del', 'up', 'down', 'left', 'right', 'mode',
-    'left_space', 'view', 'batch', 'tab', 'histo', 'summary', 'dismiss', 'fish', 'sample',
-    'sex', 'size', 'light_bulb', 'scale', 'location', 'pit_pwr', 'settings',
-    '1B', '2B', '3B', '4B', '5B', '6B', '7B', '8B',
-    '1G', '2G', '3G', '4G', '5G', '6G', '7G', '8G', 'right_space'
-]
-
-##### Key map json##### | BUILT IN COPY  ----READY----
 VALID_COMMANDS = ["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm"]
-KEYS_MAP = {
-    'a1': 'escape',
-    'a2': 'f1',
-    'a3': 'f2',
-    'a4': 'f3',
-    'a5': 'f4',
-    'a6': 'f5',
-    'b1': 'f8',
-    'b2': 'f9',
-    'b3': 'f10',
-    'b4': '11',
-    'b5': ['Y', 'enter'],
-    'b6': 'backspace',
-    'c1': 'ctrl',
-    'skip': 'pagedown',
-    'enter': 'enter',
-    'del': 'delete',
-    'up': 'up',
-    'down': 'down',
-    'left': 'left',
-    'right': 'right',
-    'mode': 'CHANGE_STYLUS',
-    'view': None,
-    'batch': None,
-    'tab': None,
-    'histo': None,
-    'summary': None,
-    'dismiss': None,
-    'fish': None,
-    'sample': None,
-    'sex': None,
-    'size': None,
-    'light_bulb': None,
-    'scale': None,
-    'location': None,
-    'pit_pwr': None,
-    'settings': None,
-    '1B': '-',
-    '2B': '(',
-    '3B': ')',
-    '4B': None,
-    '5B': None,
-    '6B': None,
-    '7B': 'alt',
-    '8B': 'shift',
-    '1G': 'BACKLIGHT_DOWN',
-    '2G': 'BACKLIGHT_UP',
-    '3G': None,
-    '4G': None,
-    '5G': None,
-    '6G': None,
-    '7G': 'UNITS_mm',
-    '8G': 'UNITS_cm',
-    'left_space_1': 'space',
-    'left_space_2': 'space',
-    'left_space_3': 'space',
-    'left_space_4': 'space',
-    'left_space_5': 'space',
-    'left_space_6': 'space',
-    'left_space_7': 'space',
-    'right_space_1': 'space',
-    'right_space_2': 'space',
-    'right_space_3': 'space',
-    'right_space_4': 'space',
-    'right_space_5': 'space',
-    'right_space_6': 'space',
-    'del_last_1': 'backspace',
-    'del_last_2': 'backspace',
-}
 
+VALID_SEGMENTS_MODE = ['length', 'top', 'bottom']
 
-class KeyMap:
-    def __init__(self):
-        self.map: dict = None
-
-    def load_map(self, key_map: Dict[str, str]):
-        for key, value in key_map.items():
-            if key in MAPPABLE_KEYS and value is not None:
-                if pag.isValidKey(value) or value in VALID_COMMANDS:
-                    self.map[key] = value
-                else:
-                    logging.warning(f'{key} -> {value}. {value} is not a valid command.')
-            else:
-                logging.warning(f'{key} -> {value}. {key} is not a valid or mappable board key name.')
-
-
-class DecalSpecifications:
-    def __init__(self, number_of_keys: int, key_to_mm_ratio: float, key_zero: float, detection_range: float):
-        """
-        x = a*k + b
-        x = length in millimeter
-        k = length in key scale (where k = 1 at the leftmost point of the  key circle).
-        a = ratio between n*keys and m*1 millimeters.
-
-        keys_ratio : a
-        keys_zero : b
-        """
-        self.number_of_keys = number_of_keys
-        self.key_to_mm_ratio = key_to_mm_ratio
-        self.key_zero = key_zero
-        self.detection_range = detection_range
-        self.relative_key_zero = None
-        self._compute_relative_key_zero()
-
-    def _compute_relative_key_zero(self):
-        self.relative_key_zero = self.key_zero - self.detection_range
-
-
-# one object ot hold current reading settings and other to hold custom settings
-class ReadingProfile:
-    def __init__(self, settling_delay: int, number_of_reading: int, max_deviation: int):
-        self.settling_delay = settling_delay
-        self.number_of_reading = number_of_reading
-        self.max_deviation = max_deviation
+VALID_KEYBOARD_KEYS = [
+    '\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'", '(',
+    ')', '*', '+', ',', '-', '.', '/', '0', '1', '2', '3', '4', '5', '6', '7',
+    '8', '9', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`',
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
+    'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '{', '|', '}', '~',
+    'accept', 'add', 'alt', 'altleft', 'altright', 'apps', 'backspace',
+    'browserback', 'browserfavorites', 'browserforward', 'browserhome',
+    'browserrefresh', 'browsersearch', 'browserstop', 'capslock', 'clear',
+    'convert', 'ctrl', 'ctrlleft', 'ctrlright', 'decimal', 'del', 'delete',
+    'divide', 'down', 'end', 'enter', 'esc', 'escape', 'execute', 'f1', 'f10',
+    'f11', 'f12', 'f13', 'f14', 'f15', 'f16', 'f17', 'f18', 'f19', 'f2', 'f20',
+    'f21', 'f22', 'f23', 'f24', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9',
+    'final', 'fn', 'hanguel', 'hangul', 'hanja', 'help', 'home', 'insert', 'junja',
+    'kana', 'kanji', 'launchapp1', 'launchapp2', 'launchmail',
+    'launchmediaselect', 'left', 'modechange', 'multiply', 'nexttrack',
+    'nonconvert', 'num0', 'num1', 'num2', 'num3', 'num4', 'num5', 'num6',
+    'num7', 'num8', 'num9', 'numlock', 'pagedown', 'pageup', 'pause', 'pgdn',
+    'pgup', 'playpause', 'prevtrack', 'print', 'printscreen', 'prntscrn',
+    'prtsc', 'prtscr', 'return', 'right', 'scrolllock', 'select', 'separator',
+    'shift', 'shiftleft', 'shiftright', 'sleep', 'space', 'stop', 'subtract', 'tab',
+    'up', 'volumedown', 'volumemute', 'volumeup', 'win', 'winleft', 'winright', 'yen',
+    'command', 'option', 'optionleft', 'optionright'
+]
 
 
 @dataclass(unsafe_hash=True, init=True)
@@ -335,6 +146,7 @@ class Shouter:
 
 class BtClient:
     """
+    TODO test port automatic selection.
     Notes
     -----
     Both socket and bluetooth methods(socket package) seems to be equivalent.
@@ -342,6 +154,7 @@ class BtClient:
 
     def __init__(self):
         self._mac_address: str = None
+        self._port: int = None
         self._buffer: str = ''
         self.socket: socket.socket = None
         self.default_timeout = .5
@@ -355,6 +168,7 @@ class BtClient:
             for port in range(65535):  # check for all available ports
                 try:
                     self.socket.connect((self._mac_address, port))
+                    self._port = port
                     break
                 except (PermissionError, OSError):
                     pass
@@ -410,19 +224,14 @@ class Dcs5Controller:
         see documentations
     """
 
-    def __init__(self, dynamic_stylus_settings=False, length_units="mm"):
-        """
+    def __init__(self, config_path: str, devices_specifications_path, built_in_settings_path: str):
+        """"""
 
-        Parameters
-        ----------
-        dynamic_stylus_settings : [True, False]
-        length_units : ['cm', 'mm']
-        """
         #threading.Thread.__init__(self) Probably not necessary
         self.listen_thread: threading.Thread = None
         self.command_thread: threading.Thread = None
 
-        self.internal_board_state = InternalBoardState() # BoardCurrentState
+        self.internal_board_state = InternalBoardState()  # BoardCurrentState
         # self.board_settings = Dcs5BoardSettings()
         # self.key_out_map = Dcs5KeyOutMap()
         # self.stylus_spec = StylusSpecs()
@@ -442,15 +251,23 @@ class Dcs5Controller:
         self.stylus_type: str = 'pen'  # [finger/pen]
         self.stylus_offset: str = STYLUS_OFFSET['pen']
 
-        #Reading settings
+        #Reading settings Use config object
         self.stylus_modes_settling_delay: Dict[str: int] = DEFAULT_SETTLING_DELAY
         self.stylus_modes_number_of_reading: Dict[str: int] = DEFAULT_NUMBER_OF_READING
         self.stylus_modes_max_deviation: Dict[str: int] = DEFAULT_MAX_DEVIATION
 
         self.shouter = Shouter()
         self.dynamic_stylus_settings = dynamic_stylus_settings
-        self.board_output_zone = 'middle'
+        self.board_output_mode = 'length'
         self.length_units = length_units
+
+        self.mappable_commands = {
+            "BACKLIGHT_UP": self.backlight_up,
+            "BACKLIGHT_DOWN": self.backlight_down,
+            "CHANGE_STYLUS": self.cycle_stylus,
+            "UNITS_mm": self.change_length_units_mm,
+            "UNITS_cm": self.change_length_units_cm
+        }
 
     def start_client(self, address: str = None, port: int = None):
         logging.info(f'Attempting to connect to board via port {port}.')
@@ -593,12 +410,13 @@ class Dcs5Controller:
         if not was_listening:
             self.stop_listening()
 
-    def change_length_units(self, value: str):
-        if value in ['cm', 'mm']:
-            self.length_units = value
-            logging.info(f"Length Units Change to {self.length_units}")
-        else:
-            logging.error("Length Units are either 'mm' or 'cm'.")
+    def change_length_units_mm(self):
+        self.length_units = "mm"
+        logging.info(f"Length Units Change to mm")
+
+    def change_length_units_cm(self):
+        self.length_units = "cm"
+        logging.info(f"Length Units Change to cm")
 
     def change_stylus(self, value: str):
         """Stylus must be one of [pen, finger]"""
@@ -614,10 +432,10 @@ class Dcs5Controller:
 
     def change_board_output_zone(self, value: str):
         """
-        value must be one of  [middle, bottom, top]
+        value must be one of  [length, bottom, top]
         """
-        self.board_output_zone = value
-        mode = {'middle': 'length', 'bottom': 'key', 'top': 'key'}[value]
+        self.board_output_mode = value
+        mode = {'length': 'length', 'bottom': 'key', 'top': 'key'}[value]
         if self.dynamic_stylus_settings is True:
             self.c_set_stylus_settling_delay(self.stylus_modes_settling_delay[mode])
             self.c_set_stylus_number_of_reading(self.stylus_modes_number_of_reading[mode])
@@ -900,8 +718,8 @@ class SocketListener:
             out_value = None
             msg_type, msg_value = self._decode_board_message(message)
             logging.info(f"Message Type: {msg_type}, Message Value: {msg_value}")
-            if msg_type == "xt_key":
-                out_value = msg_value
+            if msg_type == "controller_box_key":
+                out_value = msg_value # -> controller_box_output
 
             elif msg_type == 'swipe':
                 self.swipe_value = msg_value
@@ -912,8 +730,8 @@ class SocketListener:
                 if self.swipe_triggered is True:
                     self._check_for_stylus_swipe(msg_value)
                 else:
-                    out_value = self._map_stylus_length_measurement(msg_value)
-
+                    out_value = self._map_board_length_measurement(msg_value)
+                # -> _map_board_length_output()
             elif msg_type == "unsolicited":
                 self.controller.command_handler.received_queue.put(msg_value)
 
@@ -921,31 +739,6 @@ class SocketListener:
                 self._process_output(out_value)
 
             time.sleep(0.001)
-
-    def _process_output(self, value):
-        shout_value = None
-        if value in MAPPABLE_KEYS:
-            mapped_value = KEYS_MAP[value]
-            if mapped_value == "BACKLIGHT_UP":
-                self.controller.backlight_up()
-            elif mapped_value == "BACKLIGHT_DOWN":
-                self.controller.backlight_down()
-            elif mapped_value == "CHANGE_STYLUS":
-                self.controller.cycle_stylus()
-            elif mapped_value == "UNITS_mm":
-                self.controller.change_length_units('mm')
-            elif mapped_value == "UNITS_cm":
-                self.controller.change_length_units('cm')
-            else:
-                shout_value = mapped_value
-        else:
-            shout_value = value
-
-        if not self.controller.is_muted and shout_value is not None:
-            logging.info(f"Mapped value {shout_value}")
-            self.controller.shout(shout_value)
-        else:
-            logging.info(f'Key {value} not mapped')
 
     @staticmethod
     def _decode_board_message(value: str):
@@ -957,12 +750,29 @@ class SocketListener:
             elif match[0][2] != "":
                 return 'swipe', int(match[0][2])
             elif match[0][3] != "":
-                return 'xt_key', XT_KEYS_NAME_MAP[match[0][3]]
+                return 'controller_box_key', XT_KEYS_NAME_MAP[match[0][3]] # TODO use config values
         else:
             return 'unsolicited', value
 
-    def _map_stylus_length_measurement(self, value: int):
-        if self.controller.board_output_zone == 'middle':
+    def _process_output(self, value): # one for the board and one for the controller
+        shout_value = None
+        if value in MAPPABLE_KEYS: # TODO use config value
+            mapped_value = KEYS_MAP[value] # TODO use config value
+            if mapped_value in self.controller.mappable_commands:
+                self.controller.mappable_commands[mapped_value]()
+            else:
+                shout_value = mapped_value
+        else:
+            shout_value = value
+
+        if not self.controller.is_muted and shout_value is not None:
+            logging.info(f"Mapped value {shout_value}")
+            self.controller.shout(shout_value)
+        else:
+            logging.info(f'Key {value} not mapped')
+
+    def _map_board_length_measurement(self, value: int): #TODO use the values from config
+        if self.controller.board_output_mode == 'length':
             out_value = value - self.controller.stylus_offset
             if self.controller.length_units == 'cm':
                 out_value /= 10
@@ -971,19 +781,27 @@ class SocketListener:
             index = int((value - DECAL_KEY_DETECTION_ZERO) / DECAL_KEY_RATIO)
             logging.info(f'index {index}')
             if index < DECAL_NUMBER_OF_KEYS:
-                return DECAL_KEYS_LAYOUT[self.controller.board_output_zone][index]
+                return DECAL_KEYS_LAYOUT[self.controller.board_output_mode][index]
 
     def _check_for_stylus_swipe(self, value: str): #TODO use the swipe_segment and output zone from config
         self.swipe_triggered = False
+        #    "segments_limits": [0, 230, 430, 630, 800],
+        #    "segments_mode": ["length", "top", "bottom", "length"],
+        # if value <= segments_limits[-1]
+        #     for l_min, l_max, mode in zip(segments_limits[1:], segments_limits[:-1], segments_mode):
+        #         if l_max >= int(value) > l_min:
+        #             self.controller.change_board_output_zone('mode')
+        #
+
         if int(value) > 630:
-            self.controller.change_board_output_zone('middle')
+            self.controller.change_board_output_zone('length')
         elif int(value) > 430:
             self.controller.change_board_output_zone('bottom')
         elif int(value) > 230:
             self.controller.change_board_output_zone('top')
         else:
-            self.controller.change_board_output_zone('middle')
-        logging.info(f'Board entry: {self.controller.board_output_zone}.')
+            self.controller.change_board_output_zone('length')
+        logging.info(f'Board entry: {self.controller.board_output_mode}.')
 
 
 if __name__ == "__main__":
