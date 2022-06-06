@@ -3,7 +3,7 @@ from utils import json2dict
 
 
 @dataclass
-class Settings:
+class ControlBoxParameters:
     settling_delay: int
     max_deviation: int
     number_of_reading: int
@@ -12,13 +12,11 @@ class Settings:
     backlighting_sensitivity: int
     max_settling_delay: int
     max_max_deviation: int
-    min_backlighting_level: int
     max_backlighting_level: int
-    min_backlighting_sensitivity: int
     max_backlighting_sensitivity: int
 
 
-def load_built_in_settings(path: str):
+def load_control_box_parameters(path: str):
     settings = json2dict(path)
-    return Settings(**settings)
+    return ControlBoxParameters(**settings)
 

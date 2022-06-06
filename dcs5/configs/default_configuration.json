@@ -4,13 +4,14 @@
         "mac_address": "00:06:66:89:E5:FE"
     },
     "launch_settings": {
-        "output_mode": "measure",
+        "output_mode": "length",
         "reading_profile": "measure",
         "dynamic_stylus_mode": false,
         "backlighting_level": 95,
         "backlighting_auto_mode": false,
         "backlighting_sensitivity": 0,
-        "length_units": "mm"
+        "length_units": "mm",
+        "stylus": "pen"
     },
     "reading_profiles": {
         "measure": {

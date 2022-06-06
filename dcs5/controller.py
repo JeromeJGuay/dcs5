@@ -19,9 +19,6 @@ References
 ----------
     https://bigfinllc.com/wp-content/uploads/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf?fbclid=IwAR0tJMwvN7jkqxgEhRQABS0W3HLLntpOflg12bMEwM5YrDOwcHStznJJNQM
 
-
-# MAKE THE CALIBRATION FILE EDITABLE (.dcs5board.conf)
-
 """
 
 import logging
@@ -38,21 +35,18 @@ from queue import Queue
 
 from config import load_config
 from devices_specification import load_devices_specification
-from built_in_setting import load_built_in_settings
+from built_in_setting import load_control_box_parameters
 
-XT_BUILTIN_SETTINGS = "./built_in_settings/built_in_settings.json"
+
+XT_BUILTIN_SETTINGS = "./built_in_settings/control_box_parameters.json"
 DEFAULT_DEVICES_SPECIFICATION_FILE = "./devices_specification/default_devices_specification.json"
 DEFAULT_CONTROLLER_CONFIGURATION_FILE = "configs/default_configuration.json"
 
 BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
 
-active_thread_sync_barrier = threading.Barrier(2)
-
 VALID_COMMANDS = ["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm"]
-
 VALID_SEGMENTS_MODE = ['length', 'top', 'bottom']
-
 VALID_KEYBOARD_KEYS = [
     '\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'", '(',
     ')', '*', '+', ',', '-', '.', '/', '0', '1', '2', '3', '4', '5', '6', '7',
@@ -77,9 +71,17 @@ VALID_KEYBOARD_KEYS = [
     'up', 'volumedown', 'volumemute', 'volumeup', 'win', 'winleft', 'winright', 'yen',
     'command', 'option', 'optionleft', 'optionright'
 ]
+VALID_UNITS = ["mm", "cm"]
 
 
-@dataclass(unsafe_hash=True, init=True)
+def cycle(my_list: iter):
+    index = 0
+    while True:
+        yield my_list[index]
+        index = (index + 1) % len(my_list)
+
+
+@dataclass
 class InternalBoardState:
     sensor_mode: str = None
     stylus_status_msg: str = None
@@ -224,50 +226,45 @@ class Dcs5Controller:
         see documentations
     """
 
-    def __init__(self, config_path: str, devices_specifications_path, built_in_settings_path: str):
-        """"""
+    def __init__(self, config_path: str, devices_specifications_path, control_box_settings_path: str):
+        """
 
-        #threading.Thread.__init__(self) Probably not necessary
+        Parameters
+        ----------
+        config_path
+        devices_specifications_path
+        control_box_settings_path
+        """
+        self.config = load_config(config_path)
+        self.devices_spec = load_devices_specification(devices_specifications_path)
+        self.control_box_parameters = load_control_box_parameters(control_box_settings_path)
+
         self.listen_thread: threading.Thread = None
         self.command_thread: threading.Thread = None
 
-        self.internal_board_state = InternalBoardState()  # BoardCurrentState
-        # self.board_settings = Dcs5BoardSettings()
-        # self.key_out_map = Dcs5KeyOutMap()
-        # self.stylus_spec = StylusSpecs()
-        # self.decal_map = DecalMap()
-
         self.socket_listener = SocketListener(self)
         self.command_handler = CommandHandler(self)
+
         self.is_listening = False
         self.is_muted = False
 
         self.is_sync = False
         self.ping_event_check = threading.Event()
+        self.thread_barrier = threading.Barrier(2)
 
         self.client = BtClient()
         self.client_isconnected = False
 
-        self.stylus_type: str = 'pen'  # [finger/pen]
-        self.stylus_offset: str = STYLUS_OFFSET['pen']
-
-        #Reading settings Use config object
-        self.stylus_modes_settling_delay: Dict[str: int] = DEFAULT_SETTLING_DELAY
-        self.stylus_modes_number_of_reading: Dict[str: int] = DEFAULT_NUMBER_OF_READING
-        self.stylus_modes_max_deviation: Dict[str: int] = DEFAULT_MAX_DEVIATION
-
+        self.internal_board_state = InternalBoardState()  # BoardCurrentState
         self.shouter = Shouter()
-        self.dynamic_stylus_settings = dynamic_stylus_settings
-        self.board_output_mode = 'length'
-        self.length_units = length_units
+        self.stylus_cyclical_list = cycle(self.devices_spec.stylus_offset.keys())
 
-        self.mappable_commands = {
-            "BACKLIGHT_UP": self.backlight_up,
-            "BACKLIGHT_DOWN": self.backlight_down,
-            "CHANGE_STYLUS": self.cycle_stylus,
-            "UNITS_mm": self.change_length_units_mm,
-            "UNITS_cm": self.change_length_units_cm
-        }
+        self.dynamic_stylus_settings = self.config.launch_settings.dynamic_stylus_mode
+        self.output_mode = self.config.launch_settings.output_mode
+        self.reading_profile = self.config.launch_settings.reading_profile
+        self.length_units = self.config.launch_settings.length_units
+        self.stylus: str = self.config.launch_settings.stylus
+        self.stylus_offset = self.devices_spec.stylus_offset[self.stylus]
 
     def start_client(self, address: str = None, port: int = None):
         logging.info(f'Attempting to connect to board via port {port}.')
@@ -336,7 +333,7 @@ class Dcs5Controller:
             logging.info('Board muted')
 
     def sync_controller_and_board(self):
-        """Init board to default settings.
+        """Init board to launch settings.
         TODO have the default settings comme from an attributes. Json file maybe
         """
         logging.info('Syncing Controller and Board.')
@@ -346,11 +343,11 @@ class Dcs5Controller:
 
         self.c_set_interface(1)
         self.c_set_sensor_mode(0)
-        self.c_set_backlighting_level(DEFAULT_BACKLIGHTING_LEVEL)
         self.c_set_stylus_detection_message(False)
-        self.c_set_stylus_settling_delay(DEFAULT_SETTLING_DELAY['length'])
-        self.c_set_stylus_max_deviation(DEFAULT_MAX_DEVIATION['length'])
-        self.c_set_stylus_number_of_reading(DEFAULT_NUMBER_OF_READING['length'])
+        self.c_set_backlighting_level(self.config.launch_settings.backlighting_level)
+        self.c_set_stylus_settling_delay(self.config.reading_profiles[self.output_mode].settling_delay)
+        self.c_set_stylus_max_deviation(self.config.reading_profiles[self.output_mode].max_deviation)
+        self.c_set_stylus_number_of_reading(self.config.reading_profiles[self.output_mode].number_of_reading)
         self.c_check_calibration_state()
 
         self.wait_for_ping()
@@ -358,11 +355,12 @@ class Dcs5Controller:
         if not was_listening:
             self.stop_listening()
 
-        if (self.internal_board_state.sensor_mode == "length" and
-            self.internal_board_state.stylus_status_msg == "disable" and
-            self.internal_board_state.stylus_settling_delay == DEFAULT_SETTLING_DELAY["length"] and
-            self.internal_board_state.stylus_max_deviation == DEFAULT_MAX_DEVIATION["length"] and
-            self.internal_board_state.number_of_reading == DEFAULT_NUMBER_OF_READING["length"]
+        if (
+                self.internal_board_state.sensor_mode == "length" and
+                self.internal_board_state.stylus_status_msg == "disable" and
+                self.internal_board_state.stylus_settling_delay == self.config.reading_profiles[self.output_mode].settling_delay and
+                self.internal_board_state.stylus_max_deviation == self.config.reading_profiles[self.output_mode].max_deviation and
+                self.internal_board_state.number_of_reading == self.config.reading_profiles[self.output_mode].number_of_reading
         ):
             self.is_sync = True
             logging.info("Syncing successful.")
@@ -420,47 +418,45 @@ class Dcs5Controller:
 
     def change_stylus(self, value: str):
         """Stylus must be one of [pen, finger]"""
-        self.stylus_type = value
-        self.stylus_offset = STYLUS_OFFSET[self.stylus_type]
-        logging.info(f'Stylus set to {self.stylus_type}. Stylus offset {self.stylus_offset}')
+        self.stylus = value
+        self.stylus_offset = self.devices_spec.stylus_offset[self.stylus]
+        logging.info(f'Stylus set to {self.stylus}. Stylus offset {self.stylus_offset}')
 
     def cycle_stylus(self):
-        if self.stylus_type == 'pen':
-            self.change_stylus('finger')
-        else:
-            self.change_stylus('pen')
+        self.change_stylus(next(self.stylus_cyclical_list))
 
-    def change_board_output_zone(self, value: str):
+    def change_board_output_mode(self, value: str):
         """
         value must be one of  [length, bottom, top]
         """
-        self.board_output_mode = value
-        mode = {'length': 'length', 'bottom': 'key', 'top': 'key'}[value]
+        self.output_mode = value
         if self.dynamic_stylus_settings is True:
-            self.c_set_stylus_settling_delay(self.stylus_modes_settling_delay[mode])
-            self.c_set_stylus_number_of_reading(self.stylus_modes_number_of_reading[mode])
-            self.c_set_stylus_max_deviation(self.stylus_modes_max_deviation[mode])
+            self.c_set_stylus_settling_delay(self.config.reading_profiles[self.output_mode].settling_delay)
+            self.c_set_stylus_max_deviation(self.config.reading_profiles[self.output_mode].max_deviation)
+            self.c_set_stylus_number_of_reading(self.config.reading_profiles[self.output_mode].number_of_reading)
 
     def backlight_up(self):
-        if self.internal_board_state.backlighting_level < MAX_BACKLIGHTING_LEVEL:
+        if self.internal_board_state.backlighting_level < self.control_box_parameters.max_backlighting_level:
             self.internal_board_state.backlighting_level += 25
-            if self.internal_board_state.backlighting_level > MAX_BACKLIGHTING_LEVEL:
-                self.internal_board_state.backlighting_level = MAX_BACKLIGHTING_LEVEL
+            if self.internal_board_state.backlighting_level > self.control_box_parameters.max_backlighting_level:
+                self.internal_board_state.backlighting_level = self.control_box_parameters.max_backlighting_level
             self.c_set_backlighting_level(self.internal_board_state.backlighting_level)
         else:
             logging.info("Backlighting is already at maximum.")
 
     def backlight_down(self):
-        if self.internal_board_state.backlighting_level > MIN_BACKLIGHTING_LEVEL:
+        if self.internal_board_state.backlighting_level > 0:
             self.internal_board_state.backlighting_level += -25
-            if self.internal_board_state.backlighting_level < MIN_BACKLIGHTING_LEVEL:
-                self.internal_board_state.backlighting_level = MIN_BACKLIGHTING_LEVEL
+            if self.internal_board_state.backlighting_level < 0:
+                self.internal_board_state.backlighting_level = 0
             self.c_set_backlighting_level(self.internal_board_state.backlighting_level)
         else:
             logging.info("Backlighting is already at minimum.")
 
     def shout(self, value: Union[int, float, str]):
-        self.shouter.shout_to_keyboard(value)
+        if not self.is_muted:
+            logging.info(f"Shooted value {value}")
+            self.shouter.shout_to_keyboard(value)
 
     def c_board_initialization(self):
         self.command_handler.queue_command("&init#", "Setting EEPROM init flag.\r")
@@ -480,8 +476,10 @@ class Dcs5Controller:
 
     def c_set_sensor_mode(self, value):
         """ 'length', 'alpha', 'shortcut', 'numeric' """
-        self.command_handler.queue_command(f'&m,{value}#', ['length mode activated\r', 'alpha mode activated\r',
-                                             'shortcut mode activated\r', 'numeric mode activated\r'][value])
+        self.command_handler.queue_command(
+            f'&m,{value}#', ['length mode activated\r', 'alpha mode activated\r',
+            'shortcut mode activated\r', 'numeric mode activated\r'][value]
+        )
 
     def c_set_interface(self, value: int):
         """
@@ -496,22 +494,22 @@ class Dcs5Controller:
             logging.info(f'Interface set to {self.internal_board_state.board_interface}')
 
     def c_set_backlighting_level(self, value: int):
-        if 0 <= value <= MAX_BACKLIGHTING_LEVEL:
+        if 0 <= value <= self.control_box_parameters.max_backlighting_level:
             self.command_handler.queue_command(f'&o,{value}#', None)
             self.internal_board_state.backlighting_level = value
         else:
-            logging.warning(f"Backlighting level range: (0, {MAX_BACKLIGHTING_LEVEL})")
+            logging.warning(f"Backlighting level range: (0, {self.control_box_parameters.max_backlighting_level})")
 
     def c_set_backlighting_auto_mode(self, value: int):
         self.command_handler.queue_command(f"&oa,{value}", None)
         self.internal_board_state.backlighting_auto_mode = {True: 'auto', False: 'manual'}
 
     def c_set_backlighting_sensitivity(self, value: int):
-        if 0 <= value <= MAX_BACKLIGHTING_SENSITIVITY:
+        if 0 <= value <= self.control_box_parameters.max_backlighting_sensitivity:
             self.command_handler.queue_command(f"&os,{value}", None)
             self.internal_board_state.backlighting_sensitivity = value
         else:
-            logging.warning(f"Backlighting sensitivity range: (0, {MAX_BACKLIGHTING_SENSITIVITY})")
+            logging.warning(f"Backlighting sensitivity range: (0, {self.control_box_parameters.max_backlighting_sensitivity})")
 
     def c_set_stylus_detection_message(self, value: bool):
         """
@@ -520,16 +518,16 @@ class Dcs5Controller:
         self.command_handler.queue_command(f'&sn,{int(value)}#', f'%sn:{int(value)}#\r')
 
     def c_set_stylus_settling_delay(self, value: int = 1):
-        if 0 <= value <= MAX_SETTLING_DELAY:
+        if 0 <= value <= self.control_box_parameters.max_settling_delay:
             self.command_handler.queue_command(f"&di,{value}#", f"%di:{value}#\r")
         else:
-            logging.warning(f"Settling delay value range: (0, {MAX_SETTLING_DELAY})")
+            logging.warning(f"Settling delay value range: (0, {self.control_box_parameters.max_settling_delay})")
 
     def c_set_stylus_max_deviation(self, value: int):
-        if 0 <= value <= MAX_MAX_DEVIATION:
+        if 0 <= value <= self.control_box_parameters.max_max_deviation:
             self.command_handler.queue_command(f"&dm,{value}#", f"%dm:{value}#\r")
         else:
-            logging.warning(f"Settling delay value range: (0, {MAX_MAX_DEVIATION})")
+            logging.warning(f"Settling delay value range: (0, {self.control_box_parameters.max_max_deviation})")
 
     def c_set_stylus_number_of_reading(self, value: int = 5):
         self.command_handler.queue_command(f"&dn,{value}#", f"%dn:{value}#\r")
@@ -564,7 +562,7 @@ class CommandHandler:
 
     def processes_queues(self):
         self.clear_queues()
-        active_thread_sync_barrier.wait()
+        self.controller.thread_barrier.wait()
         logging.info('Command Handling Started')
         while self.controller.is_listening is True:
             if not self.received_queue.empty():
@@ -686,7 +684,7 @@ class SocketListener:
         self.controller.client.clear_all()
         self.message_queue.queue.clear()
         logging.info("Listener Queue and Client Buffers Cleared.")
-        active_thread_sync_barrier.wait()
+        self.controller.thread_barrier.wait()
         logging.info('Listener Queue cleared & Client Buffer Clear.')
         try:
             logging.info('Listening started')
@@ -719,11 +717,13 @@ class SocketListener:
             msg_type, msg_value = self._decode_board_message(message)
             logging.info(f"Message Type: {msg_type}, Message Value: {msg_value}")
             if msg_type == "controller_box_key":
-                out_value = msg_value # -> controller_box_output
+                out_value = self.controller.config.key_maps.control_box[
+                    self.controller.devices_spec.control_box.keys_layout[msg_value]
+                        ]
 
             elif msg_type == 'swipe':
                 self.swipe_value = msg_value
-                if msg_value > SWIPE_THRESHOLD:
+                if msg_value > self.controller.config.output_modes.swipe_threshold:
                     self.swipe_triggered = True
 
             elif msg_type == 'length':
@@ -731,12 +731,11 @@ class SocketListener:
                     self._check_for_stylus_swipe(msg_value)
                 else:
                     out_value = self._map_board_length_measurement(msg_value)
-                # -> _map_board_length_output()
             elif msg_type == "unsolicited":
                 self.controller.command_handler.received_queue.put(msg_value)
 
-            if out_value is not None:
-                self._process_output(out_value)
+            if shout_value is not None:
+                self.controller.shout(shout_value)
 
             time.sleep(0.001)
 
@@ -750,7 +749,7 @@ class SocketListener:
             elif match[0][2] != "":
                 return 'swipe', int(match[0][2])
             elif match[0][3] != "":
-                return 'controller_box_key', XT_KEYS_NAME_MAP[match[0][3]] # TODO use config values
+                return 'controller_box_key', match[0][3]
         else:
             return 'unsolicited', value
 
@@ -771,37 +770,30 @@ class SocketListener:
         else:
             logging.info(f'Key {value} not mapped')
 
-    def _map_board_length_measurement(self, value: int): #TODO use the values from config
-        if self.controller.board_output_mode == 'length':
+    def _map_board_length_measurement(self, value: int):
+        if self.controller.output_mode == 'length':
             out_value = value - self.controller.stylus_offset
             if self.controller.length_units == 'cm':
                 out_value /= 10
             return out_value
         else:
-            index = int((value - DECAL_KEY_DETECTION_ZERO) / DECAL_KEY_RATIO)
+            index = int((value - self.controller.devices_spec.board.relative_zero) / self.controller.devices_spec.board.number_of_keys)
             logging.info(f'index {index}')
-            if index < DECAL_NUMBER_OF_KEYS:
-                return DECAL_KEYS_LAYOUT[self.controller.board_output_mode][index]
+            if index < self.controller.devices_spec.board.number_of_keys:
+                return self.controller.config.key_maps.board[
+                    self.controller.devices_spec.board.keys_layout[self.controller.output_mode][index]
+                ]
 
-    def _check_for_stylus_swipe(self, value: str): #TODO use the swipe_segment and output zone from config
+    def _check_for_stylus_swipe(self, value: str):
         self.swipe_triggered = False
-        #    "segments_limits": [0, 230, 430, 630, 800],
-        #    "segments_mode": ["length", "top", "bottom", "length"],
-        # if value <= segments_limits[-1]
-        #     for l_min, l_max, mode in zip(segments_limits[1:], segments_limits[:-1], segments_mode):
-        #         if l_max >= int(value) > l_min:
-        #             self.controller.change_board_output_zone('mode')
-        #
-
-        if int(value) > 630:
-            self.controller.change_board_output_zone('length')
-        elif int(value) > 430:
-            self.controller.change_board_output_zone('bottom')
-        elif int(value) > 230:
-            self.controller.change_board_output_zone('top')
-        else:
-            self.controller.change_board_output_zone('length')
-        logging.info(f'Board entry: {self.controller.board_output_mode}.')
+        segments_limits = self.controller.config.output_modes.segments_limits
+        if value <= segments_limits[-1]:
+            for l_min, l_max, mode in zip(segments_limits[1:],
+                                          segments_limits[:-1],
+                                          self.controller.config.output_modes.segments_mode):
+                if l_max >= int(value) > l_min:
+                    self.controller.change_board_output_mode('mode')
+                    logging.info(f'Board entry: {self.controller.output_mode}.')
 
 
 if __name__ == "__main__":

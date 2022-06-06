@@ -7,8 +7,6 @@
     "backlighting_sensitivity": 0,
     "max_settling_delay": 20,
     "max_max_deviation": 100,
-    "min_backlighting_level": 0,
     "max_backlighting_level": 95,
-    "min_backlighting_sensitivity": 0,
     "max_backlighting_sensitivity": 7
 }

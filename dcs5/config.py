@@ -5,7 +5,7 @@ Module that contains the scripts to load controller configuration.
 from dataclasses import dataclass
 from utils import json2dict
 from typing import *
-from controller import VALID_COMMANDS, VALID_KEYBOARD_KEYS, VALID_SEGMENTS_MODE
+from controller import VALID_COMMANDS, VALID_KEYBOARD_KEYS, VALID_SEGMENTS_MODE, VALID_UNITS
 
 
 class ConfigError(Exception):
@@ -27,6 +27,11 @@ class LaunchSettings:
     backlighting_auto_mode: bool
     backlighting_sensitivity: int
     length_units: str
+    stylus: str
+
+    def __post_init__(self):
+        if self.length_units not in VALID_UNITS:
+            raise ConfigError(f'`length_units` must be one of {VALID_UNITS}')
 
 
 @dataclass
