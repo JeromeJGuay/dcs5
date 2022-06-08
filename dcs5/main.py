@@ -1,9 +1,10 @@
+import logging
+
 from controller import Dcs5Controller
 
-XT_BUILTIN_SETTINGS = "./static/control_box_parameters.json"
-DEFAULT_DEVICES_SPECIFICATION_FILE = "./devices_specification/default_devices_specification.json"
-DEFAULT_CONTROLLER_CONFIGURATION_FILE = "configs/default_configuration.json"
-
+DEFAULT_CONTROLLER_CONFIGURATION_FILE = "dcs5/configs/default_configuration.json"
+DEFAULT_DEVICES_SPECIFICATION_FILE = "dcs5/devices_specification/default_devices_specification.json"
+XT_BUILTIN_SETTINGS = "dcs5/static/control_box_parameters.json"
 
 def launch_dcs5(
         config_path: str = DEFAULT_CONTROLLER_CONFIGURATION_FILE,
@@ -17,6 +18,7 @@ def launch_dcs5(
         control_box_settings_path=control_box_settings_path
     )
 
+    logging.info(controller.config.client.mac_address)
     controller.start_client(controller.config.client.mac_address)
 
     if controller.client_isconnected:

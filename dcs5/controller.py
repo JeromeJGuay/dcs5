@@ -135,10 +135,12 @@ class BtClient:
 
         self._mac_address = address if address is not None else self._mac_address
         while True: # TODO test me
+            logging.info(f'Attempting to connect')
             for port in range(65535):  # check for all available ports
                 try:
                     self.socket.connect((self._mac_address, port))
                     self._port = port
+                    logging.info(f'Connected to port {self._port}')
                     break
                 except (PermissionError, OSError):
                     pass
@@ -241,13 +243,12 @@ class Dcs5Controller:
         self.stylus: str = self.config.launch_settings.stylus
         self.stylus_offset = self.devices_spec.stylus_offset[self.stylus]
 
-    def start_client(self, address: str = None, port: int = None):
-        logging.info(f'Attempting to connect to board via port {port}.')
+    def start_client(self, address: str = None):
         if self.client_isconnected:
             logging.info("Client Already Connected.")
         else:
             logging.info('Trying to connect for 30 s.')
-            self.client.connect(address, port, timeout=30)
+            self.client.connect(address, timeout=30)
             self.client_isconnected = True
             logging.info('Connection Successful.\n')
 

@@ -9,7 +9,6 @@ class Board:
     key_to_mm_ratio: float
     zero: float
     detection_range: float
-    relative_zero: float
     keys_layout: Dict[str, List[str]]
     mappable_keys: List[str]
 
