@@ -128,25 +128,32 @@ class BtClient:
         self._buffer: str = ''
         self.socket: socket.socket = None
         self.default_timeout = .5
+        self.isconnected = False
 
-    def connect(self, address: str = None, timeout: int = None):
+    def connect(self, mac_address, timeout: int = None):
         self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
         self.socket.settimeout(timeout if timeout is not None else self.default_timeout)
-
-        self._mac_address = address if address is not None else self._mac_address
-        while True: # TODO test me
-            logging.info(f'Attempting to connect')
+        self._mac_address = mac_address
+        logging.info(f'Attempting to connect for {timeout} seconds')
+        try:
             for port in range(65535):  # check for all available ports
                 try:
-                    self.socket.connect((self._mac_address, port))
+                    port += 1
+                    self.socket.connect((self._mac_address, port ))
                     self._port = port
+                    self.isconnected = True
                     logging.info(f'Connected to port {self._port}')
                     break
-                except (PermissionError, OSError):
+                except PermissionError:
                     pass
-            logging.error('No available ports were found.')
-            break
-        self.socket.settimeout(self.default_timeout)
+            if not self.isconnected:
+                logging.error('No available ports were found.')
+
+        except OSError as err:
+            logging.warning("Devices not found.")
+            logging.debug(err)
+        finally:
+            self.socket.settimeout(self.default_timeout)
 
     @property
     def mac_address(self):
@@ -188,14 +195,6 @@ class BtClient:
 
 
 class Dcs5Controller:
-    """
-    Notes
-    -----
-    Firmware update command could be added:
-        %h,VER,BR#
-        see documentations
-    """
-
     def __init__(self, config_path: str, devices_specifications_path, control_box_settings_path: str):
         """
 
@@ -223,7 +222,6 @@ class Dcs5Controller:
         self.thread_barrier = threading.Barrier(2)
 
         self.client = BtClient()
-        self.client_isconnected = False
 
         self.internal_board_state = InternalBoardState()  # BoardCurrentState
         self.shouter = Shouter()
@@ -243,21 +241,19 @@ class Dcs5Controller:
         self.stylus: str = self.config.launch_settings.stylus
         self.stylus_offset = self.devices_spec.stylus_offset[self.stylus]
 
-    def start_client(self, address: str = None):
-        if self.client_isconnected:
+    def start_client(self, mac_address: str = None):
+        if self.client.isconnected:
             logging.info("Client Already Connected.")
         else:
-            logging.info('Trying to connect for 30 s.')
-            self.client.connect(address, timeout=30)
-            self.client_isconnected = True
-            logging.info('Connection Successful.\n')
+            mac_address = mac_address if mac_address is not None else self.config.client.mac_address
+            self.client.connect(mac_address, timeout=30)
 
     def close_client(self):
-        if self.client_isconnected:
+        if self.client.isconnected:
             if self.is_listening:
                 self.stop_listening()
             self.client.close()
-            self.client_isconnected = False
+            self.client.isconnected = False
             logging.info('Client Closed.')
         else:
             logging.info('Client Already Closed')
@@ -763,4 +759,4 @@ class SocketListener:
 
 if __name__ == "__main__":
     from cli import main
-    c=main()
+    main()

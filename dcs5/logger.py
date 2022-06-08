@@ -2,18 +2,21 @@ import time
 import sys
 import logging
 from pathlib import Path
+from dcs5.utils import resolve_relative_path
+
 
 DEFAULT_FILE_PATH = "../logs/dcs5_log"
 
 
 def init_logging(
-        verbose="INFO",
-        file_path=DEFAULT_FILE_PATH,
+        file_path=None,
         stdout_level="INFO",
         file_level="DEBUG",
         stdout=True,
         write=False,
 ):
+    file_path = resolve_relative_path(DEFAULT_FILE_PATH, __file__) or file_path
+
     formatter = logging.Formatter("%(asctime)s {%(threadName)s} [%(levelname)s] %(message)s")
     handlers = []
 
@@ -29,7 +32,7 @@ def init_logging(
         file_handler.setFormatter(formatter)
         handlers.append(file_handler)
 
-    logging.basicConfig(level=verbose.upper(), handlers=handlers)
+    logging.basicConfig(level="NOTSET", handlers=handlers)
 
 
 def format_log_path(path: str) -> str:

@@ -11,14 +11,16 @@ def main():
     parser.add_argument(
         "-v",
         "--verbose",
-        default="INFO",
+        default="DEBUG",
         help="Logging level: [debug, info, warning, error, critical]",
     )
     parser.add_argument(
         "-w",
         '--write',
         default=False,
-        help='Use this command to write the logging.')
+        help='Use this command to write the logging.',
+        action='store_true'
+    )
 
     parser.add_argument(
         "-p",
@@ -26,12 +28,13 @@ def main():
         help="Path to where to write the log.",
     )
     parser.add_argument(
-        "--file_level",
+        "--file_verbose",
+        default="DEBUG",
         help="File logging level: [debug, info, warning, error, critical]"
     )
     args = parser.parse_args()
 
-    init_logging(verbose=args.verbose, write=args.write, file_path=args.file_path, file_level=args.file_level)
+    init_logging(stdout_level=args.verbose, write=args.write, file_path=args.file_path, file_level=args.file_verbose)
 
     logging.info('Starting')
 
