@@ -35,6 +35,20 @@ VALID_KEYBOARD_KEYS = [
 VALID_UNITS = ["mm", "cm"]
 
 
+def check_key_map(key_map: Dict[str, str]):
+    for key, value in key_map.items():
+        if isinstance(value, list):
+            for _value in value:
+                validate_command(key, _value)
+        else:
+            validate_command(key, value)
+
+
+def validate_command(key, value):
+    if value is not None and value not in VALID_KEYBOARD_KEYS + VALID_COMMANDS:
+        raise ConfigError(f"Invalid Command or KeyBoard key: {key} -> {value}.")
+
+
 class ConfigError(Exception):
     pass
 
@@ -96,16 +110,8 @@ class KeyMaps:
     board: Dict[str, str]
 
     def __post_init__(self):
-       # self.check_key_map(self.control_box)
-       # self.check_key_map(self.board)
-        pass
-
-    @staticmethod #TODO FIXME
-    def check_key_map(key_map: Dict[str, str]):
-        for key, value in key_map.items():
-            if value is not None and value not in VALID_KEYBOARD_KEYS + VALID_COMMANDS:
-                raise ConfigError(f"Invalid KeyBoard key: {key} -> {value}.")
-
+       check_key_map(self.control_box)
+       check_key_map(self.board)
 
 @dataclass
 class ControllerConfiguration:
