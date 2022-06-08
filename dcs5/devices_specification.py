@@ -17,8 +17,6 @@ class Board:
         self.relative_zero = self.zero - self.detection_range
 
 
-
-
 @dataclass
 class ControlBox:
     keys_layout: Dict[str, str]

@@ -35,43 +35,11 @@ from queue import Queue
 
 from config import load_config
 from devices_specification import load_devices_specification
-from built_in_setting import load_control_box_parameters
+from statics import load_control_box_parameters
 
-
-XT_BUILTIN_SETTINGS = "./built_in_settings/control_box_parameters.json"
-DEFAULT_DEVICES_SPECIFICATION_FILE = "./devices_specification/default_devices_specification.json"
-DEFAULT_CONTROLLER_CONFIGURATION_FILE = "configs/default_configuration.json"
 
 BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
-
-VALID_COMMANDS = ["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm"]
-VALID_SEGMENTS_MODE = ['length', 'top', 'bottom']
-VALID_KEYBOARD_KEYS = [
-    '\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'", '(',
-    ')', '*', '+', ',', '-', '.', '/', '0', '1', '2', '3', '4', '5', '6', '7',
-    '8', '9', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`',
-    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
-    'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '{', '|', '}', '~',
-    'accept', 'add', 'alt', 'altleft', 'altright', 'apps', 'backspace',
-    'browserback', 'browserfavorites', 'browserforward', 'browserhome',
-    'browserrefresh', 'browsersearch', 'browserstop', 'capslock', 'clear',
-    'convert', 'ctrl', 'ctrlleft', 'ctrlright', 'decimal', 'del', 'delete',
-    'divide', 'down', 'end', 'enter', 'esc', 'escape', 'execute', 'f1', 'f10',
-    'f11', 'f12', 'f13', 'f14', 'f15', 'f16', 'f17', 'f18', 'f19', 'f2', 'f20',
-    'f21', 'f22', 'f23', 'f24', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9',
-    'final', 'fn', 'hanguel', 'hangul', 'hanja', 'help', 'home', 'insert', 'junja',
-    'kana', 'kanji', 'launchapp1', 'launchapp2', 'launchmail',
-    'launchmediaselect', 'left', 'modechange', 'multiply', 'nexttrack',
-    'nonconvert', 'num0', 'num1', 'num2', 'num3', 'num4', 'num5', 'num6',
-    'num7', 'num8', 'num9', 'numlock', 'pagedown', 'pageup', 'pause', 'pgdn',
-    'pgup', 'playpause', 'prevtrack', 'print', 'printscreen', 'prntscrn',
-    'prtsc', 'prtscr', 'return', 'right', 'scrolllock', 'select', 'separator',
-    'shift', 'shiftleft', 'shiftright', 'sleep', 'space', 'stop', 'subtract', 'tab',
-    'up', 'volumedown', 'volumemute', 'volumeup', 'win', 'winleft', 'winright', 'yen',
-    'command', 'option', 'optionleft', 'optionright'
-]
-VALID_UNITS = ["mm", "cm"]
 
 
 def cycle(my_list: iter):
@@ -258,6 +226,13 @@ class Dcs5Controller:
         self.internal_board_state = InternalBoardState()  # BoardCurrentState
         self.shouter = Shouter()
         self.stylus_cyclical_list = cycle(self.devices_spec.stylus_offset.keys())
+        self.mappable_commands = {
+            "BACKLIGHT_UP": self.backlight_up,
+            "BACKLIGHT_DOWN": self.backlight_down,
+            "CHANGE_STYLUS": self.cycle_stylus,
+            "UNITS_mm": self.change_length_units_mm,
+            "UNITS_cm": self.change_length_units_cm
+        }
 
         self.dynamic_stylus_settings = self.config.launch_settings.dynamic_stylus_mode
         self.output_mode = self.config.launch_settings.output_mode
@@ -734,8 +709,8 @@ class SocketListener:
             elif msg_type == "unsolicited":
                 self.controller.command_handler.received_queue.put(msg_value)
 
-            if shout_value is not None:
-                self.controller.shout(shout_value)
+            if out_value is not None:
+                self._process_output(out_value)
 
             time.sleep(0.001)
 
@@ -754,21 +729,10 @@ class SocketListener:
             return 'unsolicited', value
 
     def _process_output(self, value): # one for the board and one for the controller
-        shout_value = None
-        if value in MAPPABLE_KEYS: # TODO use config value
-            mapped_value = KEYS_MAP[value] # TODO use config value
-            if mapped_value in self.controller.mappable_commands:
-                self.controller.mappable_commands[mapped_value]()
-            else:
-                shout_value = mapped_value
+        if value in self.controller.mappable_commands:
+            self.controller.mappable_commands[value]()
         else:
-            shout_value = value
-
-        if not self.controller.is_muted and shout_value is not None:
-            logging.info(f"Mapped value {shout_value}")
-            self.controller.shout(shout_value)
-        else:
-            logging.info(f'Key {value} not mapped')
+            self.controller.shout(value)
 
     def _map_board_length_measurement(self, value: int):
         if self.controller.output_mode == 'length':
