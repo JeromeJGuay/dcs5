@@ -193,7 +193,7 @@ class BtClient:
 
 
 class Dcs5Controller:
-    def __init__(self, config_path: str, devices_specifications_path, control_box_settings_path: str):
+    def __init__(self, config_path: str, devices_specifications_path: str, control_box_parameters_path: str):
         """
 
         Parameters
@@ -202,9 +202,10 @@ class Dcs5Controller:
         devices_specifications_path
         control_box_settings_path
         """
-        self.config = load_config(config_path)
-        self.devices_spec = load_devices_specification(devices_specifications_path)
-        self.control_box_parameters = load_control_box_parameters(control_box_settings_path)
+        self.config_path = config_path
+        self.devices_specifications_path = devices_specifications_path
+        self.control_box_parameters_path = control_box_parameters_path
+        self._load_configs()
 
         self.listen_thread: threading.Thread = None
         self.command_thread: threading.Thread = None
@@ -238,6 +239,14 @@ class Dcs5Controller:
         self.length_units = self.config.launch_settings.length_units
         self.stylus: str = self.config.launch_settings.stylus
         self.stylus_offset = self.devices_spec.stylus_offset[self.stylus]
+
+    def _load_configs(self):
+        self.config = load_config(self.config_path)
+        self.devices_spec = load_devices_specification(self.devices_specifications_path)
+        self.control_box_parameters = load_control_box_parameters(self.control_box_parameters_path)
+
+    def reload_configs(self):
+        self._load_configs()
 
     def start_client(self, mac_address: str = None):
         if self.client.isconnected:
@@ -408,6 +417,7 @@ class Dcs5Controller:
         value must be one of  [length, bottom, top]
         """
         self.output_mode = value
+        logging.info(f'Board entry: {self.output_mode}.')
         if self.dynamic_stylus_settings is True:
             reading_profile = self.config.reading_profiles[
                 self.config.output_modes.mode_reading_profiles[self.output_mode]
@@ -770,5 +780,4 @@ class SocketListener:
                                           self.controller.config.output_modes.segments_mode):
                 if l_max >= int(value) > l_min:
                     self.controller.change_board_output_mode(mode)
-                    logging.info(f'Board entry: {self.controller.output_mode}.')
                     break

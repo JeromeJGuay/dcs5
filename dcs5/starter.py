@@ -10,13 +10,13 @@ XT_BUILTIN_SETTINGS = "static/control_box_parameters.json"
 def start_dcs5_controller(
         config_path=resolve_relative_path(DEFAULT_CONTROLLER_CONFIGURATION_FILE, __file__),
         devices_specifications_path=resolve_relative_path(DEFAULT_DEVICES_SPECIFICATION_FILE, __file__),
-        control_box_settings_path=resolve_relative_path(XT_BUILTIN_SETTINGS, __file__)
+        control_box_parameters_path=resolve_relative_path(XT_BUILTIN_SETTINGS, __file__)
 ):
 
     controller = Dcs5Controller(
         config_path=config_path,
         devices_specifications_path=devices_specifications_path,
-        control_box_settings_path=control_box_settings_path
+        control_box_parameters_path=control_box_parameters_path
     )
 
     controller.start_client()
