@@ -3,8 +3,9 @@ Module that contains the scripts to load controller configuration.
 
 """
 from dataclasses import dataclass
-from utils import json2dict
 from typing import *
+
+from utils import json2dict
 
 VALID_COMMANDS = ["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm"]
 VALID_SEGMENTS_MODE = ['length', 'top', 'bottom']

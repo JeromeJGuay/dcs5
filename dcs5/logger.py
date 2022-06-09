@@ -1,10 +1,9 @@
-import time
-import sys
-from io import TextIOBase
 import logging
+import sys
+import time
 from pathlib import Path
-from dcs5.utils import resolve_relative_path
 
+from dcs5.utils import resolve_relative_path
 
 DEFAULT_FILE_PATH = "../logs/dcs5_log"
 

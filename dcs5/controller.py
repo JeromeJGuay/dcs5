@@ -22,15 +22,15 @@ References
 """
 
 import logging
+import re
 import socket
 import threading
-import re
-from typing import *
 import time
-import pyautogui as pag
-
 from dataclasses import dataclass
 from queue import Queue
+from typing import *
+
+import pyautogui as pag
 
 from config import load_config
 from devices_specification import load_devices_specification

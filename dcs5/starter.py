@@ -1,9 +1,9 @@
-import logging
-from utils import resolve_relative_path
+
 from controller import Dcs5Controller
+from utils import resolve_relative_path
 
 DEFAULT_CONTROLLER_CONFIGURATION_FILE = "configs/default_configuration.json"
-DEFAULT_DEVICES_SPECIFICATION_FILE = "devices_specification/default_devices_specification.json"
+DEFAULT_DEVICES_SPECIFICATION_FILE = "devices_specifications/default_devices_specification.json"
 XT_BUILTIN_SETTINGS = "static/control_box_parameters.json"
 
 

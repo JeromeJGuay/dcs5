@@ -1,10 +1,9 @@
 import argparse
 import logging
-import subprocess
 import sys
 
-from dcs5.main import start_dcs5_controller
 from dcs5.logger import init_logging
+from dcs5.starter import start_dcs5_controller
 
 VALID_COMMANDS = ['stop', 'help', 'restart', 'mute', 'unmute', 'cm', 'mm', 'top','bottom',
                   'length', 'calpt1', 'calpt2', 'calibrate']
