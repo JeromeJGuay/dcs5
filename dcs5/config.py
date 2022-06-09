@@ -9,12 +9,16 @@ from typing import *
 VALID_COMMANDS = ["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm"]
 VALID_SEGMENTS_MODE = ['length', 'top', 'bottom']
 VALID_KEYBOARD_KEYS = [
-    '\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'", '(',
-    ')', '*', '+', ',', '-', '.', '/', '0', '1', '2', '3', '4', '5', '6', '7',
-    '8', '9', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`',
+    '\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'",
+    '(', ')', '*', '+', ',', '-', '.', '/', '{', '|', '}', '~',
+    ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`',
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
-    'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '{', '|', '}', '~',
-    'accept', 'add', 'alt', 'altleft', 'altright', 'apps', 'backspace',
+    'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
+    'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+                                                      'accept', 'add', 'alt', 'altleft', 'altright', 'apps',
+    'backspace',
     'browserback', 'browserfavorites', 'browserforward', 'browserhome',
     'browserrefresh', 'browsersearch', 'browserstop', 'capslock', 'clear',
     'convert', 'ctrl', 'ctrlleft', 'ctrlright', 'decimal', 'del', 'delete',
@@ -88,6 +92,9 @@ class ModeReadingProfiles:
     length: str
     bottom: str
 
+    def __getitem__(self, item):
+        return getattr(self, item)
+
 
 @dataclass
 class OutputModes:
@@ -110,8 +117,9 @@ class KeyMaps:
     board: Dict[str, str]
 
     def __post_init__(self):
-       check_key_map(self.control_box)
-       check_key_map(self.board)
+        check_key_map(self.control_box)
+        check_key_map(self.board)
+
 
 @dataclass
 class ControllerConfiguration:

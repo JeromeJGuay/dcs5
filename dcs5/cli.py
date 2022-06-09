@@ -1,6 +1,9 @@
 import argparse
 import logging
-from dcs5.main import launch_dcs5
+import subprocess
+import sys
+
+from dcs5.main import start_dcs5_controller
 from dcs5.logger import init_logging
 
 VALID_COMMANDS = ['stop', 'help', 'restart', 'mute', 'unmute', 'cm', 'mm', 'calpt1', 'calpt2', 'calibrate']
@@ -11,7 +14,7 @@ def main():
     parser.add_argument(
         "-v",
         "--verbose",
-        default="DEBUG",
+        default="info",
         help="Logging level: [debug, info, warning, error, critical]",
     )
     parser.add_argument(
@@ -34,11 +37,15 @@ def main():
     )
     args = parser.parse_args()
 
-    init_logging(stdout_level=args.verbose, write=args.write, file_path=args.file_path, file_level=args.file_verbose)
+    init_logging(stdout_level=args.verbose,
+                 write=args.write,
+                 file_path=args.file_path,
+                 file_level=args.file_verbose,
+                 )
 
-    logging.info('Starting')
+    logging.info('Starting dcs5 controller')
 
-    controller = launch_dcs5()
+    controller = start_dcs5_controller()
 
     print('\n\n')
     while 1:
@@ -82,7 +89,3 @@ def main():
 if __name__ == "__main__":
     main()
 
-""" Possible error
-ESError
-OSError: [Errno 107] Transport endpoint is not connected
-"""

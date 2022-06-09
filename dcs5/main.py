@@ -7,10 +7,10 @@ DEFAULT_DEVICES_SPECIFICATION_FILE = "devices_specification/default_devices_spec
 XT_BUILTIN_SETTINGS = "static/control_box_parameters.json"
 
 
-def launch_dcs5(
-        config_path: str = resolve_relative_path(DEFAULT_CONTROLLER_CONFIGURATION_FILE, __file__),
-        devices_specifications_path: str = resolve_relative_path(DEFAULT_DEVICES_SPECIFICATION_FILE, __file__),
-        control_box_settings_path: str = resolve_relative_path(XT_BUILTIN_SETTINGS, __file__)
+def start_dcs5_controller(
+        config_path=resolve_relative_path(DEFAULT_CONTROLLER_CONFIGURATION_FILE, __file__),
+        devices_specifications_path=resolve_relative_path(DEFAULT_DEVICES_SPECIFICATION_FILE, __file__),
+        control_box_settings_path=resolve_relative_path(XT_BUILTIN_SETTINGS, __file__)
 ):
 
     controller = Dcs5Controller(
@@ -31,4 +31,4 @@ def launch_dcs5(
 if __name__ == "__main__":
     from dcs5.logger import init_logging
     init_logging()
-    c = launch_dcs5()
+    c = start_dcs5_controller()

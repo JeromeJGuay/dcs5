@@ -1,6 +1,7 @@
 import json
 from typing import *
 from pathlib import PurePath
+from dataclasses import dataclass
 
 
 def dict2json(filename: Union[str, PurePath], dictionary: Dict, indent: int = 4) -> None:

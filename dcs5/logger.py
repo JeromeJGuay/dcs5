@@ -1,5 +1,6 @@
 import time
 import sys
+from io import TextIOBase
 import logging
 from pathlib import Path
 from dcs5.utils import resolve_relative_path
@@ -12,7 +13,6 @@ def init_logging(
         file_path=None,
         stdout_level="INFO",
         file_level="DEBUG",
-        stdout=True,
         write=False,
 ):
     file_path = resolve_relative_path(DEFAULT_FILE_PATH, __file__) or file_path
@@ -20,11 +20,10 @@ def init_logging(
     formatter = logging.Formatter("%(asctime)s {%(threadName)s} [%(levelname)s] %(message)s")
     handlers = []
 
-    if stdout is True:
-        stdout_handler = logging.StreamHandler(sys.stdout)
-        stdout_handler.setLevel(stdout_level.upper())
-        stdout_handler.setFormatter(formatter)
-        handlers.append(stdout_handler)
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.setLevel(stdout_level.upper())
+    stdout_handler.setFormatter(formatter)
+    handlers.append(stdout_handler)
 
     if write is True:
         file_handler = logging.FileHandler(format_log_path(file_path))
