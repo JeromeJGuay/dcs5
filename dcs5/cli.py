@@ -1,4 +1,4 @@
-import logging
+#!/home/jeromejguay/anaconda3/bin/dcs5/bin/python
 import sys
 import click
 import click_shell
@@ -26,7 +26,7 @@ def start_dcs5_controller(
 
 CONTROLLER = start_dcs5_controller()
 
-INTRO = "Launching DCS-5 Controller App."
+INTRO = "DCS-5 Controller"
 
 
 def prompt():

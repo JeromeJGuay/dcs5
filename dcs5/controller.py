@@ -318,7 +318,6 @@ class Dcs5Controller:
 
     def sync_controller_and_board(self):
         """Init board to launch settings.
-        TODO have the default settings comme from an attributes. Json file maybe
         """
         logging.info('Syncing Controller and Board.')
 
