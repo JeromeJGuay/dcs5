@@ -223,7 +223,7 @@ class Dcs5Controller:
 
         self.internal_board_state = InternalBoardState()  # BoardCurrentState
         self.shouter = Shouter()
-        self.stylus_cyclical_list = cycle(self.devices_spec.stylus_offset.keys())
+        self.stylus_cyclical_list = cycle(list(self.devices_spec.stylus_offset.keys()))
         self.mappable_commands = {
             "BACKLIGHT_UP": self.backlight_up,
             "BACKLIGHT_DOWN": self.backlight_down,
@@ -252,12 +252,14 @@ class Dcs5Controller:
                 self.stop_listening()
             self.client.close()
             self.client.isconnected = False
+            time.sleep(0.5)
             logging.info('Client Closed.')
         else:
             logging.info('Client Already Closed')
 
     def restart_client(self):
         self.close_client()
+        was_listening = self.is_listening
         try:
             self.start_client()
         except OSError as err:
@@ -265,6 +267,8 @@ class Dcs5Controller:
             logging.debug(f'restart_client OSError: {str(err)}')
             time.sleep(0.5)
             self.restart_client()
+            if was_listening:
+                self.start_listening()
 
     def start_listening(self):
         if not self.is_listening:
@@ -731,11 +735,15 @@ class SocketListener:
         else:
             return 'unsolicited', value
 
-    def _process_output(self, value):  # one for the board and one for the controller
-        if value in self.controller.mappable_commands:
-            self.controller.mappable_commands[value]()
+    def _process_output(self, value):
+        if isinstance(value, list):
+            for _value in value:
+                self._process_output(_value)
         else:
-            self.controller.shout(value)
+            if value in self.controller.mappable_commands:
+                self.controller.mappable_commands[value]()
+            else:
+                self.controller.shout(value)
 
     def _map_board_length_measurement(self, value: int):
         if self.controller.output_mode == 'length':
@@ -744,9 +752,10 @@ class SocketListener:
                 out_value /= 10
             return out_value
         else:
-            index = int((
-                                    value - self.controller.devices_spec.board.relative_zero) / self.controller.devices_spec.board.number_of_keys)
-            logging.info(f'index {index}')
+            index = int(
+                (value - self.controller.devices_spec.board.relative_zero)
+                / self.controller.devices_spec.board.key_to_mm_ratio
+            )
             if index < self.controller.devices_spec.board.number_of_keys:
                 return self.controller.config.key_maps.board[
                     self.controller.devices_spec.board.keys_layout[self.controller.output_mode][index]
@@ -756,9 +765,10 @@ class SocketListener:
         self.swipe_triggered = False
         segments_limits = self.controller.config.output_modes.segments_limits
         if value <= segments_limits[-1]:
-            for l_min, l_max, mode in zip(segments_limits[1:],
+            for l_max, l_min, mode in zip(segments_limits[1:],
                                           segments_limits[:-1],
                                           self.controller.config.output_modes.segments_mode):
                 if l_max >= int(value) > l_min:
-                    self.controller.change_board_output_mode('mode')
+                    self.controller.change_board_output_mode(mode)
                     logging.info(f'Board entry: {self.controller.output_mode}.')
+                    break

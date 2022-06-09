@@ -6,7 +6,8 @@ import sys
 from dcs5.main import start_dcs5_controller
 from dcs5.logger import init_logging
 
-VALID_COMMANDS = ['stop', 'help', 'restart', 'mute', 'unmute', 'cm', 'mm', 'calpt1', 'calpt2', 'calibrate']
+VALID_COMMANDS = ['stop', 'help', 'restart', 'mute', 'unmute', 'cm', 'mm', 'top','bottom',
+                  'length', 'calpt1', 'calpt2', 'calibrate']
 
 
 def main():
@@ -45,6 +46,16 @@ def main():
 
     logging.info('Starting dcs5 controller')
 
+    try:
+        cli_app()
+    except KeyError as err:
+        print(err)
+        sys.exit()
+
+    logging.info("Exiting")
+
+
+def cli_app():
     controller = start_dcs5_controller()
 
     print('\n\n')
@@ -65,6 +76,12 @@ def main():
             controller.change_length_units_cm()
         elif command == "mm":
             controller.change_length_units_mm()
+        elif command == "top":
+            controller.change_board_output_mode('top')
+        elif command == "bottom":
+            controller.change_board_output_mode('bottom')
+        elif command == "length":
+            controller.change_board_output_mode('length')
         elif command == "calpt1":
             value = input('Enter cal pt 1 value in mm:')
             if value.isnumeric():
@@ -82,9 +99,6 @@ def main():
             controller.calibrate(2)
         else:
             print(f'Invalid command. Commands: {VALID_COMMANDS}')
-
-    logging.info("Exiting")
-
 
 if __name__ == "__main__":
     main()

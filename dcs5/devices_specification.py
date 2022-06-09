@@ -10,7 +10,6 @@ class Board:
     zero: float
     detection_range: float
     keys_layout: Dict[str, List[str]]
-    mappable_keys: List[str]
 
     def __post_init__(self):
         self.relative_zero = self.zero - self.detection_range
@@ -19,7 +18,6 @@ class Board:
 @dataclass
 class ControlBox:
     keys_layout: Dict[str, str]
-    mappable_keys: List[str]
 
 
 @dataclass
