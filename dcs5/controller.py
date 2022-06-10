@@ -32,9 +32,9 @@ from typing import *
 
 import pyautogui as pag
 
-from config import load_config
-from devices_specification import load_devices_specification
-from statics import load_control_box_parameters
+from config import load_config, ControllerConfiguration
+from devices_specification import load_devices_specification, DevicesSpecification
+from statics import load_control_box_parameters, ControlBoxParameters
 
 BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
@@ -193,6 +193,18 @@ class BtClient:
 
 
 class Dcs5Controller:
+    config: ControllerConfiguration
+    device_specs: DevicesSpecification
+    control_box_parameters: ControlBoxParameters
+
+    dynamic_stylus_settings: bool
+    output_mode: str
+    reading_profile: str
+    length_units: str
+    stylus: str
+    stylus_offset: int
+    stylus_cyclical_list: Generator
+
     def __init__(self, config_path: str, devices_specifications_path: str, control_box_parameters_path: str):
         """
 
@@ -224,7 +236,7 @@ class Dcs5Controller:
 
         self.internal_board_state = InternalBoardState()  # BoardCurrentState
         self.shouter = Shouter()
-        self.stylus_cyclical_list = cycle(list(self.devices_spec.stylus_offset.keys()))
+
         self.mappable_commands = {
             "BACKLIGHT_UP": self.backlight_up,
             "BACKLIGHT_DOWN": self.backlight_down,
@@ -233,17 +245,19 @@ class Dcs5Controller:
             "UNITS_cm": self.change_length_units_cm
         }
 
+
+    def _load_configs(self):
+        self.config = load_config(self.config_path)
+        self.devices_spec = load_devices_specification(self.devices_specifications_path)
+        self.control_box_parameters = load_control_box_parameters(self.control_box_parameters_path)
+
         self.dynamic_stylus_settings = self.config.launch_settings.dynamic_stylus_mode
         self.output_mode = self.config.launch_settings.output_mode
         self.reading_profile = self.config.launch_settings.reading_profile
         self.length_units = self.config.launch_settings.length_units
         self.stylus: str = self.config.launch_settings.stylus
         self.stylus_offset = self.devices_spec.stylus_offset[self.stylus]
-
-    def _load_configs(self):
-        self.config = load_config(self.config_path)
-        self.devices_spec = load_devices_specification(self.devices_specifications_path)
-        self.control_box_parameters = load_control_box_parameters(self.control_box_parameters_path)
+        self.stylus_cyclical_list = cycle(list(self.devices_spec.stylus_offset.keys()))
 
     def reload_configs(self):
         self._load_configs()
