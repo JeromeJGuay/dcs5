@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict, List
 
-from utils import json2dict
+from dcs5.utils import json2dict
 
 
 @dataclass

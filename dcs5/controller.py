@@ -32,9 +32,9 @@ from typing import *
 
 import pyautogui as pag
 
-from config import load_config, ControllerConfiguration
-from devices_specification import load_devices_specification, DevicesSpecification
-from statics import load_control_box_parameters, ControlBoxParameters
+from dcs5.config import load_config, ControllerConfiguration
+from dcs5.devices_specification import load_devices_specification, DevicesSpecification
+from dcs5.statics import load_control_box_parameters, ControlBoxParameters
 
 BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024

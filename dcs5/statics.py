@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from utils import json2dict
+from dcs5.utils import json2dict
 
 
 @dataclass
