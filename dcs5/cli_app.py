@@ -4,16 +4,11 @@ import click
 import click_shell
 
 
-from dcs5 import VERSION
+from dcs5 import VERSION, DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROLLER_CONFIGURATION_FILE, XT_BUILTIN_PARAMETERS
 from dcs5.logger import init_logging
 from dcs5.controller import Dcs5Controller
 from dcs5.utils import resolve_relative_path
 from dcs5.config import load_config, ConfigError
-
-
-DEFAULT_CONTROLLER_CONFIGURATION_FILE = "configs/default_configuration.json"
-DEFAULT_DEVICES_SPECIFICATION_FILE = "devices_specifications/default_devices_specification.json"
-XT_BUILTIN_PARAMETERS = "static/control_box_parameters.json"
 
 
 class StatePrompt:
@@ -74,11 +69,12 @@ def close_client(ctx: click.Context):
 
 
 #### CLI APPLICATION STRUCTURE ####
-@click_shell.shell(prompt=STATE_PROMPT.prompt, on_finished=close_client, intro=INTRO)
+@click_shell.shell(prompt=STATE_PROMPT.prompt, on_finished=close_client)
 @click.option("-v", "--verbose", type=click.Choice(['info', 'debug', 'warning', 'error']), default='error')
 @click.option("-u", "--user_interface", is_flag=True, default=False)
 @click.pass_context
 def cli_app(ctx, verbose, user_interface):
+    click.secho(INTRO)
     init_logging(stdout_level=verbose.upper(), ui=user_interface)
 
     ctx.obj = start_dcs5_controller()

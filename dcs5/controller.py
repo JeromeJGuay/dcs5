@@ -132,13 +132,12 @@ class BtClient:
         self.isconnected = False
 
     def connect(self, mac_address, timeout: int = None):
-        self.socket = BluetoothSocket(bluetooth.RFCOMM)
-        #self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
-        self.socket.settimeout(timeout if timeout is not None else self.default_timeout)
         self._mac_address = mac_address
         logging.debug(f'Attempting to connect to board. Timeout: {timeout} seconds')
         try:
             for port in range(self.max_port):  # check for all available ports
+                self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
+                self.socket.settimeout(timeout if timeout is not None else self.default_timeout)
                 try:
                     port += 1
                     logging.debug(f'port: {port}')
@@ -150,8 +149,7 @@ class BtClient:
                 except PermissionError:
                     pass
                 except bluetooth.BluetoothError as err:
-                    logging.debug(err)
-                    break
+                    pass
             if not self.isconnected:
                 logging.error('No available ports were found.')
 
@@ -159,6 +157,7 @@ class BtClient:
             logging.warning("Devices not found.")
             logging.debug(err)
         finally:
+            pass
             self.socket.settimeout(self.default_timeout)
 
     @property
