@@ -79,7 +79,6 @@ def cli_app(ctx, verbose, user_interface):
 
     ctx.obj = start_dcs5_controller()
     STATE_PROMPT.update_controller(ctx.obj)
-    ctx.obj.reload_configs()
 
     click.secho(f'Attempting to connect to device ... ')
     click.secho(f' Name : {ctx.obj.config.client.device_name}')

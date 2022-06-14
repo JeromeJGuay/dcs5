@@ -1,5 +1,6 @@
 import argparse
 from dcs5.cli_app import cli_app
+from dcs5.server import start_server
 
 
 def main():
@@ -12,8 +13,7 @@ def main():
     if args.cli is True:
         cli_app(unknownargs)
     elif args.server is True:
-        pass
-        print('cli')
+        start_server()
     else:
         parser.print_help()
 

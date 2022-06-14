@@ -800,3 +800,4 @@ class SocketListener:
                 if l_max >= int(value) > l_min:
                     self.controller.change_board_output_mode(mode)
                     break
+
