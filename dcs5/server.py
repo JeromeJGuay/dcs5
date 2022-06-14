@@ -70,7 +70,7 @@ class Server:
                     CONTROLLER.change_length_units_mm()
                 elif data == "units cm":
                     conn.sendall("yay".encode(ENCODING))
-                    CONTROLLER.change_length_units_cm('mm')
+                    CONTROLLER.change_length_units_cm()
                 elif data == "restart":
                     conn.sendall("yay".encode(ENCODING))
                     CONTROLLER.restart_client()

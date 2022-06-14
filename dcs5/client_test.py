@@ -30,7 +30,8 @@ class Client:
 
     def chat(self, msg):
         self.send(msg)
-        print(self.receive())
+        self.receive()
+        print(self.buffer)
 
     def ping_server(self):
         self.send('hello board')
@@ -48,7 +49,7 @@ class Client:
 
 if __name__ == "__main__":
     c = Client()
-    # c.connect(HOST, PORT)
+    c.connect(HOST, PORT)
     # c.ping_server()
 #   # c.say_goodbye()
 #   # c.close()
