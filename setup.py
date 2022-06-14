@@ -15,5 +15,5 @@ setup(
     include_package_data=True,
     classifiers=["Programming Language :: Python :: 3"],
     python_requires="~=3.8",
-    entry_points={"console_scripts": ["dcs5=dcs5.cli:main", ]},
+    entry_points={"console_scripts": ["dcs5=dcs5.main:main", ]},
 )

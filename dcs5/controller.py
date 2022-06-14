@@ -30,6 +30,7 @@ from dataclasses import dataclass
 from queue import Queue
 from typing import *
 
+import bluetooth
 import pyautogui as pag
 from bluetooth import BluetoothSocket
 
@@ -120,6 +121,7 @@ class BtClient:
     -----
     Both socket and bluetooth methods(socket package) seems to be equivalent.
     """
+    max_port = 65535
 
     def __init__(self):
         self._mac_address: str = None
@@ -130,15 +132,16 @@ class BtClient:
         self.isconnected = False
 
     def connect(self, mac_address, timeout: int = None):
-        self.socket = BluetoothSocket()
+        self.socket = BluetoothSocket(bluetooth.RFCOMM)
         #self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
         self.socket.settimeout(timeout if timeout is not None else self.default_timeout)
         self._mac_address = mac_address
         logging.debug(f'Attempting to connect to board. Timeout: {timeout} seconds')
         try:
-            for port in range(65535):  # check for all available ports
+            for port in range(self.max_port):  # check for all available ports
                 try:
                     port += 1
+                    logging.debug(f'port: {port}')
                     self.socket.connect((self._mac_address, port))
                     self._port = port
                     self.isconnected = True
@@ -146,6 +149,9 @@ class BtClient:
                     break
                 except PermissionError:
                     pass
+                except bluetooth.BluetoothError as err:
+                    logging.debug(err)
+                    break
             if not self.isconnected:
                 logging.error('No available ports were found.')
 
