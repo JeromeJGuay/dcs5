@@ -22,6 +22,40 @@ def runserver():
    print('ok')
 
 
+class StatePrompt:
+    def __init__(self):
+        self._controller = start_dcs5_controller()
+        self._debug_mode = False
+
+    def update_controller(self, new_controller: Dcs5Controller):
+        self._controller = new_controller
+
+    def debug_mode(self):
+        self._debug_mode = True
+
+    def prompt(self):
+        msg = click.style('[', bold=True)
+        if self._debug_mode is True:
+            msg += click.style(f"Debug Mode", fg='red')
+        else:
+            msg += click.style(f"Connected: ", fg='red')
+            msg += click.style(f"{self._controller.client.isconnected}", bold=True)
+            msg += click.style(' | ', bold=True)
+            msg += click.style(f"Mode: ", fg='red')
+            msg += click.style(f"{self._controller.output_mode}", bold=True)
+            msg += click.style(' | ', bold=True)
+            msg += click.style(f"Units: ", fg='red')
+            msg += click.style(f"{self._controller.length_units}", bold=True)
+            msg += click.style(' | ', bold=True)
+            msg += click.style(f"Stylus: ", fg='red')
+            msg += click.style(f"{self._controller.stylus}", bold=True)
+        msg += click.style('] ', bold=True)
+        msg += click.style("(help/exit) ")
+        msg += click.style(f"dcs5 > ", fg='blue', bold=True)
+
+        return msg
+
+
 def start_dcs5_controller(
         config_path=DEFAULT_CONTROLLER_CONFIGURATION_FILE,
         devices_specifications_path=DEFAULT_DEVICES_SPECIFICATION_FILE,
@@ -34,30 +68,37 @@ def start_dcs5_controller(
     return Dcs5Controller(config_path, devices_specifications_path, control_box_parameters_path)
 
 
-class StatePrompt:
-    def __init__(self):
-        self._controller = start_dcs5_controller()
+def ui_interface(controller: Dcs5Controller, ctx: click.Context):
+    STATE_PROMPT.update_controller(controller)
+    ctx.obj = controller
 
-    def update_controller(self, new_controller: Dcs5Controller):
-        self._controller = new_controller
+    ctx.obj.reload_configs()
 
-    def prompt(self):
-        msg = click.style('[', bold=True)
-        msg += click.style(f"Connected: ", fg='red')
-        msg += click.style(f"{self._controller.client.isconnected}", bold=True)
-        msg += click.style(' | ', bold=True)
-        msg += click.style(f"Mode: ", fg='red')
-        msg += click.style(f"{self._controller.output_mode}", bold=True)
-        msg += click.style(' | ', bold=True)
-        msg += click.style(f"Units: ", fg='red')
-        msg += click.style(f"{self._controller.length_units}", bold=True)
-        msg += click.style(' | ', bold=True)
-        msg += click.style(f"Stylus: ", fg='red')
-        msg += click.style(f"{self._controller.stylus}", bold=True)
-        msg += click.style('] ', bold=True)
-        msg += click.style(f"dcs5 > ", fg='blue', bold=True)
+    click.secho(f'Attempting to connect to device ... ')
+    click.secho(f' Name : {ctx.obj.config.client.device_name}')
+    click.secho(f' Mac address : {ctx.obj.config.client.mac_address}')
+    ctx.obj.start_client()
 
-        return msg
+    if ctx.obj.client.isconnected:
+        click.secho('Syncing Board ...', **{'fg': 'red'})
+        ctx.obj.sync_controller_and_board()
+        ctx.obj.start_listening()
+    else:
+        click.secho('Device not Found.')
+    click.echo('')
+    click.echo('Type `help` to list commands or `quit` to close the app.')
+    click.echo('')
+
+
+def debug_interface(controller: Dcs5Controller, context: click.Context):
+    STATE_PROMPT.update_controller(controller)
+    STATE_PROMPT.debug_mode()
+    context.obj = controller
+    controller.reload_configs()
+    controller.start_client()
+    if controller.client.isconnected:
+        controller.sync_controller_and_board()
+        controller.start_listening()
 
 
 STATE_PROMPT = StatePrompt()
@@ -67,6 +108,7 @@ def close_client(ctx: click.Context):
     ctx.obj.close_client()
 
 
+#### CLI APPLICATION STRUCTURE ####
 @click_shell.shell(prompt=STATE_PROMPT.prompt, on_finished=close_client)
 @click.option("-v", "--verbose", type=click.Choice(['info', 'debug', 'warning', 'error']), default='error')
 @click.option("-u", "--user_interface", is_flag=True, default=False)
@@ -77,32 +119,14 @@ def main(ctx, verbose, user_interface, server):
 
     init_logging(stdout_level=verbose.upper(), ui=user_interface)
 
+    controller = start_dcs5_controller()
+
     if server is True:
         runserver()
-
+    elif verbose != "error":
+        debug_interface(controller, ctx)
     else:
-
-        controller = start_dcs5_controller()
-
-        STATE_PROMPT.update_controller(controller)
-        ctx.obj = controller
-
-        ctx.obj.reload_configs()
-
-        click.secho(f'Attempting to connect to device ... ')
-        click.secho(f' Name : {ctx.obj.config.client.device_name}')
-        click.secho(f' Mac address : {ctx.obj.config.client.mac_address}')
-        ctx.obj.start_client()
-
-        if ctx.obj.client.isconnected:
-            click.secho('Syncing Board ...', **{'fg': 'red'})
-            ctx.obj.sync_controller_and_board()
-            ctx.obj.start_listening()
-        else:
-            click.secho('Device not Found.')
-        click.echo('')
-        click.echo('Type `help` to list commands or `quit` to close the app.')
-        click.echo('')
+        ui_interface(controller, ctx)
 
 
 @main.group('units', help='Change output units.')
