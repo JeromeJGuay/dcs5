@@ -31,6 +31,7 @@ from queue import Queue
 from typing import *
 
 import pyautogui as pag
+from bluetooth import BluetoothSocket
 
 from dcs5.config import load_config, ControllerConfiguration
 from dcs5.devices_specification import load_devices_specification, DevicesSpecification
@@ -129,7 +130,8 @@ class BtClient:
         self.isconnected = False
 
     def connect(self, mac_address, timeout: int = None):
-        self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
+        self.socket = BluetoothSocket()
+        #self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
         self.socket.settimeout(timeout if timeout is not None else self.default_timeout)
         self._mac_address = mac_address
         logging.info(f'Attempting to connect to board. Timeout: {timeout} seconds')

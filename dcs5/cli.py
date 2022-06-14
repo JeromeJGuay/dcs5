@@ -3,6 +3,7 @@ import time
 import logging
 import click
 import click_shell
+from flask import Flask
 
 from dcs5 import VERSION
 from dcs5.logger import init_logging
@@ -13,6 +14,12 @@ from dcs5.config import load_config, ConfigError
 DEFAULT_CONTROLLER_CONFIGURATION_FILE = "configs/default_configuration.json"
 DEFAULT_DEVICES_SPECIFICATION_FILE = "devices_specifications/default_devices_specification.json"
 XT_BUILTIN_PARAMETERS = "static/control_box_parameters.json"
+
+flask_app = Flask(__name__)
+
+@flask_app.route("/")
+def runserver():
+   print('ok')
 
 
 def start_dcs5_controller(
@@ -62,35 +69,41 @@ def close_client(ctx: click.Context):
 
 @click_shell.shell(prompt=STATE_PROMPT.prompt, on_finished=close_client)
 @click.option("-v", "--verbose", is_flag=True, default=False)
+@click.option("-s", "--server", is_flag=True, default=False)
 @click.pass_context
-def main(ctx, verbose):
+def main(ctx, verbose, server):
     click.echo(f'Dcs5 Controller App. (version {VERSION})\n')
     level = "ERROR"
     if verbose is True:
         level = "DEBUG"
     init_logging(stdout_level=level)
 
-    controller = start_dcs5_controller()
+    if server is True:
+        runserver()
 
-    STATE_PROMPT.update_controller(controller)
-    ctx.obj = controller
-
-    ctx.obj.reload_configs()
-
-    click.secho(f'Attempting to connect to device ... ')
-    click.secho(f' Name : {ctx.obj.config.client.device_name}')
-    click.secho(f' Mac address : {ctx.obj.config.client.mac_address}')
-    ctx.obj.start_client()
-
-    if ctx.obj.client.isconnected:
-        click.secho('Syncing Board ...', **{'fg': 'red'})
-        ctx.obj.sync_controller_and_board()
-        ctx.obj.start_listening()
     else:
-        click.secho('Device not Found.')
-    click.echo('')
-    click.echo('Type `help` to list commands or `quit` to close the app.')
-    click.echo('')
+
+        controller = start_dcs5_controller()
+
+        STATE_PROMPT.update_controller(controller)
+        ctx.obj = controller
+
+        ctx.obj.reload_configs()
+
+        click.secho(f'Attempting to connect to device ... ')
+        click.secho(f' Name : {ctx.obj.config.client.device_name}')
+        click.secho(f' Mac address : {ctx.obj.config.client.mac_address}')
+        ctx.obj.start_client()
+
+        if ctx.obj.client.isconnected:
+            click.secho('Syncing Board ...', **{'fg': 'red'})
+            ctx.obj.sync_controller_and_board()
+            ctx.obj.start_listening()
+        else:
+            click.secho('Device not Found.')
+        click.echo('')
+        click.echo('Type `help` to list commands or `quit` to close the app.')
+        click.echo('')
 
 
 @main.group('units', help='Change output units.')
