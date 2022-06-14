@@ -98,7 +98,7 @@ class Shouter:
             self._with_shift = False
 
         with pag.hold(self.combo):
-            logging.info(f"Keyboard out: {'+'.join(self.combo)} {value}")
+            logging.debug(f"Keyboard out: {'+'.join(self.combo)} {value}")
             if self.is_valid_key(value):
                 pag.press(value)
             else:
@@ -134,7 +134,7 @@ class BtClient:
         #self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
         self.socket.settimeout(timeout if timeout is not None else self.default_timeout)
         self._mac_address = mac_address
-        logging.info(f'Attempting to connect to board. Timeout: {timeout} seconds')
+        logging.debug(f'Attempting to connect to board. Timeout: {timeout} seconds')
         try:
             for port in range(65535):  # check for all available ports
                 try:
@@ -142,7 +142,7 @@ class BtClient:
                     self.socket.connect((self._mac_address, port))
                     self._port = port
                     self.isconnected = True
-                    logging.info(f'Connected to port {self._port}')
+                    logging.debug(f'Connected to port {self._port}')
                     break
                 except PermissionError:
                     pass
@@ -247,7 +247,6 @@ class Dcs5Controller:
             "UNITS_cm": self.change_length_units_cm
         }
 
-
     def _load_configs(self):
         self.config = load_config(self.config_path)
         self.devices_spec = load_devices_specification(self.devices_specifications_path)
@@ -266,7 +265,7 @@ class Dcs5Controller:
 
     def start_client(self, mac_address: str = None):
         if self.client.isconnected:
-            logging.info("Client Already Connected.")
+            logging.debug("Client Already Connected.")
         else:
             mac_address = mac_address if mac_address is not None else self.config.client.mac_address
             self.client.connect(mac_address, timeout=30)
@@ -278,9 +277,9 @@ class Dcs5Controller:
             self.client.close()
             self.client.isconnected = False
             time.sleep(0.5)
-            logging.info('Client Closed.')
+            logging.info('ui: Client Closed.')
         else:
-            logging.info('Client Already Closed')
+            logging.info('ui: Client Already Closed')
 
     def restart_client(self):
         self.close_client()
@@ -324,18 +323,18 @@ class Dcs5Controller:
         """Unmute board shout output"""
         if self.is_muted:
             self.is_muted = False
-            logging.info('Board unmuted')
+            logging.info('ui: Board unmuted')
 
     def mute_board(self):
         """Mute board shout output"""
         if not self.is_muted:
             self.is_muted = True
-            logging.info('Board muted')
+            logging.info('ui: Board muted')
 
     def sync_controller_and_board(self):
         """Init board to launch settings.
         """
-        logging.info('Syncing Controller and Board.')
+        logging.info('ui: Syncing Controller and Board.')
 
         was_listening = self.is_listening
         self.restart_listening()
@@ -365,9 +364,9 @@ class Dcs5Controller:
                 self.internal_board_state.number_of_reading == reading_profile.number_of_reading
         ):
             self.is_sync = True
-            logging.info("Syncing successful.")
+            logging.info("ui: Syncing successful.")
         else:
-            logging.info("Syncing  failed.")
+            logging.info("ui: Syncing  failed.")
             self.is_sync = False
 
     def wait_for_ping(self, timeout=2):
@@ -385,7 +384,7 @@ class Dcs5Controller:
 
     def calibrate(self, pt: int):
         # TODO test again
-        logging.info("Calibration Mode Enable.")
+        logging.info("ui: Calibration Mode Enable.")
 
         was_listening = self.is_listening
         self.stop_listening()
@@ -398,12 +397,12 @@ class Dcs5Controller:
         try:
             if f'&Xr#: X={pt}\r' in self.client.buffer:
                 pt_value = self.internal_board_state.__dict__[f"cal_pt_{pt}"]
-                logging.info(f"Calibration for point {pt}. Set stylus down at {pt_value} mm ...")
+                logging.info(f"ui: Calibration for point {pt}. Set stylus down at {pt_value} mm ...")
                 while f'&{pt}c' not in self.client.buffer:
                     self.client.receive()
-                logging.info(f'Point {pt} calibrated.')
+                logging.info(f'ui: Point {pt} calibrated.')
         except KeyError:
-            logging.info('Calibration Failed.')
+            logging.info('ui: Calibration Failed.')
         finally:
             self.client.socket.settimeout(self.client.default_timeout)
 
@@ -412,17 +411,17 @@ class Dcs5Controller:
 
     def change_length_units_mm(self):
         self.length_units = "mm"
-        logging.info(f"Length Units Change to mm")
+        logging.info(f"ui: Length Units Change to mm")
 
     def change_length_units_cm(self):
         self.length_units = "cm"
-        logging.info(f"Length Units Change to cm")
+        logging.info(f"ui: Length Units Change to cm")
 
     def change_stylus(self, value: str):
         """Stylus must be one of [pen, finger]"""
         self.stylus = value
         self.stylus_offset = self.devices_spec.stylus_offset[self.stylus]
-        logging.info(f'Stylus set to {self.stylus}. Stylus offset {self.stylus_offset}')
+        logging.info(f'ui: Stylus set to {self.stylus}. Stylus offset {self.stylus_offset}')
 
     def cycle_stylus(self):
         self.change_stylus(next(self.stylus_cyclical_list))
@@ -432,7 +431,7 @@ class Dcs5Controller:
         value must be one of  [length, bottom, top]
         """
         self.output_mode = value
-        logging.info(f'Board entry: {self.output_mode}.')
+        logging.debug(f'Board entry: {self.output_mode}.')
         if self.dynamic_stylus_settings is True:
             reading_profile = self.config.reading_profiles[
                 self.config.output_modes.mode_reading_profiles[self.output_mode]
@@ -448,7 +447,7 @@ class Dcs5Controller:
                 self.internal_board_state.backlighting_level = self.control_box_parameters.max_backlighting_level
             self.c_set_backlighting_level(self.internal_board_state.backlighting_level)
         else:
-            logging.info("Backlighting is already at maximum.")
+            logging.info("ui: Backlighting is already at maximum.")
 
     def backlight_down(self):
         if self.internal_board_state.backlighting_level > 0:
@@ -457,7 +456,7 @@ class Dcs5Controller:
                 self.internal_board_state.backlighting_level = 0
             self.c_set_backlighting_level(self.internal_board_state.backlighting_level)
         else:
-            logging.info("Backlighting is already at minimum.")
+            logging.info("ui: Backlighting is already at minimum.")
 
     def shout(self, value: Union[int, float, str]):
         if not self.is_muted:
@@ -494,10 +493,10 @@ class Dcs5Controller:
         self.command_handler.queue_command(f"&fm,{value}#", None)
         if value == 0:
             self.internal_board_state.board_interface = "DCSLinkstream"
-            logging.info(f'Interface set to {self.internal_board_state.board_interface}')
+            logging.info(f'ui: Interface set to {self.internal_board_state.board_interface}')
         elif value == 1:
             self.internal_board_state.board_interface = "FEED"
-            logging.info(f'Interface set to {self.internal_board_state.board_interface}')
+            logging.info(f'ui: Interface set to {self.internal_board_state.board_interface}')
 
     def c_set_backlighting_level(self, value: int):
         if 0 <= value <= self.control_box_parameters.max_backlighting_level:
@@ -615,55 +614,55 @@ class CommandHandler:
             if len(match) > 0:
                 if match[0] == "1":
                     self.controller.internal_board_state.stylus_status_msg = "enable"
-                    logging.info('Stylus Status Message Enable')
+                    logging.info('ui: Stylus Status Message Enable')
                 else:
                     self.controller.internal_board_state.stylus_status_msg = "disable"
-                    logging.info('Stylus Status Message Disable')
+                    logging.info('ui: Stylus Status Message Disable')
 
         elif "di" in received:
             match = re.findall(f"%di:(\d)#\r", received)
             if len(match) > 0:
                 self.controller.internal_board_state.stylus_settling_delay = int(match[0])
-                logging.info(f"Stylus settling delay set to {match[0]}")
+                logging.info(f"ui: Stylus settling delay set to {match[0]}")
 
         elif "dm" in received:
             match = re.findall(f"%dm:(\d)#\r", received)
             if len(match) > 0:
                 self.controller.internal_board_state.stylus_max_deviation = int(match[0])
-                logging.info(f"Stylus max deviation set to {int(match[0])}")
+                logging.info(f"ui: Stylus max deviation set to {int(match[0])}")
 
         elif "dn" in received:
             match = re.findall(f"%dn:(\d)#\r", received)
             if len(match) > 0:
                 self.controller.internal_board_state.number_of_reading = int(match[0])
-                logging.info(f"Stylus number set to {int(match[0])}")
+                logging.info(f"ui: Stylus number set to {int(match[0])}")
 
         elif "%b" in received:
             match = re.findall("%b:(.*)#", received)
             if len(match) > 0:
-                logging.info(f'Board State: {match[0]}')
+                logging.info(f'ui: Board State: {match[0]}')
                 self.controller.internal_board_state.board_stats = match[0]
 
         elif "%q" in received:
             match = re.findall("%q:(-*\d*,\d*)#", received)
             if len(match) > 0:
-                logging.info(f'Battery level: {match[0]}')
+                logging.info(f'ui: Battery level: {match[0]}')
                 self.controller.internal_board_state.battery_level = match[0]
 
         elif "%u:" in received:
             match = re.findall("%u:(\d)#", received)
             if len(match) > 0:
                 if match[0] == '0':
-                    logging.info('Board is not calibrated.')
+                    logging.info('ui: Board is not calibrated.')
                     self.controller.internal_board_state.calibrated = False
                 elif match[0] == '1':
-                    logging.info('Board is calibrated.')
+                    logging.info('ui: Board is calibrated.')
                     self.controller.internal_board_state.calibrated = True
             else:
                 logging.error(f'Calibration state {self.controller.client.buffer}')
 
         elif 'Cal Pt' in received:
-            logging.info(received.strip("\r") + " mm")
+            logging.debug(received.strip("\r") + " mm")
             match = re.findall("Cal Pt (\d) set to: (\d)", received)
             if len(match) > 0:
                 self.controller.internal_board_state.__dict__[f'cal_pt_{match[0][0]}'] = int(match[0][1])
@@ -677,7 +676,7 @@ class CommandHandler:
     def _send_command(self):
         command = self.send_queue.get()
         self.controller.client.send(command)
-        logging.info(f'Command Sent: {[command]}')
+        logging.debug(f'Command Sent: {[command]}')
 
 
 class SocketListener:
@@ -722,7 +721,7 @@ class SocketListener:
             logging.debug(f'Received Message: {message}')
             out_value = None
             msg_type, msg_value = self._decode_board_message(message)
-            logging.info(f"Message Type: {msg_type}, Message Value: {msg_value}")
+            logging.debug(f"Message Type: {msg_type}, Message Value: {msg_value}")
             if msg_type == "controller_box_key":
                 out_value = self.controller.config.key_maps.control_box[
                     self.controller.devices_spec.control_box.keys_layout[msg_value]

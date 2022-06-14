@@ -8,20 +8,73 @@ from dcs5.utils import resolve_relative_path
 DEFAULT_FILE_PATH = "../logs/dcs5_log"
 
 
+class BasicLoggerFormatter(logging.Formatter):
+    level_width = 10
+    thread_width = 10
+
+    def format(self, record):
+        fmt_time = "("+self.formatTime(record, self.datefmt)+")"
+        fmt_thread = f"{'{'}{record.threadName}{'}'}".ljust(self.thread_width)
+        fmt_level = f"[{record.levelname}]".ljust(self.level_width)
+        fmt_message = record.getMessage()
+        return f"{fmt_time} - {fmt_thread} - {fmt_level} - {fmt_message}"
+
+
+class UiLoggerFormatter(logging.Formatter):
+    level_width = 10
+    thread_width = 10
+
+    def format(self, record):
+        fmt_time = "("+self.formatTime(record, self.datefmt)+")"
+        fmt_message = record.getMessage().strip("ui: ")
+        return f"{fmt_time} - {fmt_message}"
+
+
+class UserInterfaceFilter(logging.Filter):
+    def filter(self, record):
+        return record.getMessage().startswith("ui:")
+
+
 def init_logging(
-        file_path=None,
         stdout_level="INFO",
+        ui=False,
+        file_path=None,
         file_level="DEBUG",
         write=False,
 ):
+    """
+
+    Parameters
+    ----------
+    stdout_level :
+        Level of the sys.output logging.
+    ui :
+        Show ui (user interface) log messages. (logging.Filter).
+    file_path :
+        path where to save the log file. Defaults to dcs5/dcs5/logs/dcs5_log_{YYYYMMDDThhmmss}.log
+    file_level :
+        Level of the file logging.
+    write :
+        If True, writes the logfile to file_path.
+
+    Returns
+    -------
+
+    """
     file_path = resolve_relative_path(DEFAULT_FILE_PATH, __file__) or file_path
 
-    formatter = logging.Formatter("%(asctime)s {%(threadName)s} [%(levelname)s] %(message)s")
+    formatter = BasicLoggerFormatter()
     handlers = []
 
     stdout_handler = logging.StreamHandler(sys.stdout)
-    stdout_handler.setLevel(stdout_level.upper())
-    stdout_handler.setFormatter(formatter)
+    if ui is True:
+        stdout_handler.setLevel("INFO")
+        stdout_handler.addFilter(UserInterfaceFilter())
+        stdout_handler.setFormatter(UiLoggerFormatter())
+    else:
+        stdout_handler.setLevel(stdout_level.upper())
+        stdout_handler.setFormatter(formatter)
+
     handlers.append(stdout_handler)
 
     if write is True:

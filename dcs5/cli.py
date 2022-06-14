@@ -68,15 +68,14 @@ def close_client(ctx: click.Context):
 
 
 @click_shell.shell(prompt=STATE_PROMPT.prompt, on_finished=close_client)
-@click.option("-v", "--verbose", is_flag=True, default=False)
+@click.option("-v", "--verbose", type=click.Choice(['info', 'debug', 'warning', 'error']), default='error')
+@click.option("-u", "--user_interface", is_flag=True, default=False)
 @click.option("-s", "--server", is_flag=True, default=False)
 @click.pass_context
-def main(ctx, verbose, server):
+def main(ctx, verbose, user_interface, server):
     click.echo(f'Dcs5 Controller App. (version {VERSION})\n')
-    level = "ERROR"
-    if verbose is True:
-        level = "DEBUG"
-    init_logging(stdout_level=level)
+
+    init_logging(stdout_level=verbose.upper(), ui=user_interface)
 
     if server is True:
         runserver()
