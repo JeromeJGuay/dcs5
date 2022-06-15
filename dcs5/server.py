@@ -13,9 +13,9 @@ ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
 
 HOST = "127.0.0.1"  # Standard loopback interface address (localhost)
-PORT = 65432  # Port to listen on (non-privileged ports are > 1023)
+PORT = 65431  # Port to listen on (non-privileged ports are > 1023)
 
-init_logging(stdout_level="info")
+init_logging(stdout_level="debug")
 
 
 def start_dcs5_controller(
@@ -40,6 +40,9 @@ CONTROLLER = start_dcs5_controller()
 
 
 class Server:
+    """
+    Add a Queue to Push the server, new shouted ? New Shouter ?
+    """
     def __init__(self):
         self.is_active = True
         self.socket: socket.socket = None
@@ -61,6 +64,7 @@ class Server:
                     pass
                 elif data == "hello board":
                     conn.sendall("hello andes".encode(ENCODING))
+                    logging.info('The Client Said Hello.')
                 elif data == "goodbye":
                     logging.info(f'{addr} said goodbye.')
                     conn.sendall("yay".encode(ENCODING))

@@ -22,6 +22,7 @@ References
 """
 
 import logging
+import queue
 import re
 import socket
 import threading
@@ -71,23 +72,42 @@ class InternalBoardState:
 
 class Shouter:
     def __init__(self):
+        self.input: str = None
+
+    def is_valid_key(self):
+        if isinstance(self.input, list):
+            return all(map(pag.isValidKey, self.input))
+        else:
+            return pag.isValidKey(self.input)
+
+
+class ServerInput(Shouter):
+    def __init__(self):
+        self.input_queue = queue.Queue()
+
+
+class KeyboardInput(Shouter):
+    def __init__(self):
+        super(Shouter, self).__init__()
         self._with_control = False
         self._with_shift = False
         self._with_alt = False
+        self.input: str = None
 
         self.combo = []
 
     def shout_to_keyboard(self, value: str):
-        if value == 'ctrl':
+        self.input = value
+        if self.input == 'ctrl':
             self._with_control = not self._with_control
-        elif value == 'shift':
+        elif self.input == 'shift':
             self._with_shift = not self._with_shift
-        elif value == 'alt':
+        elif self.input == 'alt':
             self._with_alt = not self._with_alt
         else:
-            self._shout_to_keyboard(value)
+            self._shout_to_keyboard()
 
-    def _shout_to_keyboard(self, value):
+    def _shout_to_keyboard(self):
         if self._with_control:
             self.combo.append('ctrl')
             self._with_control = False
@@ -99,19 +119,12 @@ class Shouter:
             self._with_shift = False
 
         with pag.hold(self.combo):
-            logging.debug(f"Keyboard out: {'+'.join(self.combo)} {value}")
-            if self.is_valid_key(value):
-                pag.press(value)
+            logging.debug(f"Keyboard out: {'+'.join(self.combo)} {self.input}")
+            if self.is_valid_key(self.input):
+                pag.press(self.input)
             else:
-                pag.write(str(value))
+                pag.write(str(self.input))
             self.combo = []
-
-    @staticmethod
-    def is_valid_key(value):
-        if isinstance(value, list):
-            return all(map(pag.isValidKey, value))
-        else:
-            return pag.isValidKey(value)
 
 
 class BtClient:
@@ -242,7 +255,7 @@ class Dcs5Controller:
         self.client = BtClient()
 
         self.internal_board_state = InternalBoardState()  # BoardCurrentState
-        self.shouter = Shouter()
+        self.shouter = KeyboardInput()
 
         self.mappable_commands = {
             "BACKLIGHT_UP": self.backlight_up,
@@ -800,4 +813,3 @@ class SocketListener:
                 if l_max >= int(value) > l_min:
                     self.controller.change_board_output_mode(mode)
                     break
-

@@ -4,8 +4,8 @@ from dcs5.cli_app import cli_app
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--server', action='store_true', default=False, help='Start cli app')
-    parser.add_argument('--cli', action='store_true', default=False, help='start server')
+    parser.add_argument('--server', action='store_true', default=False, help='start server.')
+    parser.add_argument('--cli', action='store_true', default=False, help='start cli interface.')
 
     args, unknownargs = parser.parse_known_args()
 

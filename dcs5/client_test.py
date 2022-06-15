@@ -6,7 +6,7 @@ ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
 
 HOST = "127.0.0.1"  # The server's hostname or IP address
-PORT = 65432  # The port used by the server
+PORT = 65431  # The port used by the server
 
 
 class Client:
@@ -28,7 +28,7 @@ class Client:
         except socket.timeout:
             pass
 
-    def chat(self, msg):
+    def query(self, msg):
         self.send(msg)
         self.receive()
         print(self.buffer)
