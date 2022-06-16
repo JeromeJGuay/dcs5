@@ -120,7 +120,7 @@ class KeyboardInput(Shouter):
 
         with pag.hold(self.combo):
             logging.debug(f"Keyboard out: {'+'.join(self.combo)} {self.input}")
-            if self.is_valid_key(self.input):
+            if self.is_valid_key():
                 pag.press(self.input)
             else:
                 pag.write(str(self.input))
