@@ -140,16 +140,16 @@ class Server:
                 if args[0] == "mm":
                     CONTROLLER.change_length_units_mm()
                     logging.debug(f'Server: Valid Command')
-                    self.send('valid')
+                    self.send('mm')
                 elif args[0] == "cm":
                     CONTROLLER.change_length_units_cm()
                     logging.debug(f'Server: Valid Command')
-                    self.send('valid')
+                    self.send('cm')
                 else:
                     logging.debug(f'Server: Inalid Arguments')
 
             elif command == "restart":
-                self.send("valid")
+                self.send("restart")
                 logging.debug(f'Server: Valid Command')
                 CONTROLLER.restart_client()
                 if CONTROLLER.client.isconnected:
@@ -158,38 +158,38 @@ class Server:
                 self.send('Board Ready')
 
             elif command == "mute":
-                self.send("valid")
+                self.send("mute")
                 logging.debug(f'Server: Valid Command')
                 CONTROLLER.mute_board()
 
             elif command == "unmute":
-                self.send("valid")
+                self.send("unmute")
                 logging.debug(f'Server: Valid Command')
                 CONTROLLER.unmute_board()
 
             elif command == "mode":
                 if args[0] == "top":
-                    self.send("valid")
+                    self.send("top")
                     logging.debug(f'Server: Valid Command')
                     CONTROLLER.change_board_output_mode('top')
                 elif args[0] == "bottom":
-                    self.send("valid")
+                    self.send("bottom")
                     logging.debug(f'Server: Valid Command')
                     CONTROLLER.change_board_output_mode('bottom')
                 elif args[0] == "length":
-                    self.send("valid")
+                    self.send("length")
                     logging.debug(f'Server: Valid Command')
                     CONTROLLER.change_board_output_mode('length')
                 else:
                     logging.debug(f'Server: Invalid Arguments')
 
             elif data == "state":
-                state = {
-                    'isconnected': CONTROLLER.client.isconnected,
-                    'mode': CONTROLLER.output_mode,
-                    'units': CONTROLLER.length_units,
-                    'stylus': CONTROLLER.stylus}
-                conn.sendall(str(state).encode(ENCODING))
+                self.send(
+                    "state",
+                    [CONTROLLER.client.isconnected, CONTROLLER.output_mode,
+                     CONTROLLER.length_units, CONTROLLER.stylus]
+                )
+                logging.debug(f'Server: Valid Command')
             else:
                 logging.debug(f'Server: Invalid Command')
 
