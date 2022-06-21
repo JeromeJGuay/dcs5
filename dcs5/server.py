@@ -1,6 +1,8 @@
 import socket
 import logging
 import re
+import json
+import time
 
 from dcs5.logger import init_logging
 
@@ -33,181 +35,147 @@ def start_dcs5_controller(
     controller = Dcs5Controller(config_path, devices_specifications_path, control_box_parameters_path)
     controller.start_client()
     if controller.client.isconnected:
-        controller.sync_controller_and_board()
-        controller.start_listening()
+       controller.sync_controller_and_board()
+       controller.start_listening()
 
     return controller
 
 
-CONTROLLER = start_dcs5_controller()
-
-
 class Server:
-    """
-    Add a Queue to Push the server, new shouted ? New Shouter ?
-    """
-    tag_i = "%"
-    tag_v = ":"
-    sep_v = ","
-    tag_f = "#"
-
+    """Server communicates with json serialization."""
     def __init__(self):
-        self.is_connected = False
         self.socket: socket.socket = None
-        self.conn: socket.socket = None
-        self.regex = f"{self.tag_i}(.*?){self.tag_v}(.*?)(?:{self.sep_v}|$)*{self.tag_f}"
-        self.default_timeout = .5
+        self.controller: Dcs5Controller = None
+        self.total_connections = 0
+
+    def start_controller(self):
+        self.controller = start_dcs5_controller()
 
     def bind(self, host, port):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind((host, port))
-        logging.info('App Server is Online')
+        logging.info('Dcs5SServer: Online')
 
     def close(self):
-        if self.is_connected:
-            self.conn.close()
         self.socket.close()
 
-    def format_msg(self, command, args):
-        if args is None:
-            args = []
-        return self.tag_i + command + self.tag_v + self.sep_v.join(args) + self.tag_f
-
-    def decode(self, msg):
-        match = re.findall(self.regex, msg)
-        logging.debug(f'Server: Received: {msg}')
-        if len(match) > 0:
-            m = match[0]
-            command = m[0]
-            args = m[1].split(self.sep_v)
-            return command, args
-        else:
-            logging.debug(f'Server: Invalid Command')
-            return None, None
-
-    def send(self, command, args: list = None):
-        msg = self.format_msg(command, args)
-        logging.debug(f'Server: Sent {msg}')
-        self.conn.sendall(msg.encode(ENCODING))
-
-    def validate_connection(self, conn: socket):
-        msg = conn.recv(BUFFER_SIZE).decode(ENCODING)
-        logging.debug(f'Server: Auth Received: {msg}')
-        command, args = self.decode(msg)
-        if args[0] in VALID_AUTH_KEY:
-            logging.debug('Authentication Successful')
-            self.is_connected = True
-            self.conn = conn
-            msg = self.format_msg('auth', ['1'])
-            conn.sendall(msg.encode(ENCODING))
-        else:
-            logging.debug('Authentication Failed')
-            msg = self.format_msg('auth', ['0'])
-            conn.sendall(msg.encode(ENCODING))
-            conn.close()
-
-    def runserver(self):
+    def listen(self):
         self.socket.listen(1)
-        conn, addr = self.socket.accept()
-        logging.debug(f"New Client {addr}.")
-
-        self.validate_connection(conn)
-
-        while self.is_connected:
-            data = self.conn.recv(BUFFER_SIZE).decode(ENCODING)
-            if not data:
-                try:
-                    self.send('ping')
-                except BrokenPipeError as err:
-                    logging.debug(f'Client {addr} disconnected.')
-                    self.is_connected = False
-                    self.conn.close()
-                continue
-            else:
-                command, args = self.decode(data)
-
-            if command == "ping":
-                self.send("ping")
-                logging.debug(f'{addr} pinged.')
-
-            elif command == "goodbye":
-                self.send('goodbye')
-                logging.debug(f'Client {addr} disconnected.')
-                self.is_connected = False
-                self.conn.close()
-
-            elif command == "units":
-                if args[0] == "mm":
-                    CONTROLLER.change_length_units_mm()
-                    logging.debug(f'Server: Valid Command')
-                    self.send('mm')
-                elif args[0] == "cm":
-                    CONTROLLER.change_length_units_cm()
-                    logging.debug(f'Server: Valid Command')
-                    self.send('cm')
-                else:
-                    logging.debug(f'Server: Inalid Arguments')
-
-            elif command == "restart":
-                self.send("restart")
-                logging.debug(f'Server: Valid Command')
-                CONTROLLER.restart_client()
-                if CONTROLLER.client.isconnected:
-                    CONTROLLER.sync_controller_and_board()
-                    CONTROLLER.start_listening()
-                self.send('Board Ready')
-
-            elif command == "mute":
-                self.send("mute")
-                logging.debug(f'Server: Valid Command')
-                CONTROLLER.mute_board()
-
-            elif command == "unmute":
-                self.send("unmute")
-                logging.debug(f'Server: Valid Command')
-                CONTROLLER.unmute_board()
-
-            elif command == "mode":
-                if args[0] == "top":
-                    self.send("top")
-                    logging.debug(f'Server: Valid Command')
-                    CONTROLLER.change_board_output_mode('top')
-                elif args[0] == "bottom":
-                    self.send("bottom")
-                    logging.debug(f'Server: Valid Command')
-                    CONTROLLER.change_board_output_mode('bottom')
-                elif args[0] == "length":
-                    self.send("length")
-                    logging.debug(f'Server: Valid Command')
-                    CONTROLLER.change_board_output_mode('length')
-                else:
-                    logging.debug(f'Server: Invalid Arguments')
-
-            elif data == "state":
-                self.send(
-                    "state",
-                    [CONTROLLER.client.isconnected, CONTROLLER.output_mode,
-                     CONTROLLER.length_units, CONTROLLER.stylus]
-                )
-                logging.debug(f'Server: Valid Command')
-            else:
-                logging.debug(f'Server: Invalid Command')
-
-
-def start_server():
-    s = Server()
-    s.bind(HOST, PORT)
-
-    try:
         while 1:
-            s.runserver()
-    except KeyboardInterrupt:
-        pass
+            auth_response = 0
+            command_response = 0
+            state = {
+                "connected": None,
+                "mode": None,
+                "units": None,
+                "stylus": None
+            }
+            logging.info('Dcs5SServer: Waiting for Client ...')
+            conn, addr = self.socket.accept()
+            logging.debug(f"New Client {addr}.")
+
+            data = conn.recv(BUFFER_SIZE).decode(ENCODING)
+            logging.debug('Dcs5Server: Receiving Done')
+            if data:
+                json_data = json.loads(data)
+                logging.debug(f'Dcs5Server: Data Received {json_data}')
+                # TODO LOGGING
+                if json_data['auth'] in VALID_AUTH_KEY:
+                    auth_response = 1
+                    command_response = self.process_command(json_data['command'])
+                    if self.controller is not None:
+                        state.update({
+                            "connected": self.controller.client.isconnected,
+                            "mode": self.controller.output_mode,
+                            "units": self.controller.length_units,
+                            "stylus": self.controller.stylus
+                        })
+
+                response = {
+                            'auth': auth_response,
+                            'command': command_response,
+                            'state': state
+                        }
+
+                conn.sendall(
+                    json.dumps(
+                        response
+                    ).encode(ENCODING)
+                )
+                logging.debug(f'Dcs5Server: Data Sent. {response}')
+
+            conn.close()
+            self.total_connections += 1
+            logging.debug(f'Dcs5Server: {addr} socket closed. total_connections: {self.total_connections}')
+
+    def process_command(self, command: str):
+        if command == "ping":
+            return 1
+        if command == "units_mm":
+            if self.controller is not None:
+                self.controller.change_length_units_mm()
+            return 1
+        if command == "units_cm":
+            if self.controller is not None:
+                self.controller.change_length_units_cm()
+            return 1
+        if command == "stylus_pen":
+            if self.controller is not None:
+                self.controller.change_stylus('pen')
+            return 1
+        if command == "stylus_finger":
+            if self.controller is not None:
+                self.controller.change_stylus('finger')
+            return 1
+        if command == "mode_top":
+            if self.controller is not None:
+                self.controller.change_board_output_mode('top')
+            return 1
+        if command == "mode_bot":
+            if self.controller is not None:
+                self.controller.change_board_output_mode('bottom')
+            return 1
+        if command == "mode_length":
+            if self.controller is not None:
+                self.controller.change_board_output_mode('length')
+            return 1
+        if command == "mute":
+            if self.controller is not None:
+                self.controller.mute_board()
+            return 1
+        if command == "unmute":
+            if self.controller is not None:
+                self.controller.unmute_board()
+            return 1
+
+        return 0
+
+
+def start_server(start_controller: bool = True, reconnection_attempts=5):
+    s = Server()
+    if start_controller is True:
+        logging.debug('Dcs5Server: Starting Controller')
+        s.start_controller()
+    try:
+        count = 0
+        while 1:
+            try:
+                s.bind(HOST, PORT)
+                count = 0
+                s.listen()
+            except Exception as err:
+                s.close()
+                time.sleep(1)
+                logging.error(f"Dcs5Server: Error on listen loop {err}. Relaunching Server.")
+                count += 1
+                if count > reconnection_attempts:
+                    logging.error(f"Dcs5Server: Failed to relaunching Server.")
+                    break
+    except KeyboardInterrupt as err:
+        logging.debug(f'Dcs5Server: KeyBoard Interrupt')
     finally:
-        logging.debug('Dcs5Server: Shutting Down Server')
+        logging.info('Dcs5Server: Shutting Down Server')
+        if s.controller is not None:
+            s.controller.close_client()
         s.close()
-
-
-if __name__ == "__main__":
-    start_server()
 
