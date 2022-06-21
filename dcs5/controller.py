@@ -693,7 +693,7 @@ class CommandHandler:
 
     def _send_command(self):
         command = self.send_queue.get()
-        self.controller.client.send(command)
+        self.controller.client.sendall(command)
         logging.debug(f'Command Sent: {[command]}')
 
 
@@ -755,7 +755,7 @@ class SocketListener:
                     self._check_for_stylus_swipe(msg_value)
                 else:
                     out_value = self._map_board_length_measurement(msg_value)
-            elif msg_type == "unsolicited":
+            elif msg_type == "solicited":
                 self.controller.command_handler.received_queue.put(msg_value)
 
             if out_value is not None:
@@ -775,7 +775,7 @@ class SocketListener:
             elif match[0][3] != "":
                 return 'controller_box_key', match[0][3]
         else:
-            return 'unsolicited', value
+            return 'solicited', value
 
     def _process_output(self, value):
         if isinstance(value, list):
