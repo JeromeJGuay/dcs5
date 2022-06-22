@@ -1,3 +1,6 @@
+"""
+This modules contains some utils for path handling and json files.
+"""
 import json
 from pathlib import PurePath
 from typing import *

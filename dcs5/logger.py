@@ -1,3 +1,7 @@
+"""
+May 2022 JeromeJGuay
+This modules contains script to init the logger.
+"""
 import logging
 import sys
 import time

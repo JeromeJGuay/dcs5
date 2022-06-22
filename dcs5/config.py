@@ -1,5 +1,9 @@
 """
-Module that contains the scripts to load controller configuration.
+Module that contains the scripts to load the board configurations.
+That is:
+    - Bluetooth Parameters
+    - Controller Launch Settings
+    -
 
 """
 from dataclasses import dataclass
@@ -139,5 +143,15 @@ class ControllerConfiguration:
 
 
 def load_config(path: str):
-    configurations = json2dict(path)
-    return ControllerConfiguration(**configurations)
+    return ControllerConfiguration(**json2dict(path))
+
+
+@dataclass
+class ServerConfiguration:
+    host: str
+    port: int
+
+
+def load_server_config(path: str):
+    return ServerConfiguration(**json2dict(path))
+

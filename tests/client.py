@@ -1,3 +1,6 @@
+"""
+This module contains to test the server. Additionally this code could be copied in another app.
+"""
 import socket
 import logging
 import json

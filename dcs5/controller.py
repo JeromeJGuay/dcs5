@@ -2,13 +2,9 @@
 Author : JeromeJGuay
 Date : May 2022
 
-wine /home/jeromejguay/.wine/drive_c/users/jeromejguay/AppData/Local/Programs/Python/Python38/Script/pyinstaller.exe --onefile dcs5/gui.py
-
 This module contains the Class relative to the DCS5_XT Board Controller and Client.
 
-Valid Board Commands for key mapping : 'BACKLIGHT_UP', 'BACKLIGHT_DOWN', 'CHANGE_STYLUS', 'UNITS_mm', 'UNITS_cm'
-
-Notes
+Notes # TODO
 -----
  The code is written for a stylus calibration.
     Calibration should probably be done with the Finger Stylus and not the Pen Stylus
@@ -33,11 +29,10 @@ from typing import *
 
 import bluetooth
 import pyautogui as pag
-from bluetooth import BluetoothSocket
 
 from dcs5.config import load_config, ControllerConfiguration
-from dcs5.devices_specification import load_devices_specification, DevicesSpecification
-from dcs5.statics import load_control_box_parameters, ControlBoxParameters
+from dcs5.dcs5_devices_specification import load_devices_specification, DevicesSpecification
+from dcs5.dcs5_control_box_statics import load_control_box_parameters, ControlBoxParameters
 
 BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024

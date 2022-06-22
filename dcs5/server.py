@@ -4,10 +4,11 @@ import re
 import json
 import time
 
-from dcs5.logger import init_logging
-
 from dcs5 import VERSION, DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROLLER_CONFIGURATION_FILE, \
-    XT_BUILTIN_PARAMETERS
+    XT_BUILTIN_PARAMETERS, DEFAULT_SERVER_CONFIGURATION_FILE
+
+from dcs5.logger import init_logging
+from dcs5.config import load_server_config
 
 from dcs5.controller import Dcs5Controller
 from dcs5.utils import resolve_relative_path
@@ -16,9 +17,6 @@ ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
 
 VALID_AUTH_KEY = ["9999"]
-
-HOST = "127.0.0.1"  # Standard loopback interface address (localhost)
-PORT = 9999  # Port to listen on (non-privileged ports are > 1023)
 
 init_logging(stdout_level="debug")
 
@@ -35,14 +33,15 @@ def start_dcs5_controller(
     controller = Dcs5Controller(config_path, devices_specifications_path, control_box_parameters_path)
     controller.start_client()
     if controller.client.isconnected:
-       controller.sync_controller_and_board()
-       controller.start_listening()
+        controller.sync_controller_and_board()
+        controller.start_listening()
 
     return controller
 
 
 class Server:
     """Server communicates with json serialization."""
+
     def __init__(self):
         self.socket: socket.socket = None
         self.controller: Dcs5Controller = None
@@ -54,7 +53,7 @@ class Server:
     def bind(self, host, port):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind((host, port))
-        logging.info('Dcs5SServer: Online')
+        logging.info(f'Dcs5SServer: Online. ({host}:{port})')
 
     def close(self):
         self.socket.close()
@@ -92,10 +91,10 @@ class Server:
                         })
 
                 response = {
-                            'auth': auth_response,
-                            'command': command_response,
-                            'state': state
-                        }
+                    'auth': auth_response,
+                    'command': command_response,
+                    'state': state
+                }
 
                 conn.sendall(
                     json.dumps(
@@ -151,16 +150,25 @@ class Server:
         return 0
 
 
-def start_server(start_controller: bool = True, reconnection_attempts=5):
+def start_server(start_controller: bool = True,
+                 reconnection_attempts=5,
+                 host: str = None,
+                 port: int = None):
+
+    server_config = load_server_config(resolve_relative_path(DEFAULT_SERVER_CONFIGURATION_FILE,__file__))
+
+    host = host if host is not None else server_config.host
+    port = port if port is not None else server_config.port
+
     s = Server()
     if start_controller is True:
-        logging.debug('Dcs5Server: Starting Controller')
+        logging.debug(f'Dcs5Server: Starting Controller. Controller Version {VERSION}')
         s.start_controller()
     try:
         count = 0
         while 1:
             try:
-                s.bind(HOST, PORT)
+                s.bind(host, port)
                 count = 0
                 s.listen()
             except Exception as err:
@@ -178,4 +186,3 @@ def start_server(start_controller: bool = True, reconnection_attempts=5):
         if s.controller is not None:
             s.controller.close_client()
         s.close()
-

@@ -2,6 +2,8 @@
 Author : JeromeJGuay
 Date : May 2022
 This Module Contains functions to Scan Bluetooth devices and Find a specific bluetooth device.
+
+June 22, 2022. Currently not used
 """
 
 import click

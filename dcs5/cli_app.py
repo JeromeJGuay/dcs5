@@ -1,4 +1,6 @@
-#!/home/jeromejguay/anaconda3/bin/dcs5/bin/python
+"""
+This module contains the code for the cli application.
+"""
 import logging
 import click
 import click_shell
