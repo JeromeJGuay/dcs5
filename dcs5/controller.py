@@ -181,7 +181,7 @@ class BtClient:
         return self._buffer
 
     def send(self, command: str):
-        self.socket.send(command.encode(BOARD_MSG_ENCODING))
+        self.socket.sendall(command.encode(BOARD_MSG_ENCODING))
 
     def receive(self):
         try:
@@ -688,7 +688,7 @@ class CommandHandler:
 
     def _send_command(self):
         command = self.send_queue.get()
-        self.controller.client.sendall(command)
+        self.controller.client.send(command)
         logging.debug(f'Command Sent: {[command]}')
 
 
