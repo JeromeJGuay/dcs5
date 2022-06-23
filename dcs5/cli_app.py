@@ -5,8 +5,8 @@ import logging
 import click
 import click_shell
 
-
-from dcs5 import VERSION, DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROLLER_CONFIGURATION_FILE, XT_BUILTIN_PARAMETERS
+from dcs5 import VERSION, DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROLLER_CONFIGURATION_FILE, \
+    XT_BUILTIN_PARAMETERS
 from dcs5.logger import init_logging
 from dcs5.controller import Dcs5Controller
 from dcs5.utils import resolve_relative_path
@@ -31,26 +31,38 @@ class StatePrompt:
             if self._debug_mode is True:
                 msg += click.style(f"Debug Mode", fg='red')
             else:
-                msg += click.style(f"Connected: ", fg='red')
-                msg += click.style(f"{self._controller.client.isconnected}", bold=True)
+                if self._controller.client.isconnected:
+                    msg += click.style(f"Connected: ", fg='green')
+                    msg += click.style(f"true", bold=True)
+                else:
+                    msg += click.style(f"Connected: ", fg='red')
+                    msg += click.style(f"false", bold=True)
                 msg += click.style(' | ', bold=True)
-                msg += click.style(f"Mode: ", fg='red')
+                if self._controller.internal_board_state.calibrated:
+                    msg += click.style(f"Calibrated: ", fg='green')
+                    msg += click.style(f"true", bold=True)
+                else:
+                    msg += click.style(f"Calibrated: ", fg='red')
+                    msg += click.style(f"false", bold=True)
+                msg += click.style(' | ', bold=True)
+                if self._controller.is_sync:
+                    msg += click.style(f"Sync: ", fg='green')
+                    msg += click.style(f"true", bold=True)
+                else:
+                    msg += click.style(f"Sync: ", fg='red')
+                    msg += click.style(f"false", bold=True)
+                msg += click.style(' | ', bold=True)
+                msg += click.style(f"Mode: ", fg='white')
                 msg += click.style(f"{self._controller.output_mode}", bold=True)
                 msg += click.style(' | ', bold=True)
-                msg += click.style(f"Units: ", fg='red')
+                msg += click.style(f"Units: ", fg='white')
                 msg += click.style(f"{self._controller.length_units}", bold=True)
                 msg += click.style(' | ', bold=True)
-                msg += click.style(f"Stylus: ", fg='red')
+                msg += click.style(f"Stylus: ", fg='white')
                 msg += click.style(f"{self._controller.stylus}", bold=True)
                 msg += click.style(' | ', bold=True)
-                msg += click.style(f"Muted: ", fg='red')
-                msg += click.style(f"{self._controller.is_muted}", bold=True)
-                msg += click.style(' | ', bold=True)
-                msg += click.style(f"Calibrated: ", fg='red')
-                msg += click.style(f"{self._controller.internal_board_state.calibrated}", bold=True)
-                msg += click.style(' | ', bold=True)
-                msg += click.style(f"Sync: ", fg='red')
-                msg += click.style(f"{self._controller.is_sync}", bold=True)
+                msg += click.style(f"Muted: ", fg='white')
+                msg += click.style(f"{str(self._controller.is_muted).lower()}", bold=True)
             msg += click.style('] ', bold=True)
             msg += click.style("(help/exit) ")
         msg += click.style(f"dcs5 > ", fg='blue', bold=True)
@@ -77,6 +89,7 @@ INTRO = f'Dcs5 Controller App. (version {VERSION})'
 def close_client(ctx: click.Context):
     if ctx.obj is not None:
         ctx.obj.close_client()
+
 
 #### CLI APPLICATION STRUCTURE ####
 @click_shell.shell(prompt=STATE_PROMPT.prompt, on_finished=close_client)
@@ -147,13 +160,19 @@ def unmute(obj: Dcs5Controller):
     obj.unmute_board()
 
 
+@cli_app.command("")
+@click.pass_obj
+def unmute(obj: Dcs5Controller):
+    obj.unmute_board()
+
+
 @cli_app.command('sync')
 @click.pass_obj
 def sync(obj: Dcs5Controller):
     if obj.client.isconnected:
-        click.secho('Syncing Board ...', **{'fg': 'red'}, nl=False)
+        click.secho('Syncing Board ...', **{'fg': 'red', 'blink': True}, nl=False)
         obj.sync_controller_and_board()
-        click.secho('\r Syncing Board ... Done', **{'fg': 'red'})
+        click.secho('\rSyncing Board ... Done', **{'fg': 'green'})
     else:
         click.echo('Device not Connected.')
 
@@ -173,20 +192,39 @@ def reload_config(obj: Dcs5Controller):
     click.secho('\rReloading Config ... Done', **{'fg': 'green'})
 
 
-@cli_app.command('change_configs')  # TODO group for each configs
-@click.argument('filename', type=click.Path(exists=True), nargs=1)
-@click.pass_obj
-def change_config(obj: Dcs5Controller, filename):
-    try:
-        load_config(filename)
-        obj.config_path = filename
-        obj.reload_configs()
-    except ConfigError:
-        click.echo('Invalid Config')
+# @cli_app.command('change_configs')
+# @click.argument('filename', type=click.Path(exists=True), nargs=1, help='Path to controller_config')
+# @click.pass_obj
+# def change_config(obj: Dcs5Controller, filename):
+#     try:
+#         load_config(filename)
+#         obj.config_path = filename
+#         obj.reload_configs()
+#     except ConfigError:
+#         click.echo('Invalid Config')
+#
+#     if obj.client.isconnected:
+#         if click.confirm(click.style(f"Sync Board", fg='blue'), default=True):
+#             obj.sync_controller_and_board()
 
-    if obj.client.isconnected:
-        if click.confirm(click.style(f"Sync Board", fg='blue'), default=True):
-            obj.sync_controller_and_board()
+# --- Stylus GROUP --- #
+
+@cli_app.group('stylus')
+@click.pass_obj
+def stylus(obj):
+    pass
+
+
+@stylus.command("finger")
+@click.pass_obj
+def finger(obj: Dcs5Controller):
+    obj.change_stylus('finger')
+
+
+@stylus.command("pen")
+@click.pass_obj
+def pen(obj: Dcs5Controller):
+    obj.change_stylus('pen')
 
 
 # --- MODE GROUP --- #
@@ -197,19 +235,19 @@ def mode(obj):
     pass
 
 
-@cli_app.command("top")
+@mode.command("top")
 @click.pass_obj
 def top(obj: Dcs5Controller):
     obj.change_board_output_mode('top')
 
 
-@cli_app.command("bottom")
+@mode.command("bottom")
 @click.pass_obj
 def bottom(obj: Dcs5Controller):
     obj.change_board_output_mode('bottom')
 
 
-@click.command('length')
+@mode.command('length')
 @click.pass_obj
 def length(obj: Dcs5Controller):
     obj.change_board_output_mode('length')
@@ -244,7 +282,8 @@ def edit():
 
 
 @edit.command('config')
-@click.option('-e', '--editor', type=click.STRING, nargs=1, default=None, help='Text Editor the use. Otherwise, uses system default.')
+@click.option('-e', '--editor', type=click.STRING, nargs=1, default=None,
+              help='Text Editor the use. Otherwise, uses system default.')
 @click.pass_obj
 def edit_config(obj: Dcs5Controller, editor):
     if editor is not None:
@@ -265,4 +304,3 @@ def edit_config(obj: Dcs5Controller, editor):
             click.secho('\nSyncing Board ...', **{'fg': 'red', 'blink': True}, nl=False)
             obj.sync_controller_and_board()
             click.secho('\rSyncing Board ... Done', **{'fg': 'green'})
-
