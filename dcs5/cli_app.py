@@ -42,6 +42,15 @@ class StatePrompt:
                 msg += click.style(' | ', bold=True)
                 msg += click.style(f"Stylus: ", fg='red')
                 msg += click.style(f"{self._controller.stylus}", bold=True)
+                msg += click.style(' | ', bold=True)
+                msg += click.style(f"Muted: ", fg='red')
+                msg += click.style(f"{self._controller.is_muted}", bold=True)
+                msg += click.style(' | ', bold=True)
+                msg += click.style(f"Calibrated: ", fg='red')
+                msg += click.style(f"{self._controller.internal_board_state.calibrated}", bold=True)
+                msg += click.style(' | ', bold=True)
+                msg += click.style(f"Sync: ", fg='red')
+                msg += click.style(f"{self._controller.is_sync}", bold=True)
             msg += click.style('] ', bold=True)
             msg += click.style("(help/exit) ")
         msg += click.style(f"dcs5 > ", fg='blue', bold=True)
@@ -69,7 +78,6 @@ def close_client(ctx: click.Context):
     if ctx.obj is not None:
         ctx.obj.close_client()
 
-
 #### CLI APPLICATION STRUCTURE ####
 @click_shell.shell(prompt=STATE_PROMPT.prompt, on_finished=close_client)
 @click.option("-v", "--verbose", type=click.Choice(['info', 'debug', 'warning', 'error']), default='error')
@@ -82,14 +90,17 @@ def cli_app(ctx, verbose, user_interface):
     ctx.obj = start_dcs5_controller()
     STATE_PROMPT.update_controller(ctx.obj)
 
-    click.secho(f'Attempting to connect to device ... ')
+    click.secho(f'\nDevice infos :')
     click.secho(f' Name : {ctx.obj.config.client.device_name}')
     click.secho(f' Mac address : {ctx.obj.config.client.mac_address}')
+    click.secho('\nConnecting ...', **{'fg': 'red', 'blink': True}, nl=False)
     ctx.obj.start_client()
+    click.secho('\rConnecting ... Done', **{'fg': 'green'})
 
     if ctx.obj.client.isconnected:
-        click.secho('Syncing Board ...', **{'fg': 'red'})
+        click.secho('\nSyncing Board ...', **{'fg': 'red', 'blink': True}, nl=False)
         ctx.obj.sync_controller_and_board()
+        click.secho('\rSyncing Board ... Done', **{'fg': 'green'})
         ctx.obj.start_listening()
     else:
         click.secho('Device not Found.')
@@ -119,7 +130,9 @@ def cm(obj: Dcs5Controller):
 @cli_app.command('restart')
 @click.pass_obj
 def restart(obj):
+    click.secho('\nRestarting Board ...', **{'fg': 'red', 'blink': True}, nl=False)
     obj.restart_client()
+    click.secho('\rRestarting Board ... Done', **{'fg': 'green'})
 
 
 @cli_app.command('mute')
@@ -138,7 +151,9 @@ def unmute(obj: Dcs5Controller):
 @click.pass_obj
 def sync(obj: Dcs5Controller):
     if obj.client.isconnected:
+        click.secho('Syncing Board ...', **{'fg': 'red'}, nl=False)
         obj.sync_controller_and_board()
+        click.secho('\r Syncing Board ... Done', **{'fg': 'red'})
     else:
         click.echo('Device not Connected.')
 
@@ -153,7 +168,9 @@ def calibrate(obj: Dcs5Controller):
 @cli_app.command('reload_configs')
 @click.pass_obj
 def reload_config(obj: Dcs5Controller):
+    click.secho('\nReloading Config ...', **{'fg': 'red', 'blink': True}, nl=False)
     obj.reload_configs()
+    click.secho('\rReloading Config ... Done', **{'fg': 'green'})
 
 
 @cli_app.command('change_configs')  # TODO group for each configs
@@ -227,7 +244,7 @@ def edit():
 
 
 @edit.command('config')
-@click.option('-e', '--editor', type=click.STRING, nargs=1, default=None)
+@click.option('-e', '--editor', type=click.STRING, nargs=1, default=None, help='Text Editor the use. Otherwise, uses system default.')
 @click.pass_obj
 def edit_config(obj: Dcs5Controller, editor):
     if editor is not None:
@@ -245,5 +262,7 @@ def edit_config(obj: Dcs5Controller, editor):
 
     if obj.client.isconnected:
         if click.confirm(click.style(f"Sync Board", fg='blue'), default=True):
+            click.secho('\nSyncing Board ...', **{'fg': 'red', 'blink': True}, nl=False)
             obj.sync_controller_and_board()
+            click.secho('\rSyncing Board ... Done', **{'fg': 'green'})
 
