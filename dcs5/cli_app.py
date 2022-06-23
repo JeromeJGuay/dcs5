@@ -51,7 +51,9 @@ class StatePrompt:
                 else:
                     msg += click.style(f"Sync: ", fg='red')
                     msg += click.style(f"false", bold=True)
-                msg += click.style(' | ', bold=True)
+                msg += click.style(']\n', bold=True)
+                msg += click.style('[', bold=True)
+                #msg += click.style(' | ', bold=True)
                 msg += click.style(f"Mode: ", fg='white')
                 msg += click.style(f"{self._controller.output_mode}", bold=True)
                 msg += click.style(' | ', bold=True)
@@ -63,7 +65,7 @@ class StatePrompt:
                 msg += click.style(' | ', bold=True)
                 msg += click.style(f"Muted: ", fg='white')
                 msg += click.style(f"{str(self._controller.is_muted).lower()}", bold=True)
-            msg += click.style('] ', bold=True)
+            msg += click.style(']\n', bold=True)
             msg += click.style("(help/exit) ")
         msg += click.style(f"dcs5 > ", fg='blue', bold=True)
 
@@ -143,9 +145,9 @@ def cm(obj: Dcs5Controller):
 @cli_app.command('restart')
 @click.pass_obj
 def restart(obj):
-    click.secho('\nRestarting Board ...', **{'fg': 'red', 'blink': True}, nl=False)
+    click.secho('\nRestarting Controller ...', **{'fg': 'red', 'blink': True}, nl=False)
     obj.restart_client()
-    click.secho('\rRestarting Board ... Done', **{'fg': 'green'})
+    click.secho('\rRestarting Controller ... Done', **{'fg': 'green'})
 
 
 @cli_app.command('mute')
@@ -180,8 +182,16 @@ def sync(obj: Dcs5Controller):
 @cli_app.command('calibrate')
 @click.pass_obj
 def calibrate(obj: Dcs5Controller):
-    obj.calibrate(1)
-    obj.calibrate(2)
+    click.secho('Set stylus down for point 1 ...', nl=False)
+    if obj.calibrate(1) == 1:
+        click.secho('\rSet stylus down for point 1 ... Successful', nl=False)
+    else:
+        click.secho('\rSet stylus down for point 1 ... Failed', nl=False)
+    click.secho('Set stylus down for point 2.', nl=False)
+    if obj.calibrate(2) == 1:
+        click.secho('\rSet stylus down for point 2 ... Successful', nl=False)
+    else:
+        click.secho('\rSet stylus down for point 2 ... Failed', nl=False)
 
 
 @cli_app.command('reload_configs')
@@ -241,13 +251,13 @@ def top(obj: Dcs5Controller):
     obj.change_board_output_mode('top')
 
 
-@mode.command("bottom")
+@mode.command("bot")
 @click.pass_obj
 def bottom(obj: Dcs5Controller):
     obj.change_board_output_mode('bottom')
 
 
-@mode.command('length')
+@mode.command('len')
 @click.pass_obj
 def length(obj: Dcs5Controller):
     obj.change_board_output_mode('length')

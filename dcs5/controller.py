@@ -418,7 +418,19 @@ class Dcs5Controller:
             count += 1
             time.sleep(0.2)
 
-    def calibrate(self, pt: int):
+    def calibrate(self, pt: int)-> int:
+        """
+
+        Parameters
+        ----------
+        pt
+
+        Returns
+        -------
+        1 for good calibration
+        0 for failed calibraiton
+        """
+
         # TODO test again
         logging.info("ui: Calibration Mode Enable.")
 
@@ -437,8 +449,12 @@ class Dcs5Controller:
                 while f'&{pt}c' not in self.client.buffer:
                     self.client.receive()
                 logging.info(f'ui: Point {pt} calibrated.')
+                return 1
+            else:
+                return 0
         except KeyError:
             logging.info('ui: Calibration Failed.')
+            return 0
         finally:
             self.client.socket.settimeout(self.client.default_timeout)
 
@@ -467,6 +483,13 @@ class Dcs5Controller:
         value must be one of  [length, bottom, top]
         """
         self.output_mode = value
+        if self.output_mode == 'bottom':
+            self.flash_lights(2, interval=.1)
+        elif self.output_mode == 'top':
+            self.flash_lights(2, interval=.1)
+        else:
+            self.flash_lights(2, interval=.1)
+
         logging.debug(f'Board entry: {self.output_mode}.')
         if self.dynamic_stylus_settings is True:
             reading_profile = self.config.reading_profiles[
@@ -493,6 +516,18 @@ class Dcs5Controller:
             self.c_set_backlighting_level(self.internal_board_state.backlighting_level)
         else:
             logging.info("ui: Backlighting is already at minimum.")
+
+    def flash_lights(self, period: int, interval: int):
+        current_backlight_level = self.internal_board_state.backlighting_level
+        self.c_set_backlighting_level(0)
+        time.sleep(interval/2)
+        for i in range(period):
+            time.sleep(interval / 2)
+            self.c_set_backlighting_level(95)
+            time.sleep(interval/2)
+            self.c_set_backlighting_level(0)
+
+        self.c_set_backlighting_level(current_backlight_level)
 
     def shout(self, value: Union[int, float, str]):
         if not self.is_muted:
