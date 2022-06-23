@@ -233,7 +233,7 @@ class Dcs5Controller:
     stylus_offset: int
     stylus_cyclical_list: Generator
 
-    def __init__(self, config_path: str, devices_specifications_path: str, control_box_parameters_path: str):
+    def __init__(self, config_path: str, devices_specifications_path: str, control_box_parameters_path: str, shouter='keyboard'):
         """
 
         Parameters
@@ -256,16 +256,16 @@ class Dcs5Controller:
         self.is_listening = False  # listening to the keyboard on the connected socket.
         self.is_muted = False  # Message are processed but keyboard input are suppress.
 
-        self.is_sync = False
         self.ping_event_check = threading.Event()
         self.thread_barrier = threading.Barrier(2)
 
         self.client = BluetoothClient()
 
-        self.internal_board_state = InternalBoardState()  # BoardCurrentState
-        self.shouter = KeyboardInput()
+        self.internal_board_state = InternalBoardState()  # Board Current State
+        self.set_board_settings()
+        self.is_sync = False  # True if the Dcs5Controller board settings are the same as the Board Internal Settings.
 
-        self.mappable_commands = {
+        self.mappable_commands = { # Item are callable methods.
             "BACKLIGHT_UP": self.backlight_up,
             "BACKLIGHT_DOWN": self.backlight_down,
             "CHANGE_STYLUS": self.cycle_stylus,
@@ -273,11 +273,21 @@ class Dcs5Controller:
             "UNITS_cm": self.change_length_units_cm
         }
 
+        if shouter not in ['keyboard', 'server']:
+            logging.error('Invalid shouter method: Must be one of [keyboard, server]. Defaulting to keyboard.')
+            shouter = 'keyboard'
+
+        if shouter == 'keyboard':
+            self.shouter = KeyboardInput()
+        else:
+            self.shouter = ServerInput()
+
     def _load_configs(self):
         self.config = load_config(self.config_path)
         self.devices_spec = load_devices_specification(self.devices_specifications_path)
         self.control_box_parameters = load_control_box_parameters(self.control_box_parameters_path)
 
+    def set_board_settings(self):
         self.dynamic_stylus_settings = self.config.launch_settings.dynamic_stylus_mode
         self.output_mode = self.config.launch_settings.output_mode
         self.reading_profile = self.config.launch_settings.reading_profile
