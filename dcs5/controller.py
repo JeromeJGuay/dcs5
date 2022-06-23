@@ -34,6 +34,7 @@ from dcs5.config import load_config, ControllerConfiguration
 from dcs5.dcs5_devices_specification import load_devices_specification, DevicesSpecification
 from dcs5.dcs5_control_box_statics import load_control_box_parameters, ControlBoxParameters
 
+
 BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
 
@@ -66,63 +67,75 @@ class InternalBoardState:
 
 
 class Shouter:
+    valid_meta_keys = ['ctrl', 'alt', 'shift']
+
     def __init__(self):
-        self.input: str = None
-
-    def is_valid_key(self):
-        if isinstance(self.input, list):
-            return all(map(pag.isValidKey, self.input))
-        else:
-            return pag.isValidKey(self.input)
-
-
-class ServerInput(Shouter):
-    def __init__(self):
-        self.input_queue = queue.Queue()
-
-
-class KeyboardInput(Shouter):
-    def __init__(self):
-        super(Shouter, self).__init__()
         self._with_control = False
         self._with_shift = False
         self._with_alt = False
         self.input: str = None
 
-        self.combo = []
+        self.meta_key_combo = []
 
-    def shout_to_keyboard(self, value: str):
+    def shout(self, value: str):
         self.input = value
-        if self.input == 'ctrl':
-            self._with_control = not self._with_control
-        elif self.input == 'shift':
-            self._with_shift = not self._with_shift
-        elif self.input == 'alt':
-            self._with_alt = not self._with_alt
+        if self.input in self.valid_meta_keys:
+            if self.input in self.meta_key_combo:
+                self.meta_key_combo.remove(self.input)
+            else:
+                self.meta_key_combo.append(self.input)
         else:
-            self._shout_to_keyboard()
+            self._shout()
+            self._clear_meta_key_combo()
 
-    def _shout_to_keyboard(self):
-        if self._with_control:
-            self.combo.append('ctrl')
-            self._with_control = False
-        if self._with_alt:
-            self.combo.append('alt')
-            self._with_alt = False
-        if self._with_shift:
-            self.combo.append('shift')
-            self._with_shift = False
+    def _clear_meta_key_combo(self):
+        self.meta_key_combo = []
 
-        with pag.hold(self.combo):
-            logging.debug(f"Keyboard out: {'+'.join(self.combo)} {self.input}")
-            if self.is_valid_key():
+    def _shout(self):
+        logging.error('Shouter _shout method not defined.')
+
+
+class ServerInput(Shouter):
+    """
+    Inputs are queued in `inputs_queue`.
+    Inputs are taken from the input_queue with the get() method.
+    If more than 5 inputs are in the queue at one time, the queue is cleared.
+    """
+    def __init__(self):
+        super().__init__()
+        self.inputs_queue = queue.Queue(max_size=5)
+
+    def _shout(self):
+        _input = self.meta_key_combo + [self.input]
+        try:
+            self.inputs_queue.put_nowait(_input)
+        except queue.Full:
+            self.inputs_queue.queue.clear()
+
+    def get(self):
+        try:
+            return self.inputs_queue.get()
+        except queue.Empty:
+            return None
+
+
+class KeyboardInput(Shouter):
+    """
+    Emulate keyboard presses.
+    """
+    def __init__(self):
+        super().__init__()
+
+    def _shout(self):
+        with pag.hold(self.meta_key_combo):
+            logging.debug(f"Keyboard out: {'+'.join(self.meta_key_combo)} {self.input}")
+            if pag.isValidKey(self.input):
                 pag.press(self.input)
             else:
                 pag.write(str(self.input))
-            self.combo = []
 
 
-class BtClient:
+class BluetoothClient:
     """
     TODO test port automatic selection.
     Notes
@@ -240,14 +253,14 @@ class Dcs5Controller:
         self.socket_listener = SocketListener(self)
         self.command_handler = CommandHandler(self)
 
-        self.is_listening = False
-        self.is_muted = False
+        self.is_listening = False  # listening to the keyboard on the connected socket.
+        self.is_muted = False  # Message are processed but keyboard input are suppress.
 
         self.is_sync = False
         self.ping_event_check = threading.Event()
         self.thread_barrier = threading.Barrier(2)
 
-        self.client = BtClient()
+        self.client = BluetoothClient()
 
         self.internal_board_state = InternalBoardState()  # BoardCurrentState
         self.shouter = KeyboardInput()
@@ -474,7 +487,7 @@ class Dcs5Controller:
     def shout(self, value: Union[int, float, str]):
         if not self.is_muted:
             logging.debug(f"Shouted value {value}")
-            self.shouter.shout_to_keyboard(value)
+            self.shouter.shout(value)
 
     def c_board_initialization(self):
         self.command_handler.queue_command("&init#", "Setting EEPROM init flag.\r")
