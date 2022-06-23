@@ -17,9 +17,9 @@ def main():
     # parser.add_argument('server', action='store_true', default=False, help='start server and connects to the board.')
     # parser.add_argument('test-server', action='store_true', default=False, help='start server.')
 
-    subparser = parser.add_subparsers(dest='cmd')
+    subparser = parser.add_subparsers(dest='cmd', title='positional arguments')
 
-    cli_parser = subparser.add_parser('cli', parents=[parent_parser], add_help=False)
+    cli_parser = subparser.add_parser('cli', parents=[parent_parser])
     cli_parser.add_argument('-v', '--verbose', nargs=1, type=str, choices=['info', 'debug', 'warning', 'error'], default='error', help='Cli app verbose.')
     cli_parser.add_argument('-u', '--user-interface', action='store_true', default=False, help='Only run the server.')
 
@@ -29,7 +29,7 @@ def main():
     server_parser.add_argument('--port', nargs=1, type=int, default=None, help='Change the port.')
 
     args = parser.parse_args(sys.argv[1:])
-    print(f'-v  {args.verbose} ' + '--user_interface' if args.user_interface else '')
+
     if args.cmd == "cli":
         cli_args = ['-v',  args.verbose] + ['-u'] if args.user_interface else []
         cli_app(cli_args)
@@ -38,7 +38,6 @@ def main():
         start_server(start_controller=not args.test, host=args.host, port=args.port)
     else:
         parser.print_help()
-
 
 if __name__ == '__main__':
     main()
