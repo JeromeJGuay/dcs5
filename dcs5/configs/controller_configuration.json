@@ -16,8 +16,8 @@
     "reading_profiles": {
         "measure": {
             "settling_delay": 1,
-            "number_of_reading": 5,
-            "max_deviation": 6
+            "number_of_reading": 1,
+            "max_deviation": 1
         },
         "key": {
             "settling_delay": 1,
