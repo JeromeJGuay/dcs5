@@ -154,7 +154,7 @@ class BluetoothClient:
         self._port: int = None
         self._buffer: str = ''
         self.socket: socket.socket = None
-        self.default_timeout = 0.01
+        self.default_timeout = 0.1
         self.isconnected = False
 
     def connect(self, mac_address, timeout: int = None):
@@ -412,9 +412,16 @@ class Dcs5Controller:
                 self.internal_board_state.number_of_reading == reading_profile.number_of_reading
         ):
             self.is_sync = True
-            logging.info("ui: Syncing successful.")
+            logging.debug("Syncing successful.")
         else:
-            logging.info("ui: Syncing  failed.")
+            logging.debug("Syncing  failed.")
+            state = [
+                self.internal_board_state.sensor_mode,
+                self.internal_board_state.stylus_status_msg,
+                (self.internal_board_state.stylus_settling_delay, reading_profile.settling_delay),
+                (self.internal_board_state.stylus_max_deviation, reading_profile.max_deviation),
+                (self.internal_board_state.number_of_reading, reading_profile.number_of_reading)]
+            logging.debug(str(state))
             self.is_sync = False
 
     def wait_for_ping(self, timeout=2):
@@ -702,19 +709,19 @@ class CommandHandler:
                     logging.info('ui: Stylus Status Message Disable')
 
         elif "di" in received:
-            match = re.findall(f"%di:(\d)#\r", received)
+            match = re.findall(f"%di:(\d+)#\r", received)
             if len(match) > 0:
                 self.controller.internal_board_state.stylus_settling_delay = int(match[0])
                 logging.info(f"ui: Stylus settling delay set to {match[0]}")
 
         elif "dm" in received:
-            match = re.findall(f"%dm:(\d)#\r", received)
+            match = re.findall(f"%dm:(\d+)#\r", received)
             if len(match) > 0:
                 self.controller.internal_board_state.stylus_max_deviation = int(match[0])
                 logging.info(f"ui: Stylus max deviation set to {int(match[0])}")
 
         elif "dn" in received:
-            match = re.findall(f"%dn:(\d)#\r", received)
+            match = re.findall(f"%dn:(\d+)#\r", received)
             if len(match) > 0:
                 self.controller.internal_board_state.number_of_reading = int(match[0])
                 logging.info(f"ui: Stylus number set to {int(match[0])}")
@@ -745,7 +752,7 @@ class CommandHandler:
 
         elif 'Cal Pt' in received:
             logging.debug(received.strip("\r") + " mm")
-            match = re.findall("Cal Pt (\d) set to: (\d)", received)
+            match = re.findall("Cal Pt (\d+) set to: (\d+)", received)
             if len(match) > 0:
                 self.controller.internal_board_state.__dict__[f'cal_pt_{match[0][0]}'] = int(match[0][1])
 
