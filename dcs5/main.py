@@ -5,8 +5,10 @@ This module is the entry point for the bash command (dsc5).
 From here you can either start the interactive cli app or start the server.
 """
 import argparse
+
 from dcs5.cli_app import cli_app
 from dcs5.logger import init_logging
+from dcs5.server import start_server
 import sys
 
 
@@ -24,6 +26,7 @@ def main():
     cli_parser.add_argument('-v', '--verbose', type=str, choices=['debug', 'info', 'warning', 'error'], default='error', help='Cli app verbose.')
     cli_parser.add_argument('-u', '--user-interface', action='store_true', default=False, help='Only run the server.')
     cli_parser.add_argument('-w', '--write-log', action='store_true', default=False, help='Writes logs')
+    #cli_parser.add_argument('-r', '--reconnect', action='store_true', default=False, help='Attempts to reconnects if board is shutdown.')
 
     server_parser = subparser.add_parser('server', parents=[parent_parser])
     server_parser.add_argument('--test', action='store_true', default=False, help='Only run the server.')
@@ -35,9 +38,8 @@ def main():
     init_logging(stdout_level=args.verbose, ui=args.user_interface, write=args.write_log)
 
     if args.cmd == "cli":
-        cli_app('')
+        cli_app([])
     elif args.cmd == "server":
-        from dcs5.server import start_server
         start_server(start_controller=not args.test, host=args.host, port=args.port)
     else:
         parser.print_help()
