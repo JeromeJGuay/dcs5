@@ -7,7 +7,6 @@ import time
 from dcs5 import VERSION, DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROLLER_CONFIGURATION_FILE, \
     XT_BUILTIN_PARAMETERS, DEFAULT_SERVER_CONFIGURATION_FILE
 
-from dcs5.logger import init_logging
 from dcs5.config import load_server_config
 
 from dcs5.controller import Dcs5Controller
@@ -17,8 +16,6 @@ ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
 
 VALID_AUTH_KEY = ["9999"]
-
-init_logging(stdout_level="debug")
 
 
 def start_dcs5_controller(
@@ -53,6 +50,7 @@ class Server:
     def bind(self, host, port):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind((host, port))
+        logging.debug(f'Socket name: {self.socket.getsockname()}')
         logging.info(f'Dcs5SServer: Online. ({host}:{port})')
 
     def close(self):
@@ -71,7 +69,7 @@ class Server:
             }
             logging.info('Dcs5SServer: Waiting for Client ...')
             conn, addr = self.socket.accept()
-            logging.debug(f"New Client {addr}.")
+            logging.debug(f"Dcs5Server: New Client {addr}.")
 
             data = conn.recv(BUFFER_SIZE).decode(ENCODING)
             logging.debug('Dcs5Server: Receiving Done')

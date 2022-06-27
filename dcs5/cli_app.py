@@ -1,5 +1,13 @@
 """
 This module contains the code for the cli application.
+
+
+
+TODO: catch error if board dcs
+
+OSError: [Errno 107] Transport endpoint is not connected
+
+
 """
 import logging
 import click
@@ -7,7 +15,6 @@ import click_shell
 
 from dcs5 import VERSION, DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROLLER_CONFIGURATION_FILE, \
     XT_BUILTIN_PARAMETERS
-from dcs5.logger import init_logging
 from dcs5.controller import Dcs5Controller
 from dcs5.utils import resolve_relative_path
 from dcs5.config import load_config, ConfigError
@@ -18,7 +25,7 @@ class StatePrompt:
         self._controller: Dcs5Controller = None
         self._debug_mode = False
 
-    def update_controller(self, new_controller: Dcs5Controller):
+    def refresh(self, new_controller: Dcs5Controller):
         self._controller = new_controller
 
     def debug_mode(self):
@@ -97,7 +104,17 @@ def start_client(controller: Dcs5Controller):
     if controller.client.isconnected:
         click.secho('\rConnecting ... Done', **{'fg': 'green'})
     else:
+        click.secho('\rConnecting ... Failed', **{'fg': 'red'})
         click.secho('Device not Found. Check if Bluetooth and the board are turned on.')
+
+
+def restart_client(controller: Dcs5Controller):
+    click.secho('\nRestarting Controller ...', **{'fg': 'red', 'blink': True}, nl=False)
+    controller.restart_client()
+    if controller.client.isconnected:
+        click.secho('\rRestarting Controller ... Done', **{'fg': 'green'})
+    else:
+        click.secho('\rRestarting Controller ... Failed', **{'fg': 'red'})
 
 
 def sync_controller(controller: Dcs5Controller):
@@ -106,7 +123,7 @@ def sync_controller(controller: Dcs5Controller):
     if controller.is_sync:
         click.secho('\rSyncing Board ... Done', **{'fg': 'green'})
     else:
-        click.secho('\rSyncing Board ... Failed', **{'fg': 'green'})
+        click.secho('\rSyncing Board ... Failed', **{'fg': 'red'})
 
 
 STATE_PROMPT = StatePrompt()
@@ -120,30 +137,22 @@ def close_client(ctx: click.Context):
 
 #### CLI APPLICATION STRUCTURE ####
 @click_shell.shell(prompt=STATE_PROMPT.prompt, on_finished=close_client)
-@click.option("-v", "--verbose", type=click.Choice(['info', 'debug', 'warning', 'error']), default='error')
-@click.option("-u", "--user_interface", is_flag=True, default=False)
 @click.pass_context
-def cli_app(ctx, verbose, user_interface):
+def cli_app(ctx):
     click.secho(INTRO)
-    init_logging(stdout_level=verbose.upper(), ui=user_interface)
 
     ctx.obj = init_dcs5_controller()
-    STATE_PROMPT.update_controller(ctx.obj)
+    STATE_PROMPT.refresh(ctx.obj)
 
     click.secho(f'\nDevice infos :')
     click.secho(f' Name : {ctx.obj.config.client.device_name}')
     click.secho(f' Mac address : {ctx.obj.config.client.mac_address}')
-    click.secho('\nConnecting ...', **{'fg': 'red', 'blink': True}, nl=False)
-    ctx.obj.start_client()
-    click.secho('\rConnecting ... Done', **{'fg': 'green'})
+
+    start_client(ctx.obj)
 
     if ctx.obj.client.isconnected:
-        click.secho('\nSyncing Board ...', **{'fg': 'red', 'blink': True}, nl=False)
-        ctx.obj.sync_controller_and_board()
-        click.secho('\rSyncing Board ... Done', **{'fg': 'green'})
+        sync_controller(ctx.obj)
         ctx.obj.start_listening()
-    else:
-        click.secho('Device not Found. Check if Bluetooth is turned on.')
 
     click.echo('')
     click.echo('Type `help` to list commands or `quit` to close the app.')
@@ -167,29 +176,24 @@ def cm(obj: Dcs5Controller):
     obj.change_length_units_cm()
 
 
+@cli_app.command('connect')
+@click.pass_obj
+def connect(obj: Dcs5Controller):
+    if not obj.client.isconnected:
+        start_client(obj)
+
+    if obj.client.isconnected:
+        sync_controller(obj)
+        obj.start_listening()
+
+
 @cli_app.command('restart')
 @click.pass_obj
 def restart(obj: Dcs5Controller):
-    click.secho('\nRestarting Controller ...', **{'fg': 'red', 'blink': True}, nl=False)
-    obj.restart_client()
+    restart_client(obj)
     if obj.client.isconnected:
-        click.secho('\rRestarting Controller ... Done', **{'fg': 'green'})
-        sync(obj)
-        if not obj.is_listening:
-            obj.start_listening()
-            if obj.is_sync:
-    else:
-        click.secho('\rRestarting Controller ... Failed', **{'fg': 'green'})
-
-
-
-@cli_app.command('restart')
-@click.pass_obj
-def connect(obj):
-    click.secho('\nConnecting Controller ...', **{'fg': 'red', 'blink': True}, nl=False)
-    start_listening(obj)
-    click.secho('\rConnecting Controller ... Done', **{'fg': 'green'})
-    sync(obj)
+        sync_controller(obj)
+        obj.start_listening()
 
 
 @cli_app.command('mute')
@@ -214,26 +218,26 @@ def unmute(obj: Dcs5Controller):
 @click.pass_obj
 def sync(obj: Dcs5Controller):
     if obj.client.isconnected:
-        click.secho('Syncing Board ...', **{'fg': 'red', 'blink': True}, nl=False)
-        obj.sync_controller_and_board()
-        click.secho('\rSyncing Board ... Done', **{'fg': 'green'})
+        sync_controller(obj)
     else:
-        click.echo('Device not Connected.')
+        click.echo('Syncing impossible, device is not Connected.')
 
 
 @cli_app.command('calibrate')
 @click.pass_obj
 def calibrate(obj: Dcs5Controller):
-    click.secho('Set stylus down for point 1 ...', nl=False)
-    if obj.calibrate(1) == 1:
-        click.secho('\rSet stylus down for point 1 ... Successful', nl=False)
-    else:
-        click.secho('\rSet stylus down for point 1 ... Failed', nl=False)
-    click.secho('Set stylus down for point 2.', nl=False)
-    if obj.calibrate(2) == 1:
-        click.secho('\rSet stylus down for point 2 ... Successful', nl=False)
-    else:
-        click.secho('\rSet stylus down for point 2 ... Failed', nl=False)
+    if obj.is_listening:
+        click.secho('Set stylus down for point 1 ...', nl=False)
+        if obj.calibrate(1) == 1:
+            click.secho('\rSet stylus down for point 1 ... Successful', nl=False)
+        else:
+            click.secho('\rSet stylus down for point 1 ... Failed', nl=False)
+        click.secho('Set stylus down for point 2.', nl=False)
+        if obj.calibrate(2) == 1:
+            click.secho('\rSet stylus down for point 2 ... Successful', nl=False)
+        else:
+            click.secho('\rSet stylus down for point 2 ... Failed', nl=False)
+    click.echo('Cannot perform calibration, controller is not active/connected.')
 
 
 @cli_app.command('reload_configs')
@@ -316,14 +320,21 @@ def calpts():
 @click.argument('value', type=click.INT, nargs=1)
 @click.pass_obj
 def calpt1(obj: Dcs5Controller, value):
-    obj.c_set_calibration_points_mm(1, value)
+    if obj.is_listening:
+        obj.c_set_calibration_points_mm(1, value)
+    else:
+        click.echo('Cannot calibration points, controller is not active/connected.')
 
 
 @calpts.command('2')
 @click.argument('value', type=click.INT, nargs=1)
 @click.pass_obj
 def calpt2(obj: Dcs5Controller, value):
-    obj.c_set_calibration_points_mm(1, value)
+    if obj.is_listening:
+        obj.c_set_calibration_points_mm(2, value)
+    else:
+        click.echo('Cannot calibration points, controller is not active/connected.')
+
 
 
 # --- EDITS GROUP--- #
@@ -353,6 +364,5 @@ def edit_config(obj: Dcs5Controller, editor):
 
     if obj.client.isconnected:
         if click.confirm(click.style(f"Sync Board", fg='blue'), default=True):
-            click.secho('\nSyncing Board ...', **{'fg': 'red', 'blink': True}, nl=False)
-            obj.sync_controller_and_board()
-            click.secho('\rSyncing Board ... Done', **{'fg': 'green'})
+            sync_controller(obj)
+

@@ -6,6 +6,7 @@ From here you can either start the interactive cli app or start the server.
 """
 import argparse
 from dcs5.cli_app import cli_app
+from dcs5.logger import init_logging
 import sys
 
 
@@ -20,19 +21,21 @@ def main():
     subparser = parser.add_subparsers(dest='cmd', title='positional arguments')
 
     cli_parser = subparser.add_parser('cli', parents=[parent_parser])
-    cli_parser.add_argument('-v', '--verbose', nargs=1, type=str, choices=['info', 'debug', 'warning', 'error'], default='error', help='Cli app verbose.')
+    cli_parser.add_argument('-v', '--verbose', type=str, choices=['debug', 'info', 'warning', 'error'], default='error', help='Cli app verbose.')
     cli_parser.add_argument('-u', '--user-interface', action='store_true', default=False, help='Only run the server.')
+    cli_parser.add_argument('-w', '--write-log', action='store_true', default=False, help='Writes logs')
 
     server_parser = subparser.add_parser('server', parents=[parent_parser])
     server_parser.add_argument('--test', action='store_true', default=False, help='Only run the server.')
-    server_parser.add_argument('--host', nargs=1, type=str, default=None, help='Change the host address.')
-    server_parser.add_argument('--port', nargs=1, type=int, default=None, help='Change the port.')
+    server_parser.add_argument('--host', type=str, default=None, help='Change the host address.')
+    server_parser.add_argument('--port', type=int, default=None, help='Change the port.')
 
     args = parser.parse_args(sys.argv[1:])
 
+    init_logging(stdout_level=args.verbose, ui=args.user_interface, write=args.write_log)
+
     if args.cmd == "cli":
-        cli_args = ['-v',  args.verbose] + ['-u'] if args.user_interface else []
-        cli_app(cli_args)
+        cli_app('')
     elif args.cmd == "server":
         from dcs5.server import start_server
         start_server(start_controller=not args.test, host=args.host, port=args.port)
