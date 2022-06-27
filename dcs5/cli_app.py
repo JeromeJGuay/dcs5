@@ -38,11 +38,11 @@ class StatePrompt:
                     msg += click.style(f"Connected: ", fg='red')
                     msg += click.style(f"false", bold=True)
                 msg += click.style(' | ', bold=True)
-                if self._controller.internal_board_state.calibrated:
-                    msg += click.style(f"Calibrated: ", fg='green')
+                if self._controller.is_listening:
+                    msg += click.style(f"Active: ", fg='green')
                     msg += click.style(f"true", bold=True)
                 else:
-                    msg += click.style(f"Calibrated: ", fg='red')
+                    msg += click.style(f"Active: ", fg='red')
                     msg += click.style(f"false", bold=True)
                 msg += click.style(' | ', bold=True)
                 if self._controller.is_sync:
@@ -50,6 +50,13 @@ class StatePrompt:
                     msg += click.style(f"true", bold=True)
                 else:
                     msg += click.style(f"Sync: ", fg='red')
+                    msg += click.style(f"false", bold=True)
+                msg += click.style(' | ', bold=True)
+                if self._controller.internal_board_state.calibrated:
+                    msg += click.style(f"Calibrated: ", fg='green')
+                    msg += click.style(f"true", bold=True)
+                else:
+                    msg += click.style(f"Calibrated: ", fg='red')
                     msg += click.style(f"false", bold=True)
                 msg += click.style(']\n', bold=True)
                 msg += click.style('[', bold=True)
@@ -72,7 +79,7 @@ class StatePrompt:
         return msg
 
 
-def start_dcs5_controller(
+def init_dcs5_controller(
         config_path=DEFAULT_CONTROLLER_CONFIGURATION_FILE,
         devices_specifications_path=DEFAULT_DEVICES_SPECIFICATION_FILE,
         control_box_parameters_path=XT_BUILTIN_PARAMETERS
@@ -82,6 +89,24 @@ def start_dcs5_controller(
     control_box_parameters_path = resolve_relative_path(control_box_parameters_path, __file__)
 
     return Dcs5Controller(config_path, devices_specifications_path, control_box_parameters_path)
+
+
+def start_client(controller: Dcs5Controller):
+    click.secho('\nConnecting ...', **{'fg': 'red', 'blink': True}, nl=False)
+    controller.start_client()
+    if controller.client.isconnected:
+        click.secho('\rConnecting ... Done', **{'fg': 'green'})
+    else:
+        click.secho('Device not Found. Check if Bluetooth and the board are turned on.')
+
+
+def sync_controller(controller: Dcs5Controller):
+    click.secho('\nSyncing Board ...', **{'fg': 'red', 'blink': True}, nl=False)
+    controller.sync_controller_and_board()
+    if controller.is_sync:
+        click.secho('\rSyncing Board ... Done', **{'fg': 'green'})
+    else:
+        click.secho('\rSyncing Board ... Failed', **{'fg': 'green'})
 
 
 STATE_PROMPT = StatePrompt()
@@ -102,7 +127,7 @@ def cli_app(ctx, verbose, user_interface):
     click.secho(INTRO)
     init_logging(stdout_level=verbose.upper(), ui=user_interface)
 
-    ctx.obj = start_dcs5_controller()
+    ctx.obj = init_dcs5_controller()
     STATE_PROMPT.update_controller(ctx.obj)
 
     click.secho(f'\nDevice infos :')
@@ -118,7 +143,7 @@ def cli_app(ctx, verbose, user_interface):
         click.secho('\rSyncing Board ... Done', **{'fg': 'green'})
         ctx.obj.start_listening()
     else:
-        click.secho('Device not Found.')
+        click.secho('Device not Found. Check if Bluetooth is turned on.')
 
     click.echo('')
     click.echo('Type `help` to list commands or `quit` to close the app.')
@@ -144,10 +169,27 @@ def cm(obj: Dcs5Controller):
 
 @cli_app.command('restart')
 @click.pass_obj
-def restart(obj):
+def restart(obj: Dcs5Controller):
     click.secho('\nRestarting Controller ...', **{'fg': 'red', 'blink': True}, nl=False)
     obj.restart_client()
-    click.secho('\rRestarting Controller ... Done', **{'fg': 'green'})
+    if obj.client.isconnected:
+        click.secho('\rRestarting Controller ... Done', **{'fg': 'green'})
+        sync(obj)
+        if not obj.is_listening:
+            obj.start_listening()
+            if obj.is_sync:
+    else:
+        click.secho('\rRestarting Controller ... Failed', **{'fg': 'green'})
+
+
+
+@cli_app.command('restart')
+@click.pass_obj
+def connect(obj):
+    click.secho('\nConnecting Controller ...', **{'fg': 'red', 'blink': True}, nl=False)
+    start_listening(obj)
+    click.secho('\rConnecting Controller ... Done', **{'fg': 'green'})
+    sync(obj)
 
 
 @cli_app.command('mute')
