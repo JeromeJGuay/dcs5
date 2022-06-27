@@ -34,6 +34,11 @@ from dcs5.config import load_config, ControllerConfiguration
 from dcs5.dcs5_devices_specification import load_devices_specification, DevicesSpecification
 from dcs5.dcs5_control_box_statics import load_control_box_parameters, ControlBoxParameters
 
+AFTER_SENT_SLEEP = 0.08
+
+HANDLER_SLEEP = 0.02
+
+LISTENER_SLEEP = 0.01
 
 BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
@@ -149,7 +154,7 @@ class BluetoothClient:
         self._port: int = None
         self._buffer: str = ''
         self.socket: socket.socket = None
-        self.default_timeout = .5
+        self.default_timeout = .1
         self.isconnected = False
 
     def connect(self, mac_address, timeout: int = None):
@@ -163,9 +168,11 @@ class BluetoothClient:
                     port += 1
                     logging.debug(f'port: {port}')
                     self.socket.connect((self._mac_address, port))
+
                     self._port = port
                     self.isconnected = True
                     logging.debug(f'Connected to port {self._port}')
+                    logging.debug(f'Socket name: {self.socket.getsockname()}')
                     break
                 except PermissionError:
                     pass
@@ -218,6 +225,7 @@ class BluetoothClient:
 
     def close(self):
         self.socket.close()
+        self.isconnected = False
 
 
 class Dcs5Controller:
@@ -308,36 +316,34 @@ class Dcs5Controller:
 
     def close_client(self):
         if self.client.isconnected:
-            if self.is_listening:
-                self.stop_listening()
+            self.stop_listening()
             self.client.close()
-            self.client.isconnected = False
-            time.sleep(0.5)
-            logging.info('ui: Client Closed.')
+            logging.info('Client Closed.')
         else:
-            logging.info('ui: Client Already Closed')
+            logging.info('Client Already Closed')
 
     def restart_client(self):
         self.close_client()
+        time.sleep(0.5)
         was_listening = self.is_listening
         try:
             self.start_client()
         except OSError as err:
             logging.error(f'Failed to Start_Client. Trying again ...')
             logging.debug(f'restart_client OSError: {str(err)}')
-            time.sleep(0.5)
             self.restart_client()
             if was_listening:
                 self.start_listening()
 
     def start_listening(self):
+        logging.debug(f"Active Threads: {threading.enumerate()}")
         if not self.is_listening:
             logging.debug('Starting Threads.')
             self.is_listening = True
-            self.command_thread = threading.Thread(target=self.command_handler.processes_queues, name='command')
+            self.command_thread = threading.Thread(target=self.command_handler.processes_queues, name='command', daemon=True)
             self.command_thread.start()
 
-            self.listen_thread = threading.Thread(target=self.socket_listener.listen, name='listen')
+            self.listen_thread = threading.Thread(target=self.socket_listener.listen, name='listen', daemon=True)
             self.listen_thread.start()
 
         logging.info('Board is Active.')
@@ -345,8 +351,7 @@ class Dcs5Controller:
     def stop_listening(self):
         if self.is_listening:
             self.is_listening = False
-            self.listen_thread.join()
-            self.command_thread.join()
+            time.sleep(self.client.socket.gettimeout())
             logging.debug("Active Threads joined.")
             logging.debug("Queues and Socket Buffer Cleared.")
         logging.info('Board is Inactive.')
@@ -640,13 +645,13 @@ class CommandHandler:
         self.clear_queues()
         self.controller.thread_barrier.wait()
         logging.debug('Command Handling Started')
-        while self.controller.is_listening is True:
+        while self.controller.is_listening:
             if not self.received_queue.empty():
                 self._validate_commands()
             if not self.send_queue.empty():
                 self._send_command()
-                time.sleep(0.08)
-            time.sleep(0.02)
+                time.sleep(AFTER_SENT_SLEEP)
+            time.sleep(HANDLER_SLEEP)
         logging.debug('Command Handling Stopped')
 
     def _validate_commands(self):
@@ -769,13 +774,12 @@ class SocketListener:
                 if len(self.controller.client.buffer) > 0:
                     self._split_board_message()
                     self._process_board_message()
+                time.sleep(LISTENER_SLEEP)
             logging.debug('Listening stopped')
         except TimeoutError:
+            #self.controller.is_listening = False
             logging.error("Connection timeout. Board Disconnected.")
-            try:
-                self.controller.close_client()
-            except RuntimeError:
-                pass
+            self.controller.close_client()
 
     def _split_board_message(self):
         delimiters = ["\n", "\r", "#", "Rebooting in 2 seconds ..."]
@@ -813,7 +817,7 @@ class SocketListener:
             if out_value is not None:
                 self._process_output(out_value)
 
-            time.sleep(0.001)
+            #time.sleep(0.001)
 
     @staticmethod
     def _decode_board_message(value: str):
