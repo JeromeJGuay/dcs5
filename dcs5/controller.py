@@ -34,6 +34,7 @@ from dcs5.config import load_config, ControllerConfiguration
 from dcs5.dcs5_devices_specification import load_devices_specification, DevicesSpecification
 from dcs5.dcs5_control_box_statics import load_control_box_parameters, ControlBoxParameters
 
+
 AFTER_SENT_SLEEP = 0.08
 
 HANDLER_SLEEP = 0.02
@@ -42,7 +43,6 @@ LISTENER_SLEEP = 0.01
 
 BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
-
 
 def cycle(my_list: iter):
     index = 0
@@ -154,7 +154,7 @@ class BluetoothClient:
         self._port: int = None
         self._buffer: str = ''
         self.socket: socket.socket = None
-        self.default_timeout = .1
+        self.default_timeout = 0.01
         self.isconnected = False
 
     def connect(self, mac_address, timeout: int = None):
@@ -208,6 +208,12 @@ class BluetoothClient:
             self._buffer += self.socket.recv(BUFFER_SIZE).decode(BOARD_MSG_ENCODING)
         except socket.timeout:
             pass
+        except TimeoutError:
+            logging.warning('Connection Lost with Board.')
+            self.close()
+            while not self.isconnected:
+                logging.warning('Attempting to reconnect. (every 30 seconds)')
+                self.connect(self.mac_address, timeout=30)
 
     def clear_all(self):
         self.receive()
@@ -257,6 +263,7 @@ class Dcs5Controller:
 
         self.listen_thread: threading.Thread = None
         self.command_thread: threading.Thread = None
+        self.reconnect_thread: threading.Thread = None
 
         self.socket_listener = SocketListener(self)
         self.command_handler = CommandHandler(self)
@@ -767,19 +774,14 @@ class SocketListener:
         logging.debug("Listener Queue and Client Buffers Cleared.")
         self.controller.thread_barrier.wait()
         logging.debug('Listener Queue cleared & Client Buffer Clear.')
-        try:
-            logging.debug('Listening started')
-            while self.controller.is_listening:
-                self.controller.client.receive()
-                if len(self.controller.client.buffer) > 0:
-                    self._split_board_message()
-                    self._process_board_message()
-                time.sleep(LISTENER_SLEEP)
-            logging.debug('Listening stopped')
-        except TimeoutError:
-            #self.controller.is_listening = False
-            logging.error("Connection timeout. Board Disconnected.")
-            self.controller.close_client()
+        logging.debug('Listening started')
+        while self.controller.is_listening:
+            self.controller.client.receive()
+            if len(self.controller.client.buffer) > 0:
+                self._split_board_message()
+                self._process_board_message()
+            time.sleep(LISTENER_SLEEP)
+        logging.debug('Listening stopped')
 
     def _split_board_message(self):
         delimiters = ["\n", "\r", "#", "Rebooting in 2 seconds ..."]
@@ -816,8 +818,6 @@ class SocketListener:
 
             if out_value is not None:
                 self._process_output(out_value)
-
-            #time.sleep(0.001)
 
     @staticmethod
     def _decode_board_message(value: str):
