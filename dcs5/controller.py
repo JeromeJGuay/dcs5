@@ -428,7 +428,7 @@ class Dcs5Controller:
         Returns
         -------
         1 for good calibration
-        0 for failed calibraiton
+        0 for failed calibration
         """
 
         # TODO test again
@@ -457,9 +457,8 @@ class Dcs5Controller:
             return 0
         finally:
             self.client.socket.settimeout(self.client.default_timeout)
-
-        if not was_listening:
-            self.stop_listening()
+            if not was_listening:
+                self.stop_listening()
 
     def change_length_units_mm(self):
         self.length_units = "mm"
