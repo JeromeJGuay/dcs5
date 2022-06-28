@@ -16,6 +16,10 @@ def main():
     parser = argparse.ArgumentParser()
     parent_parser = argparse.ArgumentParser(add_help=False)
 
+    parser.add_argument('-v', '--verbose', type=str, choices=['debug', 'info', 'warning', 'error'], default='error',
+                        help='Cli app verbose.')
+    parser.add_argument('-w', '--write-log', action='store_true', default=False, help='Writes logs')
+
     # parser.add_argument('cli', default=False, help='start cli interface.')
     # parser.add_argument('server', action='store_true', default=False, help='start server and connects to the board.')
     # parser.add_argument('test-server', action='store_true', default=False, help='start server.')
@@ -23,9 +27,8 @@ def main():
     subparser = parser.add_subparsers(dest='cmd', title='positional arguments')
 
     cli_parser = subparser.add_parser('cli', parents=[parent_parser])
-    cli_parser.add_argument('-v', '--verbose', type=str, choices=['debug', 'info', 'warning', 'error'], default='error', help='Cli app verbose.')
+
     # cli_parser.add_argument('-u', '--user-interface', action='store_true', default=False, help='Only run the server.')
-    cli_parser.add_argument('-w', '--write-log', action='store_true', default=False, help='Writes logs')
 
     server_parser = subparser.add_parser('server', parents=[parent_parser])
     server_parser.add_argument('--test', action='store_true', default=False, help='Only run the server.')
@@ -34,7 +37,7 @@ def main():
 
     args = parser.parse_args(sys.argv[1:])
 
-    init_logging(stdout_level=args.verbose, ui=args.user_interface, write=args.write_log)
+    init_logging(stdout_level=args.verbose, write=args.write_log)
 
     if args.cmd == "cli":
         cli_app([])
