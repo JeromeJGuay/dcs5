@@ -30,7 +30,7 @@ from typing import *
 import bluetooth
 import pyautogui as pag
 
-from dcs5.config import load_config, ControllerConfiguration
+from dcs5.config import load_config, ControllerConfiguration, ConfigError
 from dcs5.dcs5_devices_specification import load_devices_specification, DevicesSpecification
 from dcs5.dcs5_control_box_statics import load_control_box_parameters, ControlBoxParameters
 
@@ -299,9 +299,13 @@ class Dcs5Controller:
             self.shouter = ServerInput()
 
     def _load_configs(self):
-        self.config = load_config(self.config_path)
-        self.devices_spec = load_devices_specification(self.devices_specifications_path)
         self.control_box_parameters = load_control_box_parameters(self.control_box_parameters_path)
+        self.devices_spec = load_devices_specification(self.devices_specifications_path)
+        self.config = check_config(load_config(self.config_path), self.control_box_parameters)
+
+    def reload_configs(self):
+        self.is_sync = False
+        self._load_configs()
 
     def set_board_settings(self):
         self.dynamic_stylus_settings = self.config.launch_settings.dynamic_stylus_mode
@@ -311,10 +315,6 @@ class Dcs5Controller:
         self.stylus: str = self.config.launch_settings.stylus
         self.stylus_offset = self.devices_spec.stylus_offset[self.stylus]
         self.stylus_cyclical_list = cycle(list(self.devices_spec.stylus_offset.keys()))
-
-    def reload_configs(self):
-        self._load_configs()
-        self.is_sync = False
 
     def start_client(self, mac_address: str = None):
         if self.client.isconnected:
@@ -458,7 +458,7 @@ class Dcs5Controller:
         """
 
         # TODO test again
-        logging.info("ui: Calibration Mode Enable.")
+        logging.info("Calibration Mode Enable.")
 
         was_listening = self.is_listening
         self.stop_listening()
@@ -471,15 +471,15 @@ class Dcs5Controller:
         try:
             if f'&Xr#: X={pt}\r' in self.client.buffer:
                 pt_value = self.internal_board_state.__dict__[f"cal_pt_{pt}"]
-                logging.info(f"ui: Calibration for point {pt}. Set stylus down at {pt_value} mm ...")
+                logging.info(f"Calibration for point {pt}. Set stylus down at {pt_value} mm ...")
                 while f'&{pt}c' not in self.client.buffer:
                     self.client.receive()
-                logging.info(f'ui: Point {pt} calibrated.')
+                logging.info(f'Point {pt} calibrated.')
                 return 1
             else:
                 return 0
         except KeyError:
-            logging.info('ui: Calibration Failed.')
+            logging.info('Calibration Failed.')
             return 0
         finally:
             self.client.socket.settimeout(self.client.default_timeout)
@@ -488,17 +488,17 @@ class Dcs5Controller:
 
     def change_length_units_mm(self):
         self.length_units = "mm"
-        logging.info(f"ui: Length Units Change to mm")
+        logging.info(f"Length Units Change to mm")
 
     def change_length_units_cm(self):
         self.length_units = "cm"
-        logging.info(f"ui: Length Units Change to cm")
+        logging.info(f"Length Units Change to cm")
 
     def change_stylus(self, value: str):
         """Stylus must be one of [pen, finger]"""
         self.stylus = value
         self.stylus_offset = self.devices_spec.stylus_offset[self.stylus]
-        logging.info(f'ui: Stylus set to {self.stylus}. Stylus offset {self.stylus_offset}')
+        logging.info(f'Stylus set to {self.stylus}. Stylus offset {self.stylus_offset}')
 
     def cycle_stylus(self):
         self.change_stylus(next(self.stylus_cyclical_list))
@@ -883,3 +883,16 @@ class SocketListener:
                 if l_max >= int(value) > l_min:
                     self.controller.change_board_output_mode(mode)
                     break
+
+
+def check_config(config: ControllerConfiguration, control_box: ControlBoxParameters):
+    if not 0 <= config.launch_settings.backlighting_level <= control_box.max_backlighting_level:
+        raise ConfigError(f'launch_settings/Backlight_level outside range {(0, control_box.max_backlighting_level)}')
+
+    for key, item in config.reading_profiles.items():
+        if not item.settling_delay <= control_box.max_settling_delay:
+            raise ConfigError(f'reading_profiles/{key}/settling_delay outside range {(0, control_box.max_settling_delay)}')
+        if not item.max_deviation <= control_box.max_max_deviation:
+            raise ConfigError(f'reading_profiles/{key}/max_deviation outside range {(0, control_box.max_max_deviation)}')
+    return config
+

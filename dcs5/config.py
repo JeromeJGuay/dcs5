@@ -60,6 +60,8 @@ def validate_command(key, value):
 
 class ConfigError(Exception):
     pass
+    # def __init__(self, error: str):
+    #     self.error = error
 
 
 @dataclass
@@ -82,6 +84,10 @@ class LaunchSettings:
     def __post_init__(self):
         if self.length_units not in VALID_UNITS:
             raise ConfigError(f'`length_units` must be one of {VALID_UNITS}')
+        if not isinstance(self.dynamic_stylus_mode, bool):
+            raise ConfigError('launch_settings/dynamic_stylus_mode must but in (true/false)')
+        if not isinstance(self.backlighting_auto_mode, bool):
+            raise ConfigError('launch_settings/back_light_auto_mode must but in (true/false)')
 
 
 @dataclass
@@ -140,6 +146,16 @@ class ControllerConfiguration:
         self.reading_profiles = {k: ReadingProfile(**v) for k, v in self.reading_profiles.items()}
         self.output_modes = OutputModes(**self.output_modes)
         self.key_maps = KeyMaps(**self.key_maps)
+
+        if self.launch_settings.reading_profile not in self.reading_profiles:
+            raise ConfigError('launch_settings/reading_profile values is not a reading_profile name.')
+
+        if self.output_modes.mode_reading_profiles.top not in self.reading_profiles:
+            raise ConfigError('output_mode/mode_reading_profile/top values is not a reading_profile name.')
+        if self.output_modes.mode_reading_profiles.length not in self.reading_profiles:
+            raise ConfigError('output_mode/mode_reading_profile/length value is not a reading_profile name.')
+        if self.output_modes.mode_reading_profiles.bottom not in self.reading_profiles:
+            raise ConfigError('output_mode/mode_reading_profile/bottom value is not a reading_profile name.')
 
 
 def load_config(path: str):

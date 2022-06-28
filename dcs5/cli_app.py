@@ -20,6 +20,7 @@ from dcs5.utils import resolve_relative_path
 from dcs5.config import load_config, ConfigError
 import time
 
+
 class StatePrompt:
     def __init__(self):
         self._controller: Dcs5Controller = None
@@ -86,14 +87,10 @@ class StatePrompt:
         return msg
 
 
-def init_dcs5_controller(
-        config_path=DEFAULT_CONTROLLER_CONFIGURATION_FILE,
-        devices_specifications_path=DEFAULT_DEVICES_SPECIFICATION_FILE,
-        control_box_parameters_path=XT_BUILTIN_PARAMETERS
-):
-    config_path = resolve_relative_path(config_path, __file__)
-    devices_specifications_path = resolve_relative_path(devices_specifications_path, __file__)
-    control_box_parameters_path = resolve_relative_path(control_box_parameters_path, __file__)
+def init_dcs5_controller():
+    config_path = resolve_relative_path(DEFAULT_CONTROLLER_CONFIGURATION_FILE, __file__)
+    devices_specifications_path = resolve_relative_path(DEFAULT_DEVICES_SPECIFICATION_FILE, __file__)
+    control_box_parameters_path = resolve_relative_path(XT_BUILTIN_PARAMETERS, __file__)
 
     return Dcs5Controller(config_path, devices_specifications_path, control_box_parameters_path)
 
@@ -138,10 +135,19 @@ def close_client(ctx: click.Context):
 #### CLI APPLICATION STRUCTURE ####
 @click_shell.shell(prompt=STATE_PROMPT.prompt, on_finished=close_client)
 @click.pass_context
-def cli_app(ctx):
+def cli_app(ctx: click.Context):
     click.secho(INTRO)
 
-    ctx.obj = init_dcs5_controller()
+    try:
+        ctx.obj = init_dcs5_controller()
+    except ConfigError as err:
+        click.secho(f'Config Error: {err}', **{'fg': 'red'})
+        click.secho(
+            f'Configfile\n: {resolve_relative_path(DEFAULT_CONTROLLER_CONFIGURATION_FILE, __file__)}',
+            **{'fg': 'white'}
+        )
+        ctx.abort()
+
     STATE_PROMPT.refresh(ctx.obj)
 
     click.secho(f'\nDevice infos :')
@@ -247,8 +253,13 @@ def calibrate(obj: Dcs5Controller):
 @click.pass_obj
 def reload_config(obj: Dcs5Controller):
     click.secho('\nReloading Config ...', **{'fg': 'red', 'blink': True}, nl=False)
-    obj.reload_configs()
-    click.secho('\rReloading Config ... Done', **{'fg': 'green'})
+    try:
+        obj.reload_configs()
+        click.secho('\rReloading Config ... Done', **{'fg': 'green'})
+    except ConfigError as err:
+        click.secho('\rReloading Config ... Failed', **{'fg': 'red'})
+        click.secho(f'Config Error\n: {err}', **{'fg': 'red'})
+        click.secho(f'Configfile\n: {obj.config_path}', **{'fg': 'white'})
 
 
 # @cli_app.command('change_configs')
@@ -363,27 +374,9 @@ def edit_config(obj: Dcs5Controller, editor):
     else:
         click.edit(filename=obj.config_path)
 
-    try:
-        obj.reload_configs()
-    except ConfigError:
-        logging.info('Invalid Config')
+    reload_config()
 
     if obj.client.isconnected:
         if click.confirm(click.style(f"Sync Board", fg='blue'), default=True):
             sync_controller(obj)
 
-
-# def start_cli_app(reconnect: True):
-#     try:
-#         controller=cli_app([])
-#     except TimeoutError:
-#         controller.close_client()
-#         if reconnect is True:
-#             while not controller.client.isconnected:
-#                 controller.start_client()
-#
-#         logging.debug(f'Connection to board lost. Attempting to reconnect in 5 seconds.')
-#         time.sleep(5)
-#     else:
-#         logging.debug(f'Connection to board lost. Exiting.')
-#         break
