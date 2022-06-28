@@ -18,7 +18,7 @@ from dcs5 import VERSION, DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROLLER
 from dcs5.controller import Dcs5Controller
 from dcs5.utils import resolve_relative_path
 from dcs5.config import load_config, ConfigError
-
+import time
 
 class StatePrompt:
     def __init__(self):
@@ -158,6 +158,8 @@ def cli_app(ctx):
     click.echo('Type `help` to list commands or `quit` to close the app.')
     click.echo('')
 
+    return ctx.obj
+
 
 @cli_app.group('units', help='Change output units.')
 def units():
@@ -226,18 +228,19 @@ def sync(obj: Dcs5Controller):
 @cli_app.command('calibrate')
 @click.pass_obj
 def calibrate(obj: Dcs5Controller):
-    if obj.is_listening:
-        click.secho('Set stylus down for point 1 ...', nl=False)
+    if obj.client.isconnected:
+        click.secho(f'\nSet stylus down for point 1: {obj.internal_board_state.cal_pt_1} ...', nl=False)
         if obj.calibrate(1) == 1:
-            click.secho('\rSet stylus down for point 1 ... Successful', nl=False)
+            click.secho(f'\rSet stylus down for point 1: {obj.internal_board_state.cal_pt_1} ... Successful')
         else:
-            click.secho('\rSet stylus down for point 1 ... Failed', nl=False)
-        click.secho('Set stylus down for point 2.', nl=False)
+            click.secho(f'\rSet stylus down for point 1 {obj.internal_board_state.cal_pt_1} ... Failed')
+        click.secho(f'\nSet stylus down for point 2: {obj.internal_board_state.cal_pt_1}', nl=False)
         if obj.calibrate(2) == 1:
-            click.secho('\rSet stylus down for point 2 ... Successful', nl=False)
+            click.secho(f'\rSet stylus down for point 2 {obj.internal_board_state.cal_pt_2} ... Successful')
         else:
-            click.secho('\rSet stylus down for point 2 ... Failed', nl=False)
-    click.echo('Cannot perform calibration, controller is not active/connected.')
+            click.secho(f'\rSet stylus down for point 2 {obj.internal_board_state.cal_pt_2} ... Failed')
+    else:
+        click.echo('Cannot perform calibration, controller is not connected.')
 
 
 @cli_app.command('reload_configs')
@@ -322,6 +325,8 @@ def calpts():
 def calpt1(obj: Dcs5Controller, value):
     if obj.is_listening:
         obj.c_set_calibration_points_mm(1, value)
+        click.echo(f'Calibration point 1: {obj.internal_board_state.cal_pt_1}')
+
     else:
         click.echo('Cannot calibration points, controller is not active/connected.')
 
@@ -332,6 +337,7 @@ def calpt1(obj: Dcs5Controller, value):
 def calpt2(obj: Dcs5Controller, value):
     if obj.is_listening:
         obj.c_set_calibration_points_mm(2, value)
+        click.echo(f'Calibration point 2: {obj.internal_board_state.cal_pt_2}')
     else:
         click.echo('Cannot calibration points, controller is not active/connected.')
 
@@ -366,3 +372,18 @@ def edit_config(obj: Dcs5Controller, editor):
         if click.confirm(click.style(f"Sync Board", fg='blue'), default=True):
             sync_controller(obj)
 
+
+# def start_cli_app(reconnect: True):
+#     try:
+#         controller=cli_app([])
+#     except TimeoutError:
+#         controller.close_client()
+#         if reconnect is True:
+#             while not controller.client.isconnected:
+#                 controller.start_client()
+#
+#         logging.debug(f'Connection to board lost. Attempting to reconnect in 5 seconds.')
+#         time.sleep(5)
+#     else:
+#         logging.debug(f'Connection to board lost. Exiting.')
+#         break

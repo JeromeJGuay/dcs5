@@ -24,9 +24,8 @@ def main():
 
     cli_parser = subparser.add_parser('cli', parents=[parent_parser])
     cli_parser.add_argument('-v', '--verbose', type=str, choices=['debug', 'info', 'warning', 'error'], default='error', help='Cli app verbose.')
-    cli_parser.add_argument('-u', '--user-interface', action='store_true', default=False, help='Only run the server.')
+    # cli_parser.add_argument('-u', '--user-interface', action='store_true', default=False, help='Only run the server.')
     cli_parser.add_argument('-w', '--write-log', action='store_true', default=False, help='Writes logs')
-    #cli_parser.add_argument('-r', '--reconnect', action='store_true', default=False, help='Attempts to reconnects if board is shutdown.')
 
     server_parser = subparser.add_parser('server', parents=[parent_parser])
     server_parser.add_argument('--test', action='store_true', default=False, help='Only run the server.')

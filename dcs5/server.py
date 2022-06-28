@@ -149,6 +149,7 @@ class Server:
 
 
 def start_server(start_controller: bool = True,
+                 #reconnect_board: bool = True,
                  reconnection_attempts=5,
                  host: str = None,
                  port: int = None):
@@ -179,6 +180,13 @@ def start_server(start_controller: bool = True,
                     break
     except KeyboardInterrupt as err:
         logging.debug(f'Dcs5Server: KeyBoard Interrupt')
+    # except TimeoutError:
+    #     if reconnect_board is True:
+    #         logging.debug(f'Connection to board lost. Attempting to reconnect in 5 seconds.')
+    #         time.sleep(5)
+    #     else:
+    #         logging.debug(f'Connection to board lost. Exiting.')
+
     finally:
         logging.info('Dcs5Server: Shutting Down Server')
         if s.controller is not None:
