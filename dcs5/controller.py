@@ -314,6 +314,7 @@ class Dcs5Controller:
 
     def reload_configs(self):
         self._load_configs()
+        self.is_sync = False
 
     def start_client(self, mac_address: str = None):
         if self.client.isconnected:
