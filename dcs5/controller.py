@@ -44,6 +44,7 @@ LISTENER_SLEEP = 0.01
 BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
 
+
 def cycle(my_list: iter):
     index = 0
     while True:
@@ -371,18 +372,21 @@ class Dcs5Controller:
         """Unmute board shout output"""
         if self.is_muted:
             self.is_muted = False
-            logging.info('ui: Board unmuted')
+            logging.debug('Board unmuted')
 
     def mute_board(self):
         """Mute board shout output"""
         if not self.is_muted:
             self.is_muted = True
-            logging.info('ui: Board muted')
+            logging.debug('Board muted')
 
     def sync_controller_and_board(self):
         """Init board to launch settings.
         """
-        logging.info('ui: Syncing Controller and Board.')
+        current_backlight_level = self.internal_board_state.backlighting_level
+        self.c_set_backlighting_level(0)
+
+        logging.debug('Syncing Controller and Board.')
 
         was_listening = self.is_listening
         self.restart_listening()
@@ -423,6 +427,8 @@ class Dcs5Controller:
                 (self.internal_board_state.number_of_reading, reading_profile.number_of_reading)]
             logging.debug(str(state))
             self.is_sync = False
+
+        self.c_set_backlighting_level(current_backlight_level)
 
     def wait_for_ping(self, timeout=2):
         self.c_ping()
