@@ -167,24 +167,33 @@ def cli_app(ctx: click.Context):
     return ctx.obj
 
 
-@cli_app.group('units', help='Change output units.')
+@cli_app.command('activate', help='Use this command if the controller is not active but is connected.')
+@click.pass_obj
+def activate(obj):
+    if obj.client.isconnected:
+        obj.start_listening()
+    else:
+        click.secho('Device not connected', **{'fg': 'red'})
+
+
+@cli_app.group('units', help='Change output units ...')
 def units():
     pass
 
 
-@units.command('mm', help="Change value output to mm.")
+@units.command('mm', help="to mm.")
 @click.pass_obj
 def mm(obj: Dcs5Controller):
     obj.change_length_units_mm()
 
 
-@units.command('cm', help="Change value output to cm.")
+@units.command('cm', help="to cm.")
 @click.pass_obj
 def cm(obj: Dcs5Controller):
     obj.change_length_units_cm()
 
 
-@cli_app.command('connect')
+@cli_app.command('connect', help='To start the controller and connect the board.')
 @click.pass_obj
 def connect(obj: Dcs5Controller):
     if not obj.client.isconnected:
@@ -195,7 +204,7 @@ def connect(obj: Dcs5Controller):
         obj.start_listening()
 
 
-@cli_app.command('restart')
+@cli_app.command('restart', help='To restart the controller and connect the board.')
 @click.pass_obj
 def restart(obj: Dcs5Controller):
     restart_client(obj)
@@ -204,55 +213,50 @@ def restart(obj: Dcs5Controller):
         obj.start_listening()
 
 
-@cli_app.command('mute')
+@cli_app.command('mute', help='To mute the board output.')
 @click.pass_obj
 def mute(obj: Dcs5Controller):
     obj.mute_board()
 
 
-@cli_app.command("unmute")
+@cli_app.command("unmute", help='To mute the board output.')
 @click.pass_obj
 def unmute(obj: Dcs5Controller):
     obj.unmute_board()
 
 
-@cli_app.command("")
-@click.pass_obj
-def unmute(obj: Dcs5Controller):
-    obj.unmute_board()
-
-
-@cli_app.command('sync')
+@cli_app.command('sync', help='To sync the controller and the board internal state.')
 @click.pass_obj
 def sync(obj: Dcs5Controller):
     if obj.client.isconnected:
         sync_controller(obj)
     else:
-        click.echo('Syncing impossible, device is not Connected.')
+        click.secho('Syncing impossible, device not Connected.', **{'fg': 'red'})
 
 
-@cli_app.command('calibrate')
+@cli_app.command('calibrate', help='To calibrate the board. Use the calpts command first to set the calibration points')
 @click.pass_obj
 def calibrate(obj: Dcs5Controller):
     if obj.client.isconnected:
-        if obj.internal_board_state.cal_pt_1 and obj.internal_board_state.cal_pt_2:
-            click.secho(f'\nSet stylus down for point 1: {obj.internal_board_state.cal_pt_1} ...', nl=False)
+        if obj.internal_board_state.cal_pt_1 is not None and obj.internal_board_state.cal_pt_2 is not None:
+            click.secho(f'\nSet stylus down for point 1: {obj.internal_board_state.cal_pt_1} mm ...', nl=False)
             if obj.calibrate(1) == 1:
-                click.secho(f'\rSet stylus down for point 1: {obj.internal_board_state.cal_pt_1} ... Successful')
+                click.secho(f'\rSet stylus down for point 1: {obj.internal_board_state.cal_pt_1} mm ... Successful')
             else:
-                click.secho(f'\rSet stylus down for point 1 {obj.internal_board_state.cal_pt_1} ... Failed')
-            click.secho(f'\nSet stylus down for point 2: {obj.internal_board_state.cal_pt_1}', nl=False)
+                click.secho(f'\rSet stylus down for point 1 {obj.internal_board_state.cal_pt_1} mm ... Failed')
+            click.secho(f'\nSet stylus down for point 2: {obj.internal_board_state.cal_pt_2}', nl=False)
             if obj.calibrate(2) == 1:
-                click.secho(f'\rSet stylus down for point 2 {obj.internal_board_state.cal_pt_2} ... Successful')
+                click.secho(f'\rSet stylus down for point 2 {obj.internal_board_state.cal_pt_2} mm ... Successful')
             else:
-                click.secho(f'\rSet stylus down for point 2 {obj.internal_board_state.cal_pt_2} ... Failed')
+                click.secho(f'\rSet stylus down for point 2 {obj.internal_board_state.cal_pt_2} mm ... Failed')
         else:
-            click.echo('Cannot perform calibration, calibration points not set.')
+            click.echo()
+            click.secho('Cannot perform calibration, calibration points not set.', **{'fg': 'red'})
     else:
-        click.echo('Cannot perform calibration, controller is not connected.')
+        click.secho('Cannot perform calibration, device not Connected.', **{'fg': 'red'})
 
 
-@cli_app.command('reload_configs')
+@cli_app.command('reload_configs', help='Use to reload the controller configurations.')
 @click.pass_obj
 def reload_config(obj: Dcs5Controller):
     click.secho('\nReloading Config ...', **{'fg': 'red', 'blink': True}, nl=False)
@@ -282,19 +286,19 @@ def reload_config(obj: Dcs5Controller):
 
 # --- Stylus GROUP --- #
 
-@cli_app.group('stylus')
+@cli_app.group('stylus', help='Change stylus ...')
 @click.pass_obj
 def stylus(obj):
     pass
 
 
-@stylus.command("finger")
+@stylus.command("finger", help='to finger.')
 @click.pass_obj
 def finger(obj: Dcs5Controller):
     obj.change_stylus('finger')
 
 
-@stylus.command("pen")
+@stylus.command("pen", help='to pen.')
 @click.pass_obj
 def pen(obj: Dcs5Controller):
     obj.change_stylus('pen')
@@ -302,25 +306,25 @@ def pen(obj: Dcs5Controller):
 
 # --- MODE GROUP --- #
 
-@cli_app.group('mode')
+@cli_app.group('mode', help='Change input mode ...')
 @click.pass_obj
 def mode(obj):
     pass
 
 
-@mode.command("top")
+@mode.command("top", help='to top.')
 @click.pass_obj
 def top(obj: Dcs5Controller):
     obj.change_board_output_mode('top')
 
 
-@mode.command("bot")
+@mode.command("bot", help='bottom.')
 @click.pass_obj
 def bottom(obj: Dcs5Controller):
     obj.change_board_output_mode('bottom')
 
 
-@mode.command('len')
+@mode.command('len', help='to length.')
 @click.pass_obj
 def length(obj: Dcs5Controller):
     obj.change_board_output_mode('length')
@@ -333,39 +337,40 @@ def calpts():
     pass
 
 
-@calpts.command('1')
+@calpts.command('1', help='To set calibration point 1 values in mm.')
 @click.argument('value', type=click.INT, nargs=1)
 @click.pass_obj
 def calpt1(obj: Dcs5Controller, value):
     if obj.is_listening:
         obj.c_set_calibration_points_mm(1, value)
         time.sleep(0.25)
-        click.echo(f'Calibration point 1: {obj.internal_board_state.cal_pt_1}')
+        click.secho(f'Calibration point 1: {obj.internal_board_state.cal_pt_1} mm', **{'fg': 'green'})
     else:
         click.echo('Cannot calibration points, controller is not active/connected.')
+        click.secho('Cannot set calibration points, controller not active/connected', **{'fg': 'red'})
 
 
-@calpts.command('2')
+@calpts.command('2', help='To set calibration point 2 values in mm.')
 @click.argument('value', type=click.INT, nargs=1)
 @click.pass_obj
 def calpt2(obj: Dcs5Controller, value):
     if obj.is_listening:
         obj.c_set_calibration_points_mm(2, value)
         time.sleep(0.25)
-        click.echo(f'Calibration point 2: {obj.internal_board_state.cal_pt_2}')
+        click.secho(f'Calibration point 2: {obj.internal_board_state.cal_pt_2} mm', **{'fg': 'green'})
     else:
-        click.echo('Cannot calibration points, controller is not active/connected.')
+        click.secho('Cannot set calibration points, controller not active/connected', **{'fg': 'red'})
 
 
 
 # --- EDITS GROUP--- #
 
-@cli_app.group('edit')
+@cli_app.group('edit', help='To edit the ...')
 def edit():
     pass
 
 
-@edit.command('config')
+@edit.command('config', help='controller configuration file.')
 @click.option('-e', '--editor', type=click.STRING, nargs=1, default=None,
               help='Text Editor the use. Otherwise, uses system default.')
 @click.pass_obj
