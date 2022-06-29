@@ -460,6 +460,7 @@ class Dcs5Controller:
         logging.info("Calibration Mode Enable.")
 
         was_listening = self.is_listening
+
         self.stop_listening()
 
         self.client.clear_all()
@@ -482,8 +483,8 @@ class Dcs5Controller:
             return 0
         finally:
             self.client.socket.settimeout(self.client.default_timeout)
-            if not was_listening:
-                self.stop_listening()
+            if was_listening:
+                self.start_listening()
 
     def change_length_units_mm(self):
         self.length_units = "mm"
