@@ -35,11 +35,11 @@ from dcs5.dcs5_devices_specification import load_devices_specification, DevicesS
 from dcs5.dcs5_control_box_statics import load_control_box_parameters, ControlBoxParameters
 
 
-AFTER_SENT_SLEEP = 0.08
+AFTER_SENT_SLEEP = 0.04
 
-HANDLER_SLEEP = 0.02
+HANDLER_SLEEP = 0.01
 
-LISTENER_SLEEP = 0.01
+LISTENER_SLEEP = 0.0001
 
 BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
@@ -384,8 +384,8 @@ class Dcs5Controller:
     def sync_controller_and_board(self):
         """Init board to launch settings.
         """
-        #current_backlight_level = self.internal_board_state.backlighting_level | 0
         self.c_set_backlighting_level(0)
+        time.sleep(0.01) # to split the command.
 
         logging.debug('Syncing Controller and Board.')
 
@@ -398,7 +398,6 @@ class Dcs5Controller:
         self.c_set_interface(1)
         self.c_set_sensor_mode(0)
         self.c_set_stylus_detection_message(False)
-        # self.c_set_backlighting_level(self.config.launch_settings.backlighting_level)
         self.c_set_stylus_settling_delay(reading_profile.settling_delay)
         self.c_set_stylus_max_deviation(reading_profile.max_deviation)
         self.c_set_stylus_number_of_reading(reading_profile.number_of_reading)
@@ -429,7 +428,6 @@ class Dcs5Controller:
             logging.debug(str(state))
             self.is_sync = False
 
-        #self.c_set_backlighting_level(current_backlight_level)
         self.c_set_backlighting_level(self.config.launch_settings.backlighting_level)
 
     def wait_for_ping(self, timeout=2):
@@ -510,11 +508,11 @@ class Dcs5Controller:
         """
         self.output_mode = value
         if self.output_mode == 'bottom':
-            self.flash_lights(2, interval=.1)
+            self.flash_lights(1, interval=.25)
         elif self.output_mode == 'top':
-            self.flash_lights(2, interval=.1)
+            self.flash_lights(1, interval=.25)
         else:
-            self.flash_lights(2, interval=.1)
+            self.flash_lights(1, interval=.25)
 
         logging.debug(f'Board entry: {self.output_mode}.')
         if self.dynamic_stylus_settings is True:
@@ -545,15 +543,11 @@ class Dcs5Controller:
 
     def flash_lights(self, period: int, interval: int):
         current_backlight_level = self.internal_board_state.backlighting_level
-        self.c_set_backlighting_level(0)
-        time.sleep(interval/2)
         for i in range(period):
-            time.sleep(interval / 2)
-            self.c_set_backlighting_level(95)
-            time.sleep(interval/2)
             self.c_set_backlighting_level(0)
-
-        self.c_set_backlighting_level(current_backlight_level)
+            time.sleep(interval / 2)
+            self.c_set_backlighting_level(current_backlight_level)
+            time.sleep(interval / 2)
 
     def shout(self, value: Union[int, float, str]):
         if not self.is_muted:

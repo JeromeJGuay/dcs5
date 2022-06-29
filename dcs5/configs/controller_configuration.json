@@ -7,7 +7,7 @@
         "output_mode": "length",
         "reading_profile": "measure",
         "dynamic_stylus_mode": false,
-        "backlighting_level": 95,
+        "backlighting_level": 50,
         "backlighting_auto_mode": false,
         "backlighting_sensitivity": 0,
         "length_units": "mm",
