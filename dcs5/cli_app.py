@@ -235,16 +235,19 @@ def sync(obj: Dcs5Controller):
 @click.pass_obj
 def calibrate(obj: Dcs5Controller):
     if obj.client.isconnected:
-        click.secho(f'\nSet stylus down for point 1: {obj.internal_board_state.cal_pt_1} ...', nl=False)
-        if obj.calibrate(1) == 1:
-            click.secho(f'\rSet stylus down for point 1: {obj.internal_board_state.cal_pt_1} ... Successful')
+        if obj.internal_board_state.cal_pt_1 and obj.internal_board_state.cal_pt_2:
+            click.secho(f'\nSet stylus down for point 1: {obj.internal_board_state.cal_pt_1} ...', nl=False)
+            if obj.calibrate(1) == 1:
+                click.secho(f'\rSet stylus down for point 1: {obj.internal_board_state.cal_pt_1} ... Successful')
+            else:
+                click.secho(f'\rSet stylus down for point 1 {obj.internal_board_state.cal_pt_1} ... Failed')
+            click.secho(f'\nSet stylus down for point 2: {obj.internal_board_state.cal_pt_1}', nl=False)
+            if obj.calibrate(2) == 1:
+                click.secho(f'\rSet stylus down for point 2 {obj.internal_board_state.cal_pt_2} ... Successful')
+            else:
+                click.secho(f'\rSet stylus down for point 2 {obj.internal_board_state.cal_pt_2} ... Failed')
         else:
-            click.secho(f'\rSet stylus down for point 1 {obj.internal_board_state.cal_pt_1} ... Failed')
-        click.secho(f'\nSet stylus down for point 2: {obj.internal_board_state.cal_pt_1}', nl=False)
-        if obj.calibrate(2) == 1:
-            click.secho(f'\rSet stylus down for point 2 {obj.internal_board_state.cal_pt_2} ... Successful')
-        else:
-            click.secho(f'\rSet stylus down for point 2 {obj.internal_board_state.cal_pt_2} ... Failed')
+            click.echo('Cannot perform calibration, calibration points not set.')
     else:
         click.echo('Cannot perform calibration, controller is not connected.')
 
@@ -336,8 +339,8 @@ def calpts():
 def calpt1(obj: Dcs5Controller, value):
     if obj.is_listening:
         obj.c_set_calibration_points_mm(1, value)
+        time.sleep(0.25)
         click.echo(f'Calibration point 1: {obj.internal_board_state.cal_pt_1}')
-
     else:
         click.echo('Cannot calibration points, controller is not active/connected.')
 
@@ -348,6 +351,7 @@ def calpt1(obj: Dcs5Controller, value):
 def calpt2(obj: Dcs5Controller, value):
     if obj.is_listening:
         obj.c_set_calibration_points_mm(2, value)
+        time.sleep(0.25)
         click.echo(f'Calibration point 2: {obj.internal_board_state.cal_pt_2}')
     else:
         click.echo('Cannot calibration points, controller is not active/connected.')
