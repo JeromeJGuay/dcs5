@@ -37,11 +37,15 @@ def main():
 
     args = parser.parse_args(sys.argv[1:])
 
-    init_logging(stdout_level=args.verbose, write=args.write_log)
-
     if args.cmd == "cli":
+        init_logging(stdout_level=args.verbose, write=args.write_log)
         cli_app([])
     elif args.cmd == "server":
+        print(args.verbose)
+        if args.verbose != 'debug':
+            init_logging(stdout_level='info', write=args.write_log)
+        else:
+            init_logging(stdout_level='debug', write=args.write_log)
         start_server(start_controller=not args.test, host=args.host, port=args.port)
     else:
         parser.print_help()

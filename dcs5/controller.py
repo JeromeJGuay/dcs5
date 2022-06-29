@@ -531,7 +531,7 @@ class Dcs5Controller:
                 self.internal_board_state.backlighting_level = self.control_box_parameters.max_backlighting_level
             self.c_set_backlighting_level(self.internal_board_state.backlighting_level)
         else:
-            logging.info("ui: Backlighting is already at maximum.")
+            logging.info("Backlighting is already at maximum.")
 
     def backlight_down(self):
         if self.internal_board_state.backlighting_level > 0:
@@ -540,7 +540,7 @@ class Dcs5Controller:
                 self.internal_board_state.backlighting_level = 0
             self.c_set_backlighting_level(self.internal_board_state.backlighting_level)
         else:
-            logging.info("ui: Backlighting is already at minimum.")
+            logging.info("Backlighting is already at minimum.")
 
     def flash_lights(self, period: int, interval: int):
         current_backlight_level = self.internal_board_state.backlighting_level
@@ -585,10 +585,10 @@ class Dcs5Controller:
         self.command_handler.queue_command(f"&fm,{value}#", None)
         if value == 0:
             self.internal_board_state.board_interface = "DCSLinkstream"
-            logging.info(f'ui: Interface set to {self.internal_board_state.board_interface}')
+            logging.info(f'Interface set to {self.internal_board_state.board_interface}')
         elif value == 1:
             self.internal_board_state.board_interface = "FEED"
-            logging.info(f'ui: Interface set to {self.internal_board_state.board_interface}')
+            logging.info(f'Interface set to {self.internal_board_state.board_interface}')
 
     def c_set_backlighting_level(self, value: int):
         if 0 <= value <= self.control_box_parameters.max_backlighting_level:
@@ -706,49 +706,49 @@ class CommandHandler:
             if len(match) > 0:
                 if match[0] == "1":
                     self.controller.internal_board_state.stylus_status_msg = "enable"
-                    logging.info('ui: Stylus Status Message Enable')
+                    logging.info('Stylus Status Message Enable')
                 else:
                     self.controller.internal_board_state.stylus_status_msg = "disable"
-                    logging.info('ui: Stylus Status Message Disable')
+                    logging.info('Stylus Status Message Disable')
 
         elif "di" in received:
             match = re.findall(f"%di:(\d+)#\r", received)
             if len(match) > 0:
                 self.controller.internal_board_state.stylus_settling_delay = int(match[0])
-                logging.info(f"ui: Stylus settling delay set to {match[0]}")
+                logging.info(f"Stylus settling delay set to {match[0]}")
 
         elif "dm" in received:
             match = re.findall(f"%dm:(\d+)#\r", received)
             if len(match) > 0:
                 self.controller.internal_board_state.stylus_max_deviation = int(match[0])
-                logging.info(f"ui: Stylus max deviation set to {int(match[0])}")
+                logging.info(f"Stylus max deviation set to {int(match[0])}")
 
         elif "dn" in received:
             match = re.findall(f"%dn:(\d+)#\r", received)
             if len(match) > 0:
                 self.controller.internal_board_state.number_of_reading = int(match[0])
-                logging.info(f"ui: Stylus number set to {int(match[0])}")
+                logging.info(f"Stylus number set to {int(match[0])}")
 
         elif "%b" in received:
             match = re.findall("%b:(.*)#", received)
             if len(match) > 0:
-                logging.info(f'ui: Board State: {match[0]}')
+                logging.info(f'Board State: {match[0]}')
                 self.controller.internal_board_state.board_stats = match[0]
 
         elif "%q" in received:
             match = re.findall("%q:(-*\d*,\d*)#", received)
             if len(match) > 0:
-                logging.info(f'ui: Battery level: {match[0]}')
+                logging.info(f'Battery level: {match[0]}')
                 self.controller.internal_board_state.battery_level = match[0]
 
         elif "%u:" in received:
             match = re.findall("%u:(\d)#", received)
             if len(match) > 0:
                 if match[0] == '0':
-                    logging.info('ui: Board is not calibrated.')
+                    logging.info('Board is not calibrated.')
                     self.controller.internal_board_state.calibrated = False
                 elif match[0] == '1':
-                    logging.info('ui: Board is calibrated.')
+                    logging.info('Board is calibrated.')
                     self.controller.internal_board_state.calibrated = True
             else:
                 logging.error(f'Calibration state {self.controller.client.buffer}')

@@ -148,11 +148,13 @@ class Server:
         return 0
 
 
-def start_server(start_controller: bool = True,
-                 #reconnect_board: bool = True,
-                 reconnection_attempts=5,
-                 host: str = None,
-                 port: int = None):
+def start_server(
+        start_controller: bool = True,
+        #reconnect_board: bool = True,
+        reconnection_attempts=5,
+        host: str = None,
+        port: int = None
+):
 
     server_config = load_server_config(resolve_relative_path(DEFAULT_SERVER_CONFIGURATION_FILE,__file__))
 
@@ -160,8 +162,9 @@ def start_server(start_controller: bool = True,
     port = port if port is not None else server_config.port
 
     s = Server()
+    logging.info(f'Dcs5Serve Launched.')
     if start_controller is True:
-        logging.debug(f'Dcs5Server: Starting Controller. Controller Version {VERSION}')
+        logging.info(f'Dcs5Serve controller Started. Controller Version {VERSION}')
         s.start_controller()
     try:
         count = 0
