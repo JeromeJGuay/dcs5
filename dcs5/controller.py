@@ -384,7 +384,7 @@ class Dcs5Controller:
     def sync_controller_and_board(self):
         """Init board to launch settings.
         """
-        current_backlight_level = self.internal_board_state.backlighting_level
+        #current_backlight_level = self.internal_board_state.backlighting_level | 0
         self.c_set_backlighting_level(0)
 
         logging.debug('Syncing Controller and Board.')
@@ -398,7 +398,7 @@ class Dcs5Controller:
         self.c_set_interface(1)
         self.c_set_sensor_mode(0)
         self.c_set_stylus_detection_message(False)
-        self.c_set_backlighting_level(self.config.launch_settings.backlighting_level)
+        # self.c_set_backlighting_level(self.config.launch_settings.backlighting_level)
         self.c_set_stylus_settling_delay(reading_profile.settling_delay)
         self.c_set_stylus_max_deviation(reading_profile.max_deviation)
         self.c_set_stylus_number_of_reading(reading_profile.number_of_reading)
@@ -429,7 +429,8 @@ class Dcs5Controller:
             logging.debug(str(state))
             self.is_sync = False
 
-        self.c_set_backlighting_level(current_backlight_level)
+        #self.c_set_backlighting_level(current_backlight_level)
+        self.c_set_backlighting_level(self.config.launch_settings.backlighting_level)
 
     def wait_for_ping(self, timeout=2):
         self.c_ping()
