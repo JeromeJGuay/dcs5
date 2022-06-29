@@ -35,11 +35,11 @@ from dcs5.dcs5_devices_specification import load_devices_specification, DevicesS
 from dcs5.dcs5_control_box_statics import load_control_box_parameters, ControlBoxParameters
 
 
-AFTER_SENT_SLEEP = 0.04
+AFTER_SENT_SLEEP = 0.05
 
 HANDLER_SLEEP = 0.01
 
-LISTENER_SLEEP = 0.0001
+LISTENER_SLEEP = 0.01
 
 BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
