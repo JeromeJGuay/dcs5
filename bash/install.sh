@@ -6,7 +6,6 @@ NAME="Dcs5 Cli App"
 EXEC="${SCRIPT_DIR}/Dcs5Cli.sh;$SHELL:"
 ICON="${SCRIPT_DIR}/bigfin.png"
 
-
 cat > ${TARGET} <<-END
 [Desktop Entry]
 Type=Application
@@ -16,8 +15,6 @@ Icon=${ICON}
 Terminal=true
 
 END
-
-#chmod +x ${EXEC}
 
 
 
