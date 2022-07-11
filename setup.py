@@ -1,12 +1,11 @@
 
 from setuptools import find_packages, setup
-
 from dcs5.__init__ import VERSION
 
 setup(
     name="dcs5",
     version=VERSION,
-    author="JeromeJGuay,",
+    author="JeromeJGuay",
     author_email="jerome.guay@dfo-mpo.gc.ca",
     description="""BigFin Dcs5 Board Controller Board.""",
     long_description_content_type="text/markdown",
