@@ -489,16 +489,19 @@ class Dcs5Controller:
     def change_length_units_mm(self):
         self.length_units = "mm"
         logging.info(f"Length Units Change to mm")
+        self.flash_lights(2, interval=.25)
 
     def change_length_units_cm(self):
         self.length_units = "cm"
         logging.info(f"Length Units Change to cm")
+        self.flash_lights(2, interval=.25)
 
     def change_stylus(self, value: str):
         """Stylus must be one of [pen, finger]"""
         self.stylus = value
         self.stylus_offset = self.devices_spec.stylus_offset[self.stylus]
         logging.info(f'Stylus set to {self.stylus}. Stylus offset {self.stylus_offset}')
+        self.flash_lights(2, interval=.25)
 
     def cycle_stylus(self):
         self.change_stylus(next(self.stylus_cyclical_list))
@@ -509,11 +512,11 @@ class Dcs5Controller:
         """
         self.output_mode = value
         if self.output_mode == 'bottom':
-            self.flash_lights(1, interval=.25)
+            self.flash_lights(2, interval=.25)
         elif self.output_mode == 'top':
-            self.flash_lights(1, interval=.25)
+            self.flash_lights(2, interval=.25)
         else:
-            self.flash_lights(1, interval=.25)
+            self.flash_lights(2, interval=.25)
 
         logging.debug(f'Board entry: {self.output_mode}.')
         if self.dynamic_stylus_settings is True:
