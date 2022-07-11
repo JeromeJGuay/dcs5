@@ -9,7 +9,6 @@ OSError: [Errno 107] Transport endpoint is not connected
 
 
 """
-import logging
 import click
 import click_shell
 
@@ -17,7 +16,7 @@ from dcs5 import VERSION, DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROLLER
     XT_BUILTIN_PARAMETERS
 from dcs5.controller import Dcs5Controller
 from dcs5.utils import resolve_relative_path
-from dcs5.config import load_config, ConfigError
+from dcs5.config import ConfigError
 import time
 
 
@@ -68,7 +67,6 @@ class StatePrompt:
                     msg += click.style(f"false", bold=True)
                 msg += click.style(']\n', bold=True)
                 msg += click.style('[', bold=True)
-                #msg += click.style(' | ', bold=True)
                 msg += click.style(f"Mode: ", fg='white')
                 msg += click.style(f"{self._controller.output_mode}", bold=True)
                 msg += click.style(' | ', bold=True)
@@ -132,7 +130,9 @@ def close_client(ctx: click.Context):
         ctx.obj.close_client()
 
 
+###################################
 #### CLI APPLICATION STRUCTURE ####
+###################################
 @click_shell.shell(prompt=STATE_PROMPT.prompt, on_finished=close_client)
 @click.pass_context
 def cli_app(ctx: click.Context):
@@ -388,4 +388,5 @@ def edit_config(obj: Dcs5Controller, editor):
     if obj.client.isconnected:
         if click.confirm(click.style(f"Sync Board", fg='blue'), default=True):
             sync_controller(obj)
+
 
