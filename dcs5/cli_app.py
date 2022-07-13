@@ -10,16 +10,16 @@ OSError: [Errno 107] Transport endpoint is not connected
 
 """
 import shutil
+import time
 
 import click
 import click_shell
 
 from dcs5 import VERSION, DEVICES_SPECIFICATION_FILE, CONTROLLER_CONFIGURATION_FILE, \
     CONTROL_BOX_PARAMETERS, DEFAULT_CONTROLLER_CONFIGURATION_FILE, DEFAULT_DEVICES_SPECIFICATION_FILE
+from dcs5.config import ConfigError
 from dcs5.controller import Dcs5Controller
 from dcs5.utils import resolve_relative_path
-from dcs5.config import ConfigError
-import time
 
 
 class StatePrompt:
@@ -123,6 +123,17 @@ def sync_controller(controller: Dcs5Controller):
         click.secho('\rSyncing Board ... Failed', **{'fg': 'red'})
 
 
+def _reload_config(controller: Dcs5Controller):
+    click.secho('\nReloading Config ...', **{'fg': 'red', 'blink': True}, nl=False)
+    try:
+        controller.reload_configs()
+        click.secho('\rReloading Config ... Done', **{'fg': 'green'})
+    except ConfigError as err:
+        click.secho('\rReloading Config ... Failed', **{'fg': 'red'})
+        click.secho(f'Config Error\n: {err}', **{'fg': 'red'})
+        click.secho(f'Configfile\n: {controller.config_path}', **{'fg': 'white'})
+
+
 STATE_PROMPT = StatePrompt()
 INTRO = f'Dcs5 Controller App. (version {VERSION})'
 
@@ -165,8 +176,6 @@ def cli_app(ctx: click.Context, connect):
 
     click.echo('Type `help` to list commands or `quit` to close the app.')
     click.echo('')
-
-    return ctx.obj
 
 
 @cli_app.command('activate', help='Use this command if the controller is not active but is connected.')
@@ -261,36 +270,11 @@ def calibrate(obj: Dcs5Controller):
 @cli_app.command('reload_configs', help='Use to reload the controller configurations.')
 @click.pass_obj
 def reload_config(obj: Dcs5Controller):
-    click.secho('\nReloading Config ...', **{'fg': 'red', 'blink': True}, nl=False)
-    try:
-        obj.reload_configs()
-        click.secho('\rReloading Config ... Done', **{'fg': 'green'})
-    except ConfigError as err:
-        click.secho('\rReloading Config ... Failed', **{'fg': 'red'})
-        click.secho(f'Config Error\n: {err}', **{'fg': 'red'})
-        click.secho(f'Configfile\n: {obj.config_path}', **{'fg': 'white'})
+    _reload_config(obj)
 
-
-# @cli_app.command('change_configs')
-# @click.argument('filename', type=click.Path(exists=True), nargs=1, help='Path to controller_config')
-# @click.pass_obj
-# def change_config(obj: Dcs5Controller, filename):
-#     try:
-#         load_config(filename)
-#         obj.config_path = filename
-#         obj.reload_configs()
-#     except ConfigError:
-#         click.echo('Invalid Config')
-#
-#     if obj.client.isconnected:
-#         if click.confirm(click.style(f"Sync Board", fg='blue'), default=True):
-#             obj.sync_controller_and_board()
-
-# --- Stylus GROUP --- #
 
 @cli_app.group('stylus', help='Change stylus ...')
-@click.pass_obj
-def stylus(obj):
+def stylus():
     pass
 
 
@@ -309,8 +293,7 @@ def pen(obj: Dcs5Controller):
 # --- MODE GROUP --- #
 
 @cli_app.group('mode', help='Change input mode ...')
-@click.pass_obj
-def mode(obj):
+def mode():
     pass
 
 
@@ -373,10 +356,10 @@ def edit():
 @edit.command('controller', help='controller configuration file.')
 @click.option('-e', '--editor', type=click.STRING, nargs=1, default=None,
               help='Text Editor the use. Otherwise, uses system default.')
-@click.option('-r', is_flag=True, default=False, help='Revert to default values.')
+@click.option('-r', '--revert', is_flag=True, default=False, help='Revert to default values.')
 @click.pass_obj
-def edit_config(obj: Dcs5Controller, r, editor):
-    if r is True:
+def edit_config(obj: Dcs5Controller, revert, editor):
+    if revert is True:
 
         shutil.copyfile(
             resolve_relative_path(DEFAULT_CONTROLLER_CONFIGURATION_FILE, __file__),
@@ -391,35 +374,35 @@ def edit_config(obj: Dcs5Controller, r, editor):
         else:
             click.edit(filename=obj.config_path)
 
-    reload_config()
+    _reload_config(obj)
 
     if obj.client.isconnected:
         if click.confirm(click.style(f"Sync Board", fg='blue'), default=True):
             sync_controller(obj)
 
 
-# @edit.command('devices', help='devices specification file.')
-# @click.option('-e', '--editor', type=click.STRING, nargs=1, default=None,
-#               help='Text Editor the use. Otherwise, uses system default.')
-# @click.option('-r', is_flag=True, default=False, help='Revert to default values.')
-# @click.pass_obj
-# def edit_devices(obj: Dcs5Controller, r, editor):
-#     if r is True:
-#         shutil.copyfile(
-#             resolve_relative_path(DEFAULT_DEVICES_SPECIFICATION_FILE, __file__),
-#             obj.devices_specifications_path
-#         )
-#     else:
-#         if editor is not None:
-#             try:
-#                 click.edit(filename=obj.devices_specifications_path, editor=editor)
-#             except click.ClickException:
-#                 click.echo(f'{editor} not found. ')
-#         else:
-#             click.edit(filename=obj.devices_specifications_path)
-#
-#     reload_config()
-#
-#     if obj.client.isconnected:
-#         if click.confirm(click.style(f"Sync Board", fg='blue'), default=True):
-#             sync_controller(obj)
+@edit.command('devices', help='devices specification file.')
+@click.option('-e', '--editor', type=click.STRING, nargs=1, default=None,
+              help='Text Editor the use. Otherwise, uses system default.')
+@click.option('-r', is_flag=True, default=False, help='Revert to default values.')
+@click.pass_obj
+def edit_devices(obj: Dcs5Controller, r, editor):
+    if r is True:
+        shutil.copyfile(
+            resolve_relative_path(DEFAULT_DEVICES_SPECIFICATION_FILE, __file__),
+            obj.devices_specifications_path
+        )
+    else:
+        if editor is not None:
+            try:
+                click.edit(filename=obj.devices_specifications_path, editor=editor)
+            except click.ClickException:
+                click.echo(f'{editor} not found. ')
+        else:
+            click.edit(filename=obj.devices_specifications_path)
+
+    _reload_config(obj)
+
+    if obj.client.isconnected:
+        if click.confirm(click.style(f"Sync Board", fg='blue'), default=True):
+            sync_controller(obj)

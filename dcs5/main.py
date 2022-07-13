@@ -36,10 +36,12 @@ def main():
     server_parser.add_argument('--port', type=int, default=None, help='Change the port.')
 
     args = parser.parse_args(sys.argv[1:])
-
     if args.cmd == "cli":
         init_logging(stdout_level=args.verbose, write=args.write_log)
-        cli_app(['-c'] if args.connect else [])
+        sys.argv = ['cli_app']
+        if args.connect:
+            sys.argv += ['-c']
+        cli_app()
     elif args.cmd == "server":
         if args.verbose != 'debug':
             init_logging(stdout_level='info', write=args.write_log)
