@@ -28,7 +28,7 @@ def main():
 
     cli_parser = subparser.add_parser('cli', parents=[parent_parser])
 
-    # cli_parser.add_argument('-u', '--user-interface', action='store_true', default=False, help='Only run the server.')
+    cli_parser.add_argument('-c', '--connect', action='store_true', default=False, help='Connect on launch.')
 
     server_parser = subparser.add_parser('server', parents=[parent_parser])
     server_parser.add_argument('--test', action='store_true', default=False, help='Only run the server.')
@@ -36,9 +36,10 @@ def main():
     server_parser.add_argument('--port', type=int, default=None, help='Change the port.')
 
     args = parser.parse_args(sys.argv[1:])
+
     if args.cmd == "cli":
         init_logging(stdout_level=args.verbose, write=args.write_log)
-        cli_app([])
+        cli_app(['-c'] if args.connect else [])
     elif args.cmd == "server":
         if args.verbose != 'debug':
             init_logging(stdout_level='info', write=args.write_log)
