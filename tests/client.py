@@ -1,5 +1,5 @@
 """
-This module contains to test the server. Additionally this code could be copied in another app.
+This module contains to test for the server. Additionally this code could be copied in another app.
 """
 import socket
 import logging
