@@ -1,6 +1,11 @@
 VERSION = "0.0.1"
 
-DEFAULT_SERVER_CONFIGURATION_FILE = "configs/server_configuration.json"
-DEFAULT_CONTROLLER_CONFIGURATION_FILE = "configs/controller_configuration.json"
-DEFAULT_DEVICES_SPECIFICATION_FILE = "devices_specifications/dcs5_default_devices_specification.json"
-XT_BUILTIN_PARAMETERS = "static/dcs5_control_box_parameters.json"
+SERVER_CONFIGURATION_FILE = "configs/server_configuration.json"
+CONTROLLER_CONFIGURATION_FILE = "configs/controller_configuration.json"
+DEVICES_SPECIFICATION_FILE = "configs/devices_specification.json"
+CONTROL_BOX_PARAMETERS = "configs/control_box_parameters.json"
+
+DEFAULT_CONTROLLER_CONFIGURATION_FILE = "default_configs/controller_configuration.json"
+DEFAULT_DEVICES_SPECIFICATION_FILE = "default_configs/devices_specification.json"
+DEFAULT_CONTROL_BOX_PARAMETERS = "default_configs/control_box_parameters.json"
+

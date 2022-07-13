@@ -31,8 +31,8 @@ import bluetooth
 import pyautogui as pag
 
 from dcs5.config import load_config, ControllerConfiguration, ConfigError
-from dcs5.dcs5_devices_specification import load_devices_specification, DevicesSpecification
-from dcs5.dcs5_control_box_statics import load_control_box_parameters, ControlBoxParameters
+from dcs5.devices_specification import load_devices_specification, DevicesSpecification
+from dcs5.control_box_parameters import load_control_box_parameters, ControlBoxParameters
 
 
 AFTER_SENT_SLEEP = 0.05

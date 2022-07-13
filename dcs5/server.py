@@ -4,8 +4,8 @@ import re
 import json
 import time
 
-from dcs5 import VERSION, DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROLLER_CONFIGURATION_FILE, \
-    XT_BUILTIN_PARAMETERS, DEFAULT_SERVER_CONFIGURATION_FILE
+from dcs5 import VERSION, DEVICES_SPECIFICATION_FILE, CONTROLLER_CONFIGURATION_FILE, \
+    CONTROL_BOX_PARAMETERS, SERVER_CONFIGURATION_FILE
 
 from dcs5.config import load_server_config
 
@@ -19,9 +19,9 @@ VALID_AUTH_KEY = ["9999"]
 
 
 def start_dcs5_controller(
-        config_path=DEFAULT_CONTROLLER_CONFIGURATION_FILE,
-        devices_specifications_path=DEFAULT_DEVICES_SPECIFICATION_FILE,
-        control_box_parameters_path=XT_BUILTIN_PARAMETERS
+        config_path=CONTROLLER_CONFIGURATION_FILE,
+        devices_specifications_path=DEVICES_SPECIFICATION_FILE,
+        control_box_parameters_path=CONTROL_BOX_PARAMETERS
 ):
     config_path = resolve_relative_path(config_path, __file__)
     devices_specifications_path = resolve_relative_path(devices_specifications_path, __file__)
@@ -156,7 +156,7 @@ def start_server(
         port: int = None
 ):
 
-    server_config = load_server_config(resolve_relative_path(DEFAULT_SERVER_CONFIGURATION_FILE,__file__))
+    server_config = load_server_config(resolve_relative_path(SERVER_CONFIGURATION_FILE, __file__))
 
     host = host if host is not None else server_config.host
     port = port if port is not None else server_config.port
