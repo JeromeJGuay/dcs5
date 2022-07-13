@@ -10,7 +10,7 @@ setup(
     description="""BigFin Dcs5 Board Controller Board.""",
     long_description_content_type="text/markdown",
     packages=find_packages(),
-    package_data={"": ["*.json"]},
+    package_data={"": ["configs/*.json", "default_configs/*.json"]},
     include_package_data=True,
     classifiers=["Programming Language :: Python :: 3"],
     python_requires="~=3.8",
