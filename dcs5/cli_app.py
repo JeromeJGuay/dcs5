@@ -9,11 +9,13 @@ OSError: [Errno 107] Transport endpoint is not connected
 
 
 """
+import shutil
+
 import click
 import click_shell
 
 from dcs5 import VERSION, DEVICES_SPECIFICATION_FILE, CONTROLLER_CONFIGURATION_FILE, \
-    CONTROL_BOX_PARAMETERS
+    CONTROL_BOX_PARAMETERS, DEFAULT_CONTROLLER_CONFIGURATION_FILE, DEFAULT_DEVICES_SPECIFICATION_FILE
 from dcs5.controller import Dcs5Controller
 from dcs5.utils import resolve_relative_path
 from dcs5.config import ConfigError
@@ -89,7 +91,6 @@ def init_dcs5_controller():
     config_path = resolve_relative_path(CONTROLLER_CONFIGURATION_FILE, __file__)
     devices_specifications_path = resolve_relative_path(DEVICES_SPECIFICATION_FILE, __file__)
     control_box_parameters_path = resolve_relative_path(CONTROL_BOX_PARAMETERS, __file__)
-    print(config_path, devices_specifications_path, control_box_parameters_path)
 
     return Dcs5Controller(config_path, devices_specifications_path, control_box_parameters_path)
 
@@ -363,26 +364,32 @@ def calpt2(obj: Dcs5Controller, value):
         click.secho('Cannot set calibration points, controller not active/connected', **{'fg': 'red'})
 
 
-
-# --- EDITS GROUP--- #
-
+# --- EDITS GROUP---
 @cli_app.group('edit', help='To edit the ...')
 def edit():
     pass
 
 
-@edit.command('config', help='controller configuration file.')
+@edit.command('controller', help='controller configuration file.')
 @click.option('-e', '--editor', type=click.STRING, nargs=1, default=None,
               help='Text Editor the use. Otherwise, uses system default.')
+@click.option('-r', is_flag=True, default=False, help='Revert to default values.')
 @click.pass_obj
-def edit_config(obj: Dcs5Controller, editor):
-    if editor is not None:
-        try:
-            click.edit(filename=obj.config_path, editor=editor)
-        except click.ClickException:
-            click.echo(f'{editor} not found. ')
+def edit_config(obj: Dcs5Controller, r, editor):
+    if r is True:
+
+        shutil.copyfile(
+            resolve_relative_path(DEFAULT_CONTROLLER_CONFIGURATION_FILE, __file__),
+            obj.config_path
+        )
     else:
-        click.edit(filename=obj.config_path)
+        if editor is not None:
+            try:
+                click.edit(filename=obj.config_path, editor=editor)
+            except click.ClickException:
+                click.echo(f'{editor} not found. ')
+        else:
+            click.edit(filename=obj.config_path)
 
     reload_config()
 
@@ -391,3 +398,28 @@ def edit_config(obj: Dcs5Controller, editor):
             sync_controller(obj)
 
 
+# @edit.command('devices', help='devices specification file.')
+# @click.option('-e', '--editor', type=click.STRING, nargs=1, default=None,
+#               help='Text Editor the use. Otherwise, uses system default.')
+# @click.option('-r', is_flag=True, default=False, help='Revert to default values.')
+# @click.pass_obj
+# def edit_devices(obj: Dcs5Controller, r, editor):
+#     if r is True:
+#         shutil.copyfile(
+#             resolve_relative_path(DEFAULT_DEVICES_SPECIFICATION_FILE, __file__),
+#             obj.devices_specifications_path
+#         )
+#     else:
+#         if editor is not None:
+#             try:
+#                 click.edit(filename=obj.devices_specifications_path, editor=editor)
+#             except click.ClickException:
+#                 click.echo(f'{editor} not found. ')
+#         else:
+#             click.edit(filename=obj.devices_specifications_path)
+#
+#     reload_config()
+#
+#     if obj.client.isconnected:
+#         if click.confirm(click.style(f"Sync Board", fg='blue'), default=True):
+#             sync_controller(obj)
