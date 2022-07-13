@@ -12,8 +12,8 @@ OSError: [Errno 107] Transport endpoint is not connected
 import click
 import click_shell
 
-from dcs5 import VERSION, DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROLLER_CONFIGURATION_FILE, \
-    XT_BUILTIN_PARAMETERS
+from dcs5 import VERSION, DEVICES_SPECIFICATION_FILE, CONTROLLER_CONFIGURATION_FILE, \
+    CONTROL_BOX_PARAMETERS
 from dcs5.controller import Dcs5Controller
 from dcs5.utils import resolve_relative_path
 from dcs5.config import ConfigError
@@ -86,9 +86,10 @@ class StatePrompt:
 
 
 def init_dcs5_controller():
-    config_path = resolve_relative_path(DEFAULT_CONTROLLER_CONFIGURATION_FILE, __file__)
-    devices_specifications_path = resolve_relative_path(DEFAULT_DEVICES_SPECIFICATION_FILE, __file__)
-    control_box_parameters_path = resolve_relative_path(XT_BUILTIN_PARAMETERS, __file__)
+    config_path = resolve_relative_path(CONTROLLER_CONFIGURATION_FILE, __file__)
+    devices_specifications_path = resolve_relative_path(DEVICES_SPECIFICATION_FILE, __file__)
+    control_box_parameters_path = resolve_relative_path(CONTROL_BOX_PARAMETERS, __file__)
+    print(config_path, devices_specifications_path, control_box_parameters_path)
 
     return Dcs5Controller(config_path, devices_specifications_path, control_box_parameters_path)
 
@@ -134,8 +135,9 @@ def close_client(ctx: click.Context):
 #### CLI APPLICATION STRUCTURE ####
 ###################################
 @click_shell.shell(prompt=STATE_PROMPT.prompt, on_finished=close_client)
+@click.option('-c', '--connect', default=False, is_flag=True, help='If used, with try to connect on start.')
 @click.pass_context
-def cli_app(ctx: click.Context):
+def cli_app(ctx: click.Context, connect):
     click.secho(INTRO)
 
     try:
@@ -143,7 +145,7 @@ def cli_app(ctx: click.Context):
     except ConfigError as err:
         click.secho(f'Config Error: {err}', **{'fg': 'red'})
         click.secho(
-            f'Configfile\n: {resolve_relative_path(DEFAULT_CONTROLLER_CONFIGURATION_FILE, __file__)}',
+            f'Configfile\n: {resolve_relative_path(CONTROLLER_CONFIGURATION_FILE, __file__)}',
             **{'fg': 'white'}
         )
         ctx.abort()
@@ -153,14 +155,13 @@ def cli_app(ctx: click.Context):
     click.secho(f'\nDevice infos :')
     click.secho(f' Name : {ctx.obj.config.client.device_name}')
     click.secho(f' Mac address : {ctx.obj.config.client.mac_address}')
-
-    start_client(ctx.obj)
-
-    if ctx.obj.client.isconnected:
-        sync_controller(ctx.obj)
-        ctx.obj.start_listening()
-
     click.echo('')
+    if connect is True:
+        start_client(ctx.obj)
+        if ctx.obj.client.isconnected:
+            sync_controller(ctx.obj)
+            ctx.obj.start_listening()
+
     click.echo('Type `help` to list commands or `quit` to close the app.')
     click.echo('')
 
