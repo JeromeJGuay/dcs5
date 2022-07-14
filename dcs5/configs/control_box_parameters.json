@@ -5,7 +5,9 @@
     "backlight_level": 0,
     "backlighting_auto_mode": false,
     "backlighting_sensitivity": 0,
+    "min_settling_delay": 0,
     "max_settling_delay": 20,
+    "min_max_deviation": 1,
     "max_max_deviation": 100,
     "max_backlighting_level": 95,
     "max_backlighting_sensitivity": 7

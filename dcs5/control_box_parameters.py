@@ -11,7 +11,9 @@ class ControlBoxParameters:
     backlight_level: int
     backlighting_auto_mode: int
     backlighting_sensitivity: int
+    min_settling_delay: int
     max_settling_delay: int
+    min_max_deviation: int
     max_max_deviation: int
     max_backlighting_level: int
     max_backlighting_sensitivity: int
