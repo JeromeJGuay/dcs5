@@ -162,12 +162,3 @@ def load_config(path: str):
     return ControllerConfiguration(**json2dict(path))
 
 
-@dataclass
-class ServerConfiguration:
-    host: str
-    port: int
-
-
-def load_server_config(path: str):
-    return ServerConfiguration(**json2dict(path))
-

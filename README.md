@@ -1,9 +1,9 @@
 Dcs5 Controller app
 ===================
 
-This python application provides a tool to interface with a BigFin Dcs5 XT measuring board via Bluetooth.
-At the moment, the app only works on Unix machines due to some unresolved problems with the Bluetooth packages. 
-When launched, the controller app emulates keyboard inputs when the measuring board detects stylus input.
+This python application provides a command line interface and a server to interact with a BigFin Dcs5 XT measuring board via Bluetooth.
+At the moment, the app only works on Unix machines due to some unresolved problems with the Bluetooth packages.
+The application will turn stylus input on the measuring board into keyboard inputs basically turning the measuring board into a wireless keyboard.
 
 Installation
 ------------
@@ -35,7 +35,7 @@ To call the application ...
 
 cli app
 -------
-After launching the cli app, it will try to connect the board. Use the help command to see all the available commands. 
+...
 
 server
 ------
@@ -43,7 +43,12 @@ The application can be launch with a server to communicate with the board. This 
 
 Configurations
 --------------
-The specific mapping for the controller keys are set in the `dcs5/configs/controller_configuration.json` file.
+3 json files are used to set different parameters for the application.
++ `configs/controller_configuration.json`
++ `config/devices_sepcification.json`
++ `configs/control_box_parameters.json`
+
+The specific mapping for the controller keys are set in the `configs/controller_configuration.json` file.
 
 
 

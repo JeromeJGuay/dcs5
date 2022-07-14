@@ -1,21 +1,28 @@
 import socket
 import logging
-import re
+from dataclasses import dataclass
 import json
 import time
 
 from dcs5 import VERSION, DEVICES_SPECIFICATION_FILE, CONTROLLER_CONFIGURATION_FILE, \
     CONTROL_BOX_PARAMETERS, SERVER_CONFIGURATION_FILE
 
-from dcs5.config import load_server_config
-
 from dcs5.controller import Dcs5Controller
-from dcs5.utils import resolve_relative_path
+from dcs5.utils import resolve_relative_path, json2dict
 
 ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
 
 VALID_AUTH_KEY = ["9999"]
+
+@dataclass
+class ServerConfiguration:
+    host: str
+    port: int
+
+
+def load_server_config(path: str):
+    return ServerConfiguration(**json2dict(path))
 
 
 def start_dcs5_controller(

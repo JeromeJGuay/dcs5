@@ -30,7 +30,7 @@ from typing import *
 import bluetooth
 import pyautogui as pag
 
-from dcs5.config import load_config, ControllerConfiguration, ConfigError
+from dcs5.controller_configurations import load_config, ControllerConfiguration, ConfigError
 from dcs5.devices_specification import load_devices_specification, DevicesSpecification
 from dcs5.control_box_parameters import load_control_box_parameters, ControlBoxParameters
 

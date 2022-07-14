@@ -17,7 +17,7 @@ import click_shell
 
 from dcs5 import VERSION, DEVICES_SPECIFICATION_FILE, CONTROLLER_CONFIGURATION_FILE, \
     CONTROL_BOX_PARAMETERS, DEFAULT_CONTROLLER_CONFIGURATION_FILE, DEFAULT_DEVICES_SPECIFICATION_FILE
-from dcs5.config import ConfigError
+from dcs5.controller_configurations import ConfigError
 from dcs5.controller import Dcs5Controller
 from dcs5.utils import resolve_relative_path
 
