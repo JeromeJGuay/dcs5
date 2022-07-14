@@ -443,7 +443,7 @@ class Dcs5Controller:
             count += 1
             time.sleep(0.2)
 
-    def calibrate(self, pt: int)-> int:
+    def calibrate(self, pt: int) -> int:
         """
 
         Parameters
@@ -623,16 +623,16 @@ class Dcs5Controller:
         self.command_handler.queue_command(f'&sn,{int(value)}#', f'%sn:{int(value)}#\r')
 
     def c_set_stylus_settling_delay(self, value: int = 1):
-        if 0 <= value <= self.control_box_parameters.max_settling_delay:
+        if self.control_box_parameters.min_settling_delay <= value <= self.control_box_parameters.max_settling_delay:
             self.command_handler.queue_command(f"&di,{value}#", f"%di:{value}#\r")
         else:
-            logging.warning(f"Settling delay value range: (0, {self.control_box_parameters.max_settling_delay})")
+            logging.warning(f"Settling delay value range: ({self.control_box_parameters.min_settling_delay}, {self.control_box_parameters.max_settling_delay})")
 
     def c_set_stylus_max_deviation(self, value: int):
-        if 0 <= value <= self.control_box_parameters.max_max_deviation:
+        if self.control_box_parameters.min_max_deviation <= value <= self.control_box_parameters.max_max_deviation:
             self.command_handler.queue_command(f"&dm,{value}#", f"%dm:{value}#\r")
         else:
-            logging.warning(f"Settling delay value range: (0, {self.control_box_parameters.max_max_deviation})")
+            logging.warning(f"Settling delay value range: ({self.control_box_parameters.min_max_deviation}, {self.control_box_parameters.max_max_deviation})")
 
     def c_set_stylus_number_of_reading(self, value: int = 5):
         self.command_handler.queue_command(f"&dn,{value}#", f"%dn:{value}#\r")
@@ -893,9 +893,9 @@ def check_config(config: ControllerConfiguration, control_box: ControlBoxParamet
         raise ConfigError(f'launch_settings/Backlight_level outside range {(0, control_box.max_backlighting_level)}')
 
     for key, item in config.reading_profiles.items():
-        if not item.settling_delay <= control_box.max_settling_delay:
-            raise ConfigError(f'reading_profiles/{key}/settling_delay outside range {(0, control_box.max_settling_delay)}')
-        if not item.max_deviation <= control_box.max_max_deviation:
-            raise ConfigError(f'reading_profiles/{key}/max_deviation outside range {(0, control_box.max_max_deviation)}')
+        if not control_box.min_settling_delay <= item.settling_delay <= control_box.max_settling_delay:
+            raise ConfigError(f'reading_profiles/{key}/settling_delay outside range {(control_box.min_settling_delay, control_box.max_settling_delay)}')
+        if not control_box.min_max_deviation <= item.max_deviation <= control_box.max_max_deviation:
+            raise ConfigError(f'reading_profiles/{key}/max_deviation outside range {(control_box.min_max_deviation, control_box.max_max_deviation)}')
     return config
 
