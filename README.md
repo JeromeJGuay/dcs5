@@ -29,7 +29,11 @@ See the `user_guide/UserGuide_fr.odf`. French only.
 
 
 ## Calibration
-Although the board sends measurements value in mm, a specific offset needs to be added for each stylus.
+With the cli app, use the `calpt1` and `calpt2` command to set calibration points. Then use the calibrate function and follow the instruction from the cli.
+Although the board sends measurements value in mm, a specific offset needs to be added to at least one of the 2 stylus.
+We suggest do the calibration with the finger stylus since the magnet of the pen is further away from its tips.
+Calibrating with the pen would result in negative measurements when placing the finger stylus at 0 mm.
+However, the measuring board cannot return values smaller than 0.
 The offsets value are in `dcs5/devices_specifications/dcs5_default_devices_specification.json` files.
 
 ## Configurations
@@ -58,13 +62,22 @@ The controller_configuration.json is used to configure the controller behavior.
   - Notes: Valid commands `["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm"]`
   - Notes: See the `controller_configurations.py` module for the valid keyboard input.
   - Notes: List of command are accepted.
-```
+
 ### `config/devices_sepcification.json`
-+
++ board:
+  - number_of_keys: The keys correspond to the grey circle on the board.
+  - key_to_mm_ratio: The distance in mm from one edge of a circle (larger one) to the next.
+  - zero: The distance (mm) that would be the key 0 given that the first key on the board is key 1.
+  - detection_range: Offset on the left in mm for stylus detection. 
+  - keys_layout: Ordered lists for the name of the top keys and the for the bottom keys. These names are used to map command.
+    - Notes: The two list (top and bottom) should not contain identical names.  
++ control_box:
+  - keys_layout: Mapping of the controller box key builtin id to meaningful name. These names are used to map command. 
++ stylus_offset: Offset in mm that is added ot the value measured by the board. 
+  - Notes: These values will depend on the calibration.
 
 ### `configs/control_box_parameters.json`
-
-The specific mapping for the controller keys are set in the `configs/controller_configuration.json` file.
+Values of the builtin parameters of the control box. From Bigfin documentation.
 
 ## server
 
