@@ -361,8 +361,8 @@ def edit():
               help='Text Editor the use. Otherwise, uses system default.')
 @click.option('-r', '--reset', is_flag=True, default=False, help='Reset to default values.')
 @click.pass_obj
-def edit_controller(obj: Dcs5Controller, revert, editor):
-    if revert is True:
+def edit_controller(obj: Dcs5Controller, reset, editor):
+    if reset is True:
         shutil.copyfile(
             resolve_relative_path(DEFAULT_CONTROLLER_CONFIGURATION_FILE, __file__),
             obj.config_path
