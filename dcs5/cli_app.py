@@ -394,10 +394,11 @@ def edit_devices(obj: Dcs5Controller, r, editor):
         )
     else:
         if editor is not None:
-            try:
-                click.edit(filename=obj.devices_specifications_path, editor=editor)
-            except click.ClickException:
-                click.echo(f'{editor} not found. ')
+            print('aaaaaaaaaaaaaaaaaaa')
+            # try:
+            click.edit(filename=obj.devices_specifications_path, editor=editor)
+            # except click.ClickException:
+            #     click.echo(f'{editor} not found.')
         else:
             click.edit(filename=obj.devices_specifications_path)
 
