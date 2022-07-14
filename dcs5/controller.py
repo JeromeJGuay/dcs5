@@ -210,11 +210,18 @@ class BluetoothClient:
         except socket.timeout:
             pass
         except TimeoutError:
-            logging.warning('Connection Lost with Board.')
+            logging.error('Connection Lost with Board.')
             self.close()
             while not self.isconnected:
-                logging.warning('Attempting to reconnect. (every 30 seconds)')
-                self.connect(self.mac_address, timeout=30)
+                logging.error('Attempting to reconnect. (every 15 seconds)')
+                self.connect(self.mac_address, timeout=15)
+        except OSError:
+            logging.error('Bluetooth was turned off.')
+            self.close()
+            while not self.isconnected:
+                logging.error('Attempting to reconnect. (every 15 seconds)')
+                time.sleep(15)
+                self.connect(self.mac_address, timeout=15)
 
     def clear_all(self):
         self.receive()
