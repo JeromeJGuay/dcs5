@@ -34,7 +34,7 @@ Although the board sends measurements value in mm, a specific offset needs to be
 We suggest do the calibration with the finger stylus since the magnet of the pen is further away from its tips.
 Calibrating with the pen would result in negative measurements when placing the finger stylus at 0 mm.
 However, the measuring board cannot return values smaller than 0.
-The offsets value are in `dcs5/devices_specifications/dcs5_default_devices_specification.json` files.
+The offsets value are in [dcs5/configs/devices_specifications.json](dcs5/configs/devices_specifications.json) files.
 
 ## Configurations
 
@@ -43,17 +43,18 @@ The offsets value are in `dcs5/devices_specifications/dcs5_default_devices_speci
 The controller_configuration.json is used to configure the controller behavior.
 + client : Measuring board bluetooth information.
 + launch_settings : setting used when the app is launch.
-  - dynamic_stylus_mode: TODO
-  - backlight_level: TODO
-  - backlighting_auto_mode: TODO
-  - backlighting_sensitivity: TODO
+  - dynamic_stylus_mode: (true/false) If true, reading profiles will change for each output mode as defined in the next section.
+  - backlight_level: (0-95) Backlight intensity 
+  - backlighting_auto_mode: (true/false) Automatic backlighting adjustment.
+  - backlighting_sensitivity: (0-7) Auto mode sensitivity.
   - Notes: The reading profiles are defined in the next section.
-+ reading_profiles :
-  - settling_delay: TODO
-  - number_of_reading: TODO
-  - max_deviation: TODO
++ reading_profiles : 
+  - settling_delay: (0-20) Delays after the stylus is first detected. (not seconds)
+  - number_of_reading: Number of reading needed for a good measurements.
+  - max_deviation: (1-100) Amount of deviation allowed between each reading.
+  - Notes: For more information : `configs/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf`
 + output_modes :
-  - swipe_threshold: TODO
+  - swipe_threshold: Minimal distance (mm) for a stylus swipe to be valid.
   - segments_limits: Define the limit of the different swipe segment.
   - segments_mode: The corresponding output_mode for each swipe segment.
   - mode_reading_profiles: The corresponding reading_profiles for each output modes.
@@ -77,12 +78,12 @@ The controller_configuration.json is used to configure the controller behavior.
   - Notes: These values will depend on the calibration.
 
 ### `configs/control_box_parameters.json`
-Values of the builtin parameters of the control box. From Bigfin documentation.
+Values of the builtin parameters of the control box. From BigFin documentation `configs/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf`.
 
 ## server
 
 The application can be launch with a server to communicate with the board. This feature is working but still in development.
-The server port and address are set ins the `config/server_configuration.json` file.
+The server port and address are set ins the `config/server_configuration.json` file. Contact me for more information,
 
 
 
