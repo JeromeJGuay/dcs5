@@ -128,6 +128,9 @@ def _reload_config(controller: Dcs5Controller):
     try:
         controller.reload_configs()
         click.secho('\rReloading Config ... Done', **{'fg': 'green'})
+        if controller.client.isconnected:
+            if click.confirm(click.style(f"Sync Board", fg='blue'), default=True):
+                sync_controller(controller)
     except ConfigError as err:
         click.secho('\rReloading Config ... Failed', **{'fg': 'red'})
         click.secho(f'Config Error\n: {err}', **{'fg': 'red'})
@@ -356,54 +359,58 @@ def edit():
 @edit.command('controller', help='controller configuration file.')
 @click.option('-e', '--editor', type=click.STRING, nargs=1, default=None,
               help='Text Editor the use. Otherwise, uses system default.')
-@click.option('-r', '--revert', is_flag=True, default=False, help='Revert to default values.')
+@click.option('-r', '--reset', is_flag=True, default=False, help='Reset to default values.')
 @click.pass_obj
-def edit_config(obj: Dcs5Controller, revert, editor):
+def edit_controller(obj: Dcs5Controller, revert, editor):
     if revert is True:
-
         shutil.copyfile(
             resolve_relative_path(DEFAULT_CONTROLLER_CONFIGURATION_FILE, __file__),
             obj.config_path
         )
+        click.echo('Controller configuration file reset.')
+        _reload_config(obj)
     else:
         if editor is not None:
             try:
                 click.edit(filename=obj.config_path, editor=editor)
+                _reload_config(obj)
             except click.ClickException:
-                click.echo(f'{editor} not found. ')
+                click.echo(f'{editor} not found.')
         else:
-            click.edit(filename=obj.config_path)
-
-    _reload_config(obj)
-
-    if obj.client.isconnected:
-        if click.confirm(click.style(f"Sync Board", fg='blue'), default=True):
-            sync_controller(obj)
+            try:
+                click.edit(filename=obj.config_path)
+                _reload_config(obj)
+            except click.ClickException:
+                click.echo(f'Unable to find a text editor. Use -e to provide one.')
 
 
 @edit.command('devices', help='devices specification file.')
 @click.option('-e', '--editor', type=click.STRING, nargs=1, default=None,
               help='Text Editor the use. Otherwise, uses system default.')
-@click.option('-r', is_flag=True, default=False, help='Revert to default values.')
+@click.option('-r', '--reset', is_flag=True, default=False, help='Reset to default values.')
 @click.pass_obj
-def edit_devices(obj: Dcs5Controller, r, editor):
-    if r is True:
+def edit_devices(obj: Dcs5Controller, reset, editor):
+    if reset is True:
         shutil.copyfile(
             resolve_relative_path(DEFAULT_DEVICES_SPECIFICATION_FILE, __file__),
             obj.devices_specifications_path
         )
+        click.echo('Devices specifications file reset.')
+        _reload_config(obj)
     else:
         if editor is not None:
-            print('aaaaaaaaaaaaaaaaaaa')
-            # try:
-            click.edit(filename=obj.devices_specifications_path, editor=editor)
-            # except click.ClickException:
-            #     click.echo(f'{editor} not found.')
+            try:
+                click.edit(filename=obj.devices_specifications_path, editor=editor)
+                _reload_config(obj)
+            except click.ClickException:
+                click.echo(f'{editor} not found.')
         else:
-            click.edit(filename=obj.devices_specifications_path)
+            try:
+                click.edit(filename=obj.devices_specifications_path)
+                _reload_config(obj)
+            except click.ClickException:
+                click.echo(f'Unable to find a text editor. Use -e to provide one.')
 
-    _reload_config(obj)
 
-    if obj.client.isconnected:
-        if click.confirm(click.style(f"Sync Board", fg='blue'), default=True):
-            sync_controller(obj)
+
+
