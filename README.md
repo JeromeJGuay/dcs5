@@ -34,12 +34,12 @@ Although the board sends measurements value in mm, a specific offset needs to be
 We suggest do the calibration with the finger stylus since the magnet of the pen is further away from its tips.
 Calibrating with the pen would result in negative measurements when placing the finger stylus at 0 mm.
 However, the measuring board cannot return values smaller than 0.
-The offsets value are in [dcs5/configs/devices_specifications.json](dcs5/configs/devices_specifications.json) files.
+The offsets value are in [dcs5/configs/devices_specification.json](dcs5/configs/devices_specification.json) files.
 
 ## Configurations
 
 3 json files are used to set different parameters for the application.
-### `configs/controller_configuration.json`
+### [dcs5/configs/controller_configuration.json](dcs5/configs/controller_configuration.json)
 The controller_configuration.json is used to configure the controller behavior.
 + client : Measuring board bluetooth information.
 + launch_settings : setting used when the app is launch.
@@ -52,19 +52,19 @@ The controller_configuration.json is used to configure the controller behavior.
   - settling_delay: (0-20) Delays after the stylus is first detected. (not seconds)
   - number_of_reading: Number of reading needed for a good measurements.
   - max_deviation: (1-100) Amount of deviation allowed between each reading.
-  - Notes: For more information : `configs/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf`
+  - Notes: For more information : [dcs5/configs/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](dcs5/configs/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf)
 + output_modes :
   - swipe_threshold: Minimal distance (mm) for a stylus swipe to be valid.
   - segments_limits: Define the limit of the different swipe segment.
   - segments_mode: The corresponding output_mode for each swipe segment.
   - mode_reading_profiles: The corresponding reading_profiles for each output modes.
 + keys_maps: Mapping of the key to either command or keyboard input.
-  - Notes: The name of the keys are set in `config/devices_sepcification.json`.
+  - Notes: The name of the keys are set in [dcs5/config/devices_sepcification.json](dcs5/config/devices_sepcification.json).
   - Notes: Valid commands `["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm"]`
-  - Notes: See the `controller_configurations.py` module for the valid keyboard input.
+  - Notes: See the [dcs5/controller_configurations.py](dcs5/controller_configurations.py) module for the valid keyboard input.
   - Notes: List of command are accepted.
 
-### `config/devices_sepcification.json`
+### [dcs5/config/devices_sepcification.json](dcs5/config/devices_sepcification.json)
 + board:
   - number_of_keys: The keys correspond to the grey circle on the board.
   - key_to_mm_ratio: The distance in mm from one edge of a circle (larger one) to the next.
@@ -77,13 +77,13 @@ The controller_configuration.json is used to configure the controller behavior.
 + stylus_offset: Offset in mm that is added ot the value measured by the board. 
   - Notes: These values will depend on the calibration.
 
-### `configs/control_box_parameters.json`
-Values of the builtin parameters of the control box. From BigFin documentation `configs/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf`.
+### [dcs5/configs/control_box_parameters.json](dcs5/configs/control_box_parameters.json)
+Values of the builtin parameters of the control box. From BigFin documentation [dcs5/configs/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](dcs5/configs/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf).
 
 ## server
 
 The application can be launch with a server to communicate with the board. This feature is working but still in development.
-The server port and address are set ins the `config/server_configuration.json` file. Contact me for more information,
+The server port and address are set ins the [dcs5/config/server_configuration.json](dcs5/config/server_configuration.json) file. Contact me for more information,
 
 
 
