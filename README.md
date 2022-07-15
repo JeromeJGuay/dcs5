@@ -25,7 +25,7 @@ To call the application ...
 ```
 
 ## cli app
-See the `user_guide/UserGuide_fr.odf`. French only.
+See the [dcs5/user_guide/UserGuide_fr.odf](dcs5/user_guide/UserGuide_fr.odf). French only.
 
 
 ## Calibration
