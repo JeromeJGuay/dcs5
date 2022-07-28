@@ -335,6 +335,7 @@ class Dcs5Controller:
             mac_address = mac_address if mac_address is not None else self.config.client.mac_address
             self.client.connect(mac_address, timeout=30)
             self.connection_check_thread = threading.Thread(target=self.connection_check, name='connect check', daemon=True)
+            self.connection_check_thread.start()
 
     def close_client(self):
         if self.client.isconnected:
@@ -374,7 +375,7 @@ class Dcs5Controller:
         if self.is_listening:
             self.is_listening = False
             time.sleep(self.client.socket.gettimeout())
-            logging.debug("Active Threads joined.")
+            logging.debug("Listening stopped.")
             logging.debug("Queues and Socket Buffer Cleared.")
         logging.info('Board is Inactive.')
 
