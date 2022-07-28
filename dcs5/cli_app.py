@@ -15,6 +15,9 @@ import time
 import click
 import click_shell
 
+import platform
+
+
 from dcs5 import VERSION, DEVICES_SPECIFICATION_FILE, CONTROLLER_CONFIGURATION_FILE, \
     CONTROL_BOX_PARAMETERS, DEFAULT_CONTROLLER_CONFIGURATION_FILE, DEFAULT_DEVICES_SPECIFICATION_FILE
 from dcs5.controller_configurations import ConfigError
@@ -83,8 +86,8 @@ class StatePrompt:
             msg += click.style(']\n', bold=True)
             msg += click.style("(help/exit) ")
         msg += click.style(f"dcs5 > ", fg='blue', bold=True)
-
-        return msg
+        print(msg)
+        return str(msg)
 
 
 def init_dcs5_controller():
@@ -137,23 +140,35 @@ def _reload_config(controller: Dcs5Controller):
         click.secho(f'Configfile\n: {controller.config_path}', **{'fg': 'white'})
 
 
-STATE_PROMPT = StatePrompt()
-INTRO = f'Dcs5 Controller App. (version {VERSION})'
-
-
 def close_client(ctx: click.Context):
     if ctx.obj is not None:
         ctx.obj.close_client()
 
 
-###################################
-#### CLI APPLICATION STRUCTURE ####
-###################################
+#//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#============================================
+#  SECTION Click CLI Implementation
+#============================================
+
+
+STATE_PROMPT = StatePrompt()
+
+HEADER_STRING = "Dcs5 Controller App. Version {VERSION}"
+SHELL_HEADER = '=' * len(HEADER_STRING)
+SHELL_FOOTER = '-' * len(HEADER_STRING)
+SHELL_INTRO = f'{SHELL_HEADER}\n' \
+              f'Dcs5 Controller App. Version {VERSION}\n' \
+              f'{SHELL_HEADER}\n\n' \
+              f"Operating System: {platform.system()}\n"\
+              f'Python Version: {platform.python_version()}\n' \
+
+
 @click_shell.shell(prompt=STATE_PROMPT.prompt, on_finished=close_client)
 @click.option('-c', '--connect', default=False, is_flag=True, help='If used, with try to connect on start.')
 @click.pass_context
 def cli_app(ctx: click.Context, connect):
-    click.secho(INTRO)
+    click.clear()
+    click.secho(SHELL_INTRO)
 
     try:
         ctx.obj = init_dcs5_controller()
@@ -166,11 +181,12 @@ def cli_app(ctx: click.Context, connect):
         ctx.abort()
 
     STATE_PROMPT.refresh(ctx.obj)
-
-    click.secho(f'\nDevice infos :')
-    click.secho(f' Name : {ctx.obj.config.client.device_name}')
-    click.secho(f' Mac address : {ctx.obj.config.client.mac_address}')
-    click.echo('')
+    click.echo(f'{SHELL_FOOTER}\n'
+               f"Bluetooth:\n"
+               f" Device name : {ctx.obj.config.client.device_name}\n"
+               f" Device mac address : {ctx.obj.config.client.mac_address}\n"
+               f'{SHELL_FOOTER}'
+               f'\n')
     if connect is True:
         start_client(ctx.obj)
         if ctx.obj.client.isconnected:

@@ -13,6 +13,6 @@ setup(
     package_data={"": ["configs/*.json", "default_configs/*.json"]},
     include_package_data=True,
     classifiers=["Programming Language :: Python :: 3"],
-    python_requires="~=3.8",
+    python_requires="~=3.10",
     entry_points={"console_scripts": ["dcs5=dcs5.main:main", ]},
 )

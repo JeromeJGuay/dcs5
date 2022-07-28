@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from queue import Queue
 from typing import *
 
-import bluetooth
+#import bluetooth
 import pyautogui as pag
 
 from dcs5.controller_configurations import load_config, ControllerConfiguration, ConfigError
@@ -177,7 +177,7 @@ class BluetoothClient:
                     break
                 except PermissionError:
                     pass
-                except bluetooth.BluetoothError as err:
+                except socket.error as err:
                     pass
             if not self.isconnected:
                 logging.error('No available ports were found.')
