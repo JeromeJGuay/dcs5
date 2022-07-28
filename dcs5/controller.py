@@ -218,7 +218,7 @@ class BluetoothClient:
             elif str(err) == "timed out":
                 pass
             else:
-                logging.debug('Client.receive: Unkown timout error.')
+                logging.debug('Client.receive: Unknown timeout error.')
         except ConnectionAbortedError as err:
             logging.debug(f'Receive error: {err}')
             logging.error('Bluetooth turned off.')
@@ -276,7 +276,7 @@ class Dcs5Controller:
 
         self.listen_thread: threading.Thread = None
         self.command_thread: threading.Thread = None
-        self.reconnect_thread: threading.Thread = None
+        self.connection_check_thread: threading.Thread = None
 
         self.socket_listener = SocketListener(self)
         self.command_handler = CommandHandler(self)
@@ -334,6 +334,7 @@ class Dcs5Controller:
         else:
             mac_address = mac_address if mac_address is not None else self.config.client.mac_address
             self.client.connect(mac_address, timeout=30)
+            self.connection_check_thread = threading.Thread(target=self.connection_check, name='connect check', daemon=True)
 
     def close_client(self):
         if self.client.isconnected:
@@ -380,6 +381,14 @@ class Dcs5Controller:
     def restart_listening(self):
         self.stop_listening()
         self.start_listening()
+
+    def connection_check(self, interval = 5):
+        while self.client.isconnected:
+            time.sleep(interval)
+            if self.is_listening:
+                self.c_ping()
+            else:
+                self.client.send("#a")
 
     def unmute_board(self):
         """Unmute board shout output"""
