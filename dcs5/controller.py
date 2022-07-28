@@ -176,13 +176,13 @@ class BluetoothClient:
                     logging.debug(f'Socket name: {self.socket.getsockname()}')
                     break
                 except PermissionError:
+                    logging.debug('Client.connect: PermissionError')
                     pass
-                except socket.error as err:
-                    pass
+
             if not self.isconnected:
                 logging.error('No available ports were found.')
 
-        except OSError as err:
+        except (OSError, socket.error) as err:
             logging.warning("Devices not found.")
             logging.debug(err)
         finally:
@@ -207,21 +207,26 @@ class BluetoothClient:
     def receive(self):
         try:
             self._buffer += self.socket.recv(BUFFER_SIZE).decode(BOARD_MSG_ENCODING)
-        except socket.timeout:
-            pass
-        except TimeoutError:
-            logging.error('Connection Lost with Board.')
+        except socket.timeout as err:
+            if str(err) == '[Errno 110] Connection timed out':
+                logging.debug(f'Receive error: {err}')
+                logging.error('Connection Lost with Board.')
+                self.close()
+                while not self.isconnected:
+                    logging.error('Attempting to reconnect. (every 15 seconds)')
+                    self.connect(self.mac_address, timeout=15)
+            elif str(err) == "timed out":
+                pass
+            else:
+                logging.debug('Client.receive: Unkown timout error.')
+        except ConnectionAbortedError as err:
+            logging.debug(f'Receive error: {err}')
+            logging.error('Bluetooth turned off.')
             self.close()
             while not self.isconnected:
-                logging.error('Attempting to reconnect. (every 15 seconds)')
+                logging.error('Attempting to reconnect.')
                 self.connect(self.mac_address, timeout=15)
-        except OSError:
-            logging.error('Bluetooth was turned off.')
-            self.close()
-            while not self.isconnected:
-                logging.error('Attempting to reconnect. (every 15 seconds)')
-                time.sleep(15)
-                self.connect(self.mac_address, timeout=15)
+                time.sleep(5)
 
     def clear_all(self):
         self.receive()

@@ -6,11 +6,12 @@ From here you can either start the interactive cli app or start the server.
 """
 import argparse
 
+import click
+
 from dcs5.cli_app import cli_app
 from dcs5.logger import init_logging
 from dcs5.server import start_server
 import sys
-
 
 def main():
     parser = argparse.ArgumentParser()
@@ -18,7 +19,7 @@ def main():
 
     parser.add_argument('-v', '--verbose', type=str, choices=['debug', 'info', 'warning', 'error'], default='error',
                         help='Cli app verbose.')
-    parser.add_argument('-w', '--write-log', action='store_true', default=False, help='Writes logs')
+    parser.add_argument('-w', '--write-log', type=click.Path(exists=True), default=False, help='Writes logs')
 
     # parser.add_argument('cli', default=False, help='start cli interface.')
     # parser.add_argument('server', action='store_true', default=False, help='start server and connects to the board.')
@@ -44,9 +45,9 @@ def main():
         cli_app()
     elif args.cmd == "server":
         if args.verbose != 'debug':
-            init_logging(stdout_level='info', write=args.write_log)
+            init_logging(stdout_level='info', file_path=args.write_log)
         else:
-            init_logging(stdout_level='debug', write=args.write_log)
+            init_logging(stdout_level='debug', file_path=args.write_log)
         start_server(start_controller=not args.test, host=args.host, port=args.port)
     else:
         parser.print_help()

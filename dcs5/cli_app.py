@@ -163,6 +163,7 @@ SHELL_INTRO = f'{SHELL_HEADER}\n' \
               f'Python Version: {platform.python_version()}\n' \
 
 
+
 @click_shell.shell(prompt=STATE_PROMPT.prompt, on_finished=close_client)
 @click.option('-c', '--connect', default=False, is_flag=True, help='If used, with try to connect on start.')
 @click.pass_context
@@ -182,9 +183,9 @@ def cli_app(ctx: click.Context, connect):
 
     STATE_PROMPT.refresh(ctx.obj)
     click.echo(f'{SHELL_FOOTER}\n'
-               f"Bluetooth:\n"
-               f" Device name : {ctx.obj.config.client.device_name}\n"
-               f" Device mac address : {ctx.obj.config.client.mac_address}\n"
+               f"Bluetooth device:\n"
+               f" Name : {ctx.obj.config.client.device_name}\n"
+               f" Mac address : {ctx.obj.config.client.mac_address}\n"
                f'{SHELL_FOOTER}'
                f'\n')
     if connect is True:
