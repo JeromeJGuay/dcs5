@@ -383,7 +383,7 @@ class Dcs5Controller:
         self.stop_listening()
         self.start_listening()
 
-    def connection_check(self, interval = 5):
+    def connection_check(self, interval=5):
         while self.client.isconnected:
             time.sleep(interval)
             if self.is_listening:
