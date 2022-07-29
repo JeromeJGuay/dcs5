@@ -78,7 +78,7 @@ def init_logging(
     handlers.append(stdout_handler)
 
     if write is True:
-        if platform.system == 'Windows':
+        if platform.system() == 'Windows':
             path = os.getenv('LOCALAPPDATA') + '/dcs5/logs'
         else:
             path = os.getenv('HOME') + '/.dcs5/logs'
