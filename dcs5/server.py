@@ -15,6 +15,7 @@ BUFFER_SIZE = 1024
 
 VALID_AUTH_KEY = ["9999"]
 
+
 @dataclass
 class ServerConfiguration:
     host: str

@@ -6,10 +6,10 @@ import logging
 import sys
 import time
 from pathlib import Path
+import platform
+import os
 
-from dcs5.utils import resolve_relative_path
-
-DEFAULT_FILE_PATH = "../logs/dcs5_log"
+LOG_FILE_PREFIX = "dcs5_log"
 
 
 class BasicLoggerFormatter(logging.Formatter):
@@ -42,7 +42,6 @@ class UserInterfaceFilter(logging.Filter):
 def init_logging(
         stdout_level="INFO",
         ui=False,
-        file_path=None,
         file_level="DEBUG",
         write=False,
 ):
@@ -54,8 +53,6 @@ def init_logging(
         Level of the sys.output logging.
     ui :
         Show ui (user interface) log messages. (logging.Filter).
-    file_path :
-        path where to save the log file. Defaults to dcs5/dcs5/logs/dcs5_log_{YYYYMMDDThhmmss}.log
     file_level :
         Level of the file logging.
     write :
@@ -65,7 +62,6 @@ def init_logging(
     -------
 
     """
-    file_path = resolve_relative_path(DEFAULT_FILE_PATH, __file__) or file_path
 
     formatter = BasicLoggerFormatter()
     handlers = []
@@ -82,14 +78,19 @@ def init_logging(
     handlers.append(stdout_handler)
 
     if write is True:
-        file_handler = logging.FileHandler(format_log_path(file_path))
+        if platform.system == 'Windows':
+            path = os.getenv('LOCALAPPDATA') + '/dcs5/logs'
+        else:
+            path = os.getenv('HOME') + '/.dcs5/logs'
+
+        Path(path).mkdir(parents=True, exist_ok=True)
+
+        filename = Path(path).joinpath(time.strftime("%y%m%dT%H%M%S", time.gmtime())).with_suffix('.log')
+
+        file_handler = logging.FileHandler(filename)
         file_handler.setLevel(file_level.upper())
         file_handler.setFormatter(formatter)
         handlers.append(file_handler)
 
     logging.basicConfig(level="NOTSET", handlers=handlers)
 
-
-def format_log_path(path: str) -> str:
-    new_stem = Path(path).stem + "_" + time.strftime("%y%m%dT%H%M%S", time.gmtime())
-    return str(Path(path).parent.joinpath(Path(new_stem)).with_suffix('.log'))

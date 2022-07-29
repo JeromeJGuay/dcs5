@@ -1,4 +1,4 @@
-VERSION = "0.0.1"
+VERSION = "1.0.0"
 
 SERVER_CONFIGURATION_FILE = "configs/server_configuration.json"
 CONTROLLER_CONFIGURATION_FILE = "configs/controller_configuration.json"

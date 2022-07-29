@@ -26,8 +26,9 @@ from dcs5.utils import resolve_relative_path
 
 
 class StatePrompt:
+    _controller: Dcs5Controller
+
     def __init__(self):
-        self._controller: Dcs5Controller = None
         self._debug_mode = False
 
     def refresh(self, new_controller: Dcs5Controller):
@@ -86,8 +87,8 @@ class StatePrompt:
             msg += click.style(']\n', bold=True)
             msg += click.style("(help/exit) ")
         msg += click.style(f"dcs5 > ", fg='blue', bold=True)
-        print(msg)
-        return str(msg)
+
+        return msg
 
 
 def init_dcs5_controller():
@@ -153,7 +154,7 @@ def close_client(ctx: click.Context):
 
 STATE_PROMPT = StatePrompt()
 
-HEADER_STRING = "Dcs5 Controller App. Version {VERSION}"
+HEADER_STRING = f"Dcs5 Controller App. Version {VERSION}"
 SHELL_HEADER = '=' * len(HEADER_STRING)
 SHELL_FOOTER = '-' * len(HEADER_STRING)
 SHELL_INTRO = f'{SHELL_HEADER}\n' \

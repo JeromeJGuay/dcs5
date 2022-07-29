@@ -4,12 +4,6 @@ Date : May 2022
 
 This module contains the Class relative to the DCS5_XT Board Controller and Client.
 
-Notes # TODO
------
- The code is written for a stylus calibration.
-    Calibration should probably be done with the Finger Stylus and not the Pen Stylus
-    since the magnet is further away in the pen (~5mm). If this is the case, the code should be changed.
-
 
 References
 ----------
@@ -27,7 +21,6 @@ from dataclasses import dataclass
 from queue import Queue
 from typing import *
 
-#import bluetooth
 import pyautogui as pag
 
 from dcs5.controller_configurations import load_config, ControllerConfiguration, ConfigError
