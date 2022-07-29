@@ -65,7 +65,7 @@ def init_logging(
 
     formatter = BasicLoggerFormatter()
     handlers = []
-
+    filename=None
     stdout_handler = logging.StreamHandler(sys.stdout)
     if ui is True:
         stdout_handler.setLevel("INFO")
@@ -93,4 +93,6 @@ def init_logging(
         handlers.append(file_handler)
 
     logging.basicConfig(level="NOTSET", handlers=handlers)
+    return filename
+
 
