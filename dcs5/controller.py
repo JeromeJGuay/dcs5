@@ -45,6 +45,10 @@ def cycle(my_list: iter):
         index = (index + 1) % len(my_list)
 
 
+class ConnectionLost(Exception):
+    pass
+
+
 @dataclass
 class InternalBoardState:
     sensor_mode: str = None
@@ -135,13 +139,8 @@ class KeyboardInput(Shouter):
 
 
 class BluetoothClient:
-    """
-    TODO test port automatic selection.
-    Notes
-    -----
-    Both socket and bluetooth methods(socket package) seems to be equivalent.
-    """
     max_port = 65535
+    reconnection_delay = 5
 
     def __init__(self):
         self._mac_address: str = None
@@ -151,13 +150,14 @@ class BluetoothClient:
         self.default_timeout = 0.1
         self.isconnected = False
 
-    def connect(self, mac_address, timeout: int = None):
+    def connect(self, mac_address: str = None, timeout: int = None):
         self._mac_address = mac_address
+        timeout = timeout or self.default_timeout
         logging.debug(f'Attempting to connect to board. Timeout: {timeout} seconds')
         try:
             for port in range(self.max_port):  # check for all available ports
                 self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
-                self.socket.settimeout(timeout if timeout is not None else self.default_timeout)
+                self.socket.settimeout(timeout)
                 try:
                     port += 1
                     logging.debug(f'port: {port}')
@@ -171,7 +171,6 @@ class BluetoothClient:
                 except PermissionError:
                     logging.debug('Client.connect: PermissionError')
                     pass
-
             if not self.isconnected:
                 logging.error('No available ports were found.')
 
@@ -204,22 +203,23 @@ class BluetoothClient:
             if str(err) == '[Errno 110] Connection timed out':
                 logging.debug(f'Receive error: {err}')
                 logging.error('Connection Lost with Board.')
-                self.close()
-                while not self.isconnected:
-                    logging.error('Attempting to reconnect. (every 15 seconds)')
-                    self.connect(self.mac_address, timeout=15)
+                self.reconnect()
             elif str(err) == "timed out":
                 pass
             else:
-                logging.debug('Client.receive: Unknown timeout error.')
+                logging.debug(f'Client.receive: Unknown timeout error: {err}')
+
         except ConnectionAbortedError as err:
             logging.debug(f'Receive error: {err}')
             logging.error('Bluetooth turned off.')
-            self.close()
-            while not self.isconnected:
-                logging.error('Attempting to reconnect.')
-                self.connect(self.mac_address, timeout=15)
-                time.sleep(5)
+            self.reconnect()
+
+    def reconnect(self):
+        self.close()
+        while not self.isconnected:
+            logging.error('Attempting to reconnect.')
+            self.connect(self.mac_address, timeout=15)
+            time.sleep(5)
 
     def clear_all(self):
         self.receive()
@@ -269,7 +269,6 @@ class Dcs5Controller:
 
         self.listen_thread: threading.Thread = None
         self.command_thread: threading.Thread = None
-        self.connection_check_thread: threading.Thread = None
 
         self.socket_listener = SocketListener(self)
         self.command_handler = CommandHandler(self)
@@ -325,10 +324,8 @@ class Dcs5Controller:
         if self.client.isconnected:
             logging.debug("Client Already Connected.")
         else:
-            mac_address = mac_address if mac_address is not None else self.config.client.mac_address
+            mac_address = mac_address or self.config.client.mac_address
             self.client.connect(mac_address, timeout=30)
-            self.connection_check_thread = threading.Thread(target=self.connection_check, name='connect check', daemon=True)
-            self.connection_check_thread.start()
 
     def close_client(self):
         if self.client.isconnected:
@@ -375,14 +372,6 @@ class Dcs5Controller:
     def restart_listening(self):
         self.stop_listening()
         self.start_listening()
-
-    def connection_check(self, interval=5):
-        while self.client.isconnected:
-            time.sleep(interval)
-            if self.is_listening:
-                self.c_ping()
-            else:
-                self.client.send("#a")
 
     def unmute_board(self):
         """Unmute board shout output"""
@@ -471,7 +460,6 @@ class Dcs5Controller:
         0 for failed calibration
         """
 
-        # TODO test again
         logging.info("Calibration Mode Enable.")
 
         was_listening = self.is_listening
@@ -659,7 +647,7 @@ class Dcs5Controller:
         self.command_handler.queue_command("&ca#", None)
         self.calibrated = False
 
-    def c_check_calibration_state(self):  # TODO, to be tested
+    def c_check_calibration_state(self):
         self.command_handler.queue_command('&u#', 'regex_%u:\d#\r')
 
     def c_set_calibration_points_mm(self, pt: int, pos: int):
