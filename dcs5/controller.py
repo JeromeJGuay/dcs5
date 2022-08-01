@@ -28,7 +28,7 @@ from dcs5.devices_specification import load_devices_specification, DevicesSpecif
 from dcs5.control_box_parameters import load_control_box_parameters, ControlBoxParameters
 
 
-AFTER_SENT_SLEEP = 0.05
+AFTER_SENT_SLEEP = 0.01
 
 HANDLER_SLEEP = 0.01
 
