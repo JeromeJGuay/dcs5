@@ -21,12 +21,15 @@ from dataclasses import dataclass
 from queue import Queue
 from typing import *
 
+import platform
+
 import pyautogui as pag
 
 from dcs5.controller_configurations import load_config, ControllerConfiguration, ConfigError
 from dcs5.devices_specification import load_devices_specification, DevicesSpecification
 from dcs5.control_box_parameters import load_control_box_parameters, ControlBoxParameters
 
+MONITORING_DELAY = 2
 
 AFTER_SENT_SLEEP = 0.01
 
@@ -199,7 +202,10 @@ class BluetoothClient:
         return self._buffer
 
     def send(self, command: str):
-        self.socket.sendall(command.encode(BOARD_MSG_ENCODING))
+        try:
+            self.socket.sendall(command.encode(BOARD_MSG_ENCODING))
+        except OSError as err:
+            logging.debug(f'OSError on sendall: {err.args}')
 
     def receive(self):
         try:
@@ -217,29 +223,20 @@ class BluetoothClient:
                 case 103:
                     logging.error('Bluetooth turned off. Connection to device lost. (err103)')
                     self.reconnect()
+                case 10050:
+                    logging.error('Connection to device lost. (err10050)')
+                    self.reconnect()
+                case 10053:
+                    logging.error('Bluetooth turned off. Connection to device lost. (err10053)')
+                    self.reconnect()
                 case _:
-                    logging.error(f'OSError no {err.errno}')
-
-            #self.reconnect()
-        #    if str(err) == '[Errno 110] Connection timed out':
-        #        logging.debug(f'Receive error: {err}')
-        #        logging.error('Connection Lost with Board.')
-        #        self.reconnect()
-        #    elif str(err) == "timed out":
-        #        pass
-        #    else:
-        #        logging.debug(f'Client.receive: Unknown timeout error: {err}')
-
-        except ConnectionAbortedError as err:
-            logging.debug(f'Receive error: {err}')
-            logging.error('Bluetooth turned off.')
-            self.reconnect()
+                    logging.error(f'OSError (new): {err.errno}')
 
     def reconnect(self):
         self.close()
         while not self.isconnected:
             logging.error('Attempting to reconnect.')
-            self.connect(self.mac_address, timeout=15)
+            self.connect(self.mac_address, timeout=30)
             time.sleep(5)
 
     def clear_all(self):
@@ -291,6 +288,7 @@ class Dcs5Controller:
 
         self.listen_thread: threading.Thread = None
         self.command_thread: threading.Thread = None
+        self.monitoring_thread: threading.Thread = None
 
         self.socket_listener = SocketListener(self)
         self.command_handler = CommandHandler(self)
@@ -382,6 +380,10 @@ class Dcs5Controller:
             self.listen_thread = threading.Thread(target=self.socket_listener.listen, name='listen', daemon=True)
             self.listen_thread.start()
 
+            if platform.system() == 'Windows':
+                self.monitoring_thread = threading.Thread(target=self.monitor_connection, name='listen', daemon=True)
+                self.monitoring_thread.start()
+
         logging.info('Board is Active.')
 
     def stop_listening(self):
@@ -395,6 +397,12 @@ class Dcs5Controller:
     def restart_listening(self):
         self.stop_listening()
         self.start_listening()
+
+    def monitor_connection(self):
+        "This is to raise a connection OSError if the connection is lost."
+        while self.is_listening:
+            self.client.send(" ") # a space is not a recognized command. Thus nothing is return.
+            time.sleep(MONITORING_DELAY)
 
     def unmute_board(self):
         """Unmute board shout output"""
