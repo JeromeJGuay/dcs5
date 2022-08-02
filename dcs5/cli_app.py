@@ -428,7 +428,3 @@ def edit_devices(obj: Dcs5Controller, reset, editor):
                 _reload_config(obj)
             except click.ClickException:
                 click.echo(f'Unable to find a text editor. Use -e to provide one.')
-
-
-
-

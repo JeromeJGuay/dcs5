@@ -28,7 +28,7 @@ from dcs5.devices_specification import load_devices_specification, DevicesSpecif
 from dcs5.control_box_parameters import load_control_box_parameters, ControlBoxParameters
 
 
-AFTER_SENT_SLEEP = 0.01
+AFTER_SENT_SLEEP = 0.05
 
 HANDLER_SLEEP = 0.01
 
@@ -104,6 +104,7 @@ class ServerInput(Shouter):
     Inputs are taken from the input_queue with the get() method.
     If more than 5 inputs are in the queue at one time, the queue is cleared.
     """
+
     def __init__(self):
         super().__init__()
         self.inputs_queue = queue.Queue(max_size=5)
@@ -126,6 +127,7 @@ class KeyboardInput(Shouter):
     """
     Emulate keyboard presses.
     """
+
     def __init__(self):
         super().__init__()
 
@@ -139,7 +141,11 @@ class KeyboardInput(Shouter):
 
 
 class BluetoothClient:
-    max_port = 65535
+    """
+    RFCOMM ports goes from 1 to 30
+    """
+    min_port = 1
+    max_port = 30
     reconnection_delay = 5
 
     def __init__(self):
@@ -155,14 +161,12 @@ class BluetoothClient:
         timeout = timeout or self.default_timeout
         logging.debug(f'Attempting to connect to board. Timeout: {timeout} seconds')
         try:
-            for port in range(self.max_port):  # check for all available ports
+            for port in range(self.min_port, self.max_port):  # check for all available ports
                 self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
                 self.socket.settimeout(timeout)
                 try:
-                    port += 1
                     logging.debug(f'port: {port}')
                     self.socket.connect((self._mac_address, port))
-
                     self._port = port
                     self.isconnected = True
                     logging.debug(f'Connected to port {self._port}')
@@ -171,10 +175,11 @@ class BluetoothClient:
                 except PermissionError:
                     logging.debug('Client.connect: PermissionError')
                     pass
+                port += 1
             if not self.isconnected:
                 logging.error('No available ports were found.')
 
-        except (OSError, socket.error) as err:
+        except socket.error as err:
             logging.warning("Devices not found.")
             logging.debug(err)
         finally:
@@ -253,7 +258,8 @@ class Dcs5Controller:
     stylus_offset: int
     stylus_cyclical_list: Generator
 
-    def __init__(self, config_path: str, devices_specifications_path: str, control_box_parameters_path: str, shouter='keyboard'):
+    def __init__(self, config_path: str, devices_specifications_path: str, control_box_parameters_path: str,
+                 shouter='keyboard'):
         """
 
         Parameters
@@ -285,7 +291,7 @@ class Dcs5Controller:
         self.set_board_settings()
         self.is_sync = False  # True if the Dcs5Controller board settings are the same as the Board Internal Settings.
 
-        self.mappable_commands = { # Item are callable methods.
+        self.mappable_commands = {  # Item are callable methods.
             "BACKLIGHT_UP": self.backlight_up,
             "BACKLIGHT_DOWN": self.backlight_down,
             "CHANGE_STYLUS": self.cycle_stylus,
@@ -353,7 +359,8 @@ class Dcs5Controller:
         if not self.is_listening:
             logging.debug('Starting Threads.')
             self.is_listening = True
-            self.command_thread = threading.Thread(target=self.command_handler.processes_queues, name='command', daemon=True)
+            self.command_thread = threading.Thread(target=self.command_handler.processes_queues, name='command',
+                                                   daemon=True)
             self.command_thread.start()
 
             self.listen_thread = threading.Thread(target=self.socket_listener.listen, name='listen', daemon=True)
@@ -389,7 +396,7 @@ class Dcs5Controller:
         """Init board to launch settings.
         """
         self.c_set_backlighting_level(0)
-        time.sleep(0.01) # to split the command.
+        time.sleep(0.01)  # to split the command.
 
         logging.debug('Syncing Controller and Board.')
 
@@ -629,13 +636,15 @@ class Dcs5Controller:
         if self.control_box_parameters.min_settling_delay <= value <= self.control_box_parameters.max_settling_delay:
             self.command_handler.queue_command(f"&di,{value}#", f"%di:{value}#\r")
         else:
-            logging.warning(f"Settling delay value range: ({self.control_box_parameters.min_settling_delay}, {self.control_box_parameters.max_settling_delay})")
+            logging.warning(
+                f"Settling delay value range: ({self.control_box_parameters.min_settling_delay}, {self.control_box_parameters.max_settling_delay})")
 
     def c_set_stylus_max_deviation(self, value: int):
         if self.control_box_parameters.min_max_deviation <= value <= self.control_box_parameters.max_max_deviation:
             self.command_handler.queue_command(f"&dm,{value}#", f"%dm:{value}#\r")
         else:
-            logging.warning(f"Settling delay value range: ({self.control_box_parameters.min_max_deviation}, {self.control_box_parameters.max_max_deviation})")
+            logging.warning(
+                f"Settling delay value range: ({self.control_box_parameters.min_max_deviation}, {self.control_box_parameters.max_max_deviation})")
 
     def c_set_stylus_number_of_reading(self, value: int = 5):
         self.command_handler.queue_command(f"&dn,{value}#", f"%dn:{value}#\r")
@@ -897,8 +906,9 @@ def check_config(config: ControllerConfiguration, control_box: ControlBoxParamet
 
     for key, item in config.reading_profiles.items():
         if not control_box.min_settling_delay <= item.settling_delay <= control_box.max_settling_delay:
-            raise ConfigError(f'reading_profiles/{key}/settling_delay outside range {(control_box.min_settling_delay, control_box.max_settling_delay)}')
+            raise ConfigError(
+                f'reading_profiles/{key}/settling_delay outside range {(control_box.min_settling_delay, control_box.max_settling_delay)}')
         if not control_box.min_max_deviation <= item.max_deviation <= control_box.max_max_deviation:
-            raise ConfigError(f'reading_profiles/{key}/max_deviation outside range {(control_box.min_max_deviation, control_box.max_max_deviation)}')
+            raise ConfigError(
+                f'reading_profiles/{key}/max_deviation outside range {(control_box.min_max_deviation, control_box.max_max_deviation)}')
     return config
-
