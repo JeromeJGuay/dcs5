@@ -28,7 +28,7 @@ from dcs5.devices_specification import load_devices_specification, DevicesSpecif
 from dcs5.control_box_parameters import load_control_box_parameters, ControlBoxParameters
 
 
-AFTER_SENT_SLEEP = 0.05
+AFTER_SENT_SLEEP = 0.01
 
 HANDLER_SLEEP = 0.01
 
@@ -203,16 +203,32 @@ class BluetoothClient:
 
     def receive(self):
         try:
-            self._buffer += self.socket.recv(BUFFER_SIZE).decode(BOARD_MSG_ENCODING)
-        except socket.timeout as err:
-            if str(err) == '[Errno 110] Connection timed out':
-                logging.debug(f'Receive error: {err}')
-                logging.error('Connection Lost with Board.')
-                self.reconnect()
-            elif str(err) == "timed out":
-                pass
-            else:
-                logging.debug(f'Client.receive: Unknown timeout error: {err}')
+            self._buffer = self.socket.recv(BUFFER_SIZE).decode(BOARD_MSG_ENCODING)
+        except OSError as err:
+            match err.errno:
+                case None:
+                    pass
+                case 104:
+                    logging.error('Connection to device lost. (err104)')
+                    self.reconnect()
+                case 110:
+                    logging.error('Connection to device lost. (err110)')
+                    self.reconnect()
+                case 103:
+                    logging.error('Bluetooth turned off. Connection to device lost. (err103)')
+                    self.reconnect()
+                case _:
+                    logging.error(f'OSError no {err.errno}')
+
+            #self.reconnect()
+        #    if str(err) == '[Errno 110] Connection timed out':
+        #        logging.debug(f'Receive error: {err}')
+        #        logging.error('Connection Lost with Board.')
+        #        self.reconnect()
+        #    elif str(err) == "timed out":
+        #        pass
+        #    else:
+        #        logging.debug(f'Client.receive: Unknown timeout error: {err}')
 
         except ConnectionAbortedError as err:
             logging.debug(f'Receive error: {err}')
