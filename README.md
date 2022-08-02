@@ -6,20 +6,22 @@ The application will turn stylus input on the measuring board into keyboard inpu
 
 ## Requirement
 
-1) Linux (It may work on macOS but it has not been tested)
-2) python 3.8
+1) Works on Linux and Windows.
+2) python 3.10
 3) A BigFin Dcs5 Board with XT Control Box (duh)
 
 ## Installation
-1) Install the linux package: python3.8-venv.
-2) Install the python package pipx.
+Install the python package pipx.
 ```shell
 ~$ pip install pipx
+~$ pipx ensurepath
 ```
+See [pipx](https://pypa.github.io/pipx/installation/) documentation for help.
+
 3) Install the application with pipx.
 ```shell
-~$ pipx install "path/to/dcs5_folder/"
-~$ pipx runpip dcs5 install -r "path/to/dcs5_folder/requirements.txt"
+~$ pipx install --python <path/to/python3.10> <path/to/dcs5_folder/>
+~$ pipx runpip dcs5 install -r <path/to/dcs5_folder/requirements.txt>
 ```
 
 
