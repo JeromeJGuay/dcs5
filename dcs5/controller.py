@@ -422,7 +422,7 @@ class Dcs5Controller:
 
         """
         self.c_set_backlighting_level(0)
-        time.sleep(0.01)  # to split the command.
+        time.sleep(1)  # Wait 1 second to give time to the socket buffer to be cleared.
 
         logging.debug('Syncing Controller and Board.')
 
@@ -469,16 +469,9 @@ class Dcs5Controller:
 
     def wait_for_ping(self, timeout=2):
         self.c_ping()
-        self.ping_event_check.set()
-        logging.debug('Ping Event Set.')
-        count = 0
-        while self.ping_event_check.is_set():
-            if count > timeout / 0.2:
-                logging.debug('Ping Event Not Received')
-                self.ping_event_check.clear()
-                break
-            count += 1
-            time.sleep(0.2)
+        self.ping_event_check.clear()
+        logging.debug('Waiting for ping event.')
+        return self.ping_event_check.wait(timeout)
 
     def calibrate(self, pt: int) -> int:
         """
@@ -743,8 +736,8 @@ class CommandHandler:
             logging.debug(f'{received}')
 
         elif "a:e" in received:
-            self.controller.ping_event_check.clear()
-            logging.debug('Ping Event Received.')
+            self.controller.ping_event_check.set()
+            logging.debug('Ping is set.')
 
         elif "sn" in received:
             match = re.findall(f"%sn:(\d)#\r", received)
