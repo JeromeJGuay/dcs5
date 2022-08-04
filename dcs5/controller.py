@@ -341,6 +341,7 @@ class Dcs5Controller:
         self.stylus_cyclical_list = cycle(list(self.devices_spec.stylus_offset.keys()))
 
     def start_client(self, mac_address: str = None):
+        """Create a socket and tries to connect with the board."""
         if self.client.isconnected:
             logging.debug("Client Already Connected.")
         else:
@@ -418,6 +419,7 @@ class Dcs5Controller:
 
     def sync_controller_and_board(self):
         """Init board to launch settings.
+
         """
         self.c_set_backlighting_level(0)
         time.sleep(0.01)  # to split the command.
