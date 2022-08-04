@@ -9,6 +9,7 @@ OSError: [Errno 107] Transport endpoint is not connected
 
 
 """
+import logging
 import shutil
 import time
 
@@ -190,10 +191,7 @@ def cli_app(ctx: click.Context, connect):
                f'{SHELL_FOOTER}'
                f'\n')
     if connect is True:
-        start_client(ctx.obj)
-        if ctx.obj.client.isconnected:
-            init_measuring_board(ctx.obj)
-            ctx.obj.start_listening()
+        _connect(ctx.obj)
 
     click.echo('Type `help` to list commands or `quit` to close the app.')
     click.echo('')
@@ -229,11 +227,23 @@ def cm(obj: Dcs5Controller):
 @click.pass_obj
 def connect(obj: Dcs5Controller):
     if not obj.client.isconnected:
-        start_client(obj)
+        _connect(obj)
 
-    if obj.client.isconnected:
-        init_measuring_board(obj)
-        obj.start_listening()
+
+def _connect(controller: Dcs5Controller, attempts=3):
+    _attempts = attempts
+    start_client(controller)
+    if controller.client.isconnected:
+        while _attempts > 0:
+            init_measuring_board(controller)
+            if controller.is_sync:
+                controller.start_listening()
+                break
+            else:
+                time.sleep(1)
+                _attempts -= 1
+                logging.debug(f'Connection failed. {attempts-_attempts} attempts left.')
+
 
 
 @cli_app.command('restart', help='To restart the controller and connect the board.')
