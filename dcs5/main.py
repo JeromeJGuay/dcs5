@@ -12,6 +12,7 @@ from dcs5.logger import init_logging
 from dcs5.server import start_server
 
 
+
 def main():
     parser = argparse.ArgumentParser()
     parent_parser = argparse.ArgumentParser(add_help=False)
@@ -32,6 +33,7 @@ def main():
     server_parser.add_argument('--port', type=int, default=None, help='Change the port.')
 
     args = parser.parse_args(sys.argv[1:])
+
     log_path = None
 
     try:
