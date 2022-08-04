@@ -100,32 +100,22 @@ def init_dcs5_controller():
     return Dcs5Controller(config_path, devices_specifications_path, control_box_parameters_path)
 
 
-def start_client(controller: Dcs5Controller):
-    click.secho('\nConnecting ...', **{'fg': 'red', 'blink': True}, nl=False)
-    controller.start_client()
-    if controller.client.isconnected:
-        click.secho('\rConnecting ... Done', **{'fg': 'green'})
-    else:
-        click.secho('\rConnecting ... Failed', **{'fg': 'red'})
-        click.secho('Device not Found. Check if Bluetooth and the board are turned on.')
-
-
-def restart_client(controller: Dcs5Controller):
-    click.secho('\nRestarting Controller ...', **{'fg': 'red', 'blink': True}, nl=False)
+def start_new_client(controller: Dcs5Controller):
+    click.secho('\nStarting Controller ...', **{'fg': 'red', 'blink': True}, nl=False)
     controller.restart_client()
     if controller.client.isconnected:
-        click.secho('\rRestarting Controller ... Done', **{'fg': 'green'})
+        click.secho('\rStarting Controller ... Done', **{'fg': 'green'})
     else:
-        click.secho('\rRestarting Controller ... Failed', **{'fg': 'red'})
+        click.secho('\rStarting Controller ... Failed', **{'fg': 'red'})
 
 
 def init_measuring_board(controller: Dcs5Controller):
-    click.secho('\nSyncing Board ...', **{'fg': 'red', 'blink': True}, nl=False)
+    click.secho('\nInitiating Board ...', **{'fg': 'red', 'blink': True}, nl=False)
     controller.init_controller_and_board()
     if controller.is_sync:
-        click.secho('\rSyncing Board ... Done', **{'fg': 'green'})
+        click.secho('\rInitiating Board ... Done', **{'fg': 'green'})
     else:
-        click.secho('\rSyncing Board ... Failed', **{'fg': 'red'})
+        click.secho('\rInitiating Board ... Failed', **{'fg': 'red'})
 
 
 def _reload_config(controller: Dcs5Controller):
@@ -190,8 +180,17 @@ def cli_app(ctx: click.Context, connect):
                f" Mac address : {ctx.obj.config.client.mac_address}\n"
                f'{SHELL_FOOTER}'
                f'\n')
+
+    attempts = 1
     if connect is True:
-        _connect(ctx.obj)
+        while True:
+            _connect(ctx.obj)
+            if not ctx.obj.client.isconnected:
+                break
+            if ctx.obj.is_sync:
+                break
+            click.echo(f'Board initiation failed. Restarting Client. (Attempt: {attempts})')
+            time.sleep(5)
 
     click.echo('Type `help` to list commands or `quit` to close the app.')
     click.echo('')
@@ -230,9 +229,16 @@ def connect(obj: Dcs5Controller):
         _connect(obj)
 
 
+@cli_app.command('restart', help='To restart the controller and connect the board.')
+@click.pass_obj
+def restart(obj: Dcs5Controller):
+    start_new_client(obj)
+    _connect(obj)
+
+
 def _connect(controller: Dcs5Controller, attempts=3):
     _attempts = attempts
-    start_client(controller)
+    start_new_client(controller)
     if controller.client.isconnected:
         while _attempts > 0:
             init_measuring_board(controller)
@@ -243,16 +249,6 @@ def _connect(controller: Dcs5Controller, attempts=3):
                 time.sleep(1)
                 _attempts -= 1
                 logging.debug(f'Connection failed. {attempts-_attempts} attempts left.')
-
-
-
-@cli_app.command('restart', help='To restart the controller and connect the board.')
-@click.pass_obj
-def restart(obj: Dcs5Controller):
-    restart_client(obj)
-    if obj.client.isconnected:
-        init_measuring_board(obj)
-        obj.start_listening()
 
 
 @cli_app.command('mute', help='To mute the board output.')

@@ -182,9 +182,8 @@ class BluetoothClient:
             if not self.isconnected:
                 logging.error('No available ports were found.')
 
-        except socket.error as err:
-            logging.warning("Devices not found.")
-            logging.debug(err)
+        except OSError as err:
+            self._process_os_error_code(err)
         finally:
             pass
             self.socket.settimeout(self.default_timeout)
@@ -211,26 +210,11 @@ class BluetoothClient:
         try:
             self._buffer = self.socket.recv(BUFFER_SIZE).decode(BOARD_MSG_ENCODING)
         except OSError as err:
-            match err.errno:
-                case None:
-                    pass
-                case 104:
-                    logging.error('Connection to device lost. (err104)')
-                    self.reconnect()
-                case 110:
-                    logging.error('Connection to device lost. (err110)')
-                    self.reconnect()
-                case 103:
-                    logging.error('Bluetooth turned off. Connection to device lost. (err103)')
-                    self.reconnect()
-                case 10050:
-                    logging.error('Connection to device lost. (err10050)')
-                    self.reconnect()
-                case 10053:
-                    logging.error('Bluetooth turned off. Connection to device lost. (err10053)')
-                    self.reconnect()
-                case _:
-                    logging.error(f'OSError (new): {err.errno}')
+            if err.errno is None:
+                pass
+            else:
+                self._process_os_error_code(err)
+                self.reconnect()
 
     def reconnect(self):
         self.close()
@@ -256,6 +240,26 @@ class BluetoothClient:
     def close(self):
         self.socket.close()
         self.isconnected = False
+
+    @staticmethod
+    def _process_os_error_code(err):
+        match err.errno:
+            case None:
+                pass
+            case 104:
+                logging.error('Connection to device lost. (err104)')
+            case 110:
+                logging.error('Connection to device lost. (err110)')
+            case 103: #FIXME CHECK IF THE CODE IS GOOD
+                logging.error('Bluetooth turned off. Connection to device lost. (err103)')
+            case 113:
+                logging.error('Bluetooth turned off. Connection to device lost. (err113)')
+            case 10050:
+                logging.error('Connection to device lost. (err10050)')
+            case 10053:
+                logging.error('Bluetooth turned off. Connection to device lost. (err10053)')
+            case _:
+                logging.error(f'OSError (new): {err.errno}')
 
 
 class Dcs5Controller:
