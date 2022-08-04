@@ -1,3 +1,4 @@
+import logging
 import os
 import platform
 from pathlib import Path
@@ -44,4 +45,5 @@ default_files = [
 
 for lf, df in zip(local_files, default_files):
     if not Path(lf).exists():
+        logging.debug(f'creating local file: {lf}')
         shutil.copyfile(df, lf)

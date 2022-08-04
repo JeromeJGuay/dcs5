@@ -4,6 +4,7 @@ June 2022, JeromeJGuay
 This module is the entry point for the bash command (dsc5).
 From here you can either start the interactive cli app or start the server.
 """
+import logging
 import sys
 import argparse
 
@@ -42,12 +43,14 @@ def main():
             sys.argv = ['cli_app']
             if args.connect:
                 sys.argv += ['-c']
+            logging.debug('Launching cli')
             cli_app()
         elif args.cmd == "server":
             if args.verbose != 'debug':
                 log_path = init_logging(stdout_level='info', write=args.write_log)
             else:
                 log_path = init_logging(stdout_level='debug', write=args.write_log)
+            logging.debug('Launching server')
             start_server(start_controller=not args.test, host=args.host, port=args.port)
         else:
             parser.print_help()
