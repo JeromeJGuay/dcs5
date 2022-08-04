@@ -417,9 +417,8 @@ class Dcs5Controller:
             self.is_muted = True
             logging.debug('Board muted')
 
-    def sync_controller_and_board(self):
-        """Init board to launch settings.
-
+    def init_controller_and_board(self):
+        """Init measuring board.
         """
         self.c_set_backlighting_level(0)
         time.sleep(1)  # Wait 1 second to give time to the socket buffer to be cleared.
@@ -432,18 +431,20 @@ class Dcs5Controller:
         reading_profile = self.config.reading_profiles[
             self.config.output_modes.mode_reading_profiles[self.output_mode]
         ]
+        # DEFAULT VALUES
         self.c_set_interface(1)
         self.c_set_sensor_mode(0)
         self.c_set_stylus_detection_message(False)
+
+        # USER VALUES
         self.c_set_stylus_settling_delay(reading_profile.settling_delay)
         self.c_set_stylus_max_deviation(reading_profile.max_deviation)
         self.c_set_stylus_number_of_reading(reading_profile.number_of_reading)
+        self.c_set_backlighting_level(self.config.launch_settings.backlighting_level)
+
         self.c_check_calibration_state()
 
         self.wait_for_ping()
-
-        if not was_listening:
-            self.stop_listening()
 
         if (
                 self.internal_board_state.sensor_mode == "length" and
@@ -465,7 +466,8 @@ class Dcs5Controller:
             logging.debug(str(state))
             self.is_sync = False
 
-        self.c_set_backlighting_level(self.config.launch_settings.backlighting_level)
+        if not was_listening:
+            self.stop_listening()
 
     def wait_for_ping(self, timeout=2):
         self.c_ping()

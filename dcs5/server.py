@@ -38,7 +38,7 @@ def start_dcs5_controller(
     controller = Dcs5Controller(config_path, devices_specifications_path, control_box_parameters_path)
     controller.start_client()
     if controller.client.isconnected:
-        controller.sync_controller_and_board()
+        controller.init_controller_and_board()
         controller.start_listening()
 
     return controller

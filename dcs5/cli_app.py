@@ -118,9 +118,9 @@ def restart_client(controller: Dcs5Controller):
         click.secho('\rRestarting Controller ... Failed', **{'fg': 'red'})
 
 
-def sync_controller(controller: Dcs5Controller):
+def init_measuring_board(controller: Dcs5Controller):
     click.secho('\nSyncing Board ...', **{'fg': 'red', 'blink': True}, nl=False)
-    controller.sync_controller_and_board()
+    controller.init_controller_and_board()
     if controller.is_sync:
         click.secho('\rSyncing Board ... Done', **{'fg': 'green'})
     else:
@@ -134,7 +134,7 @@ def _reload_config(controller: Dcs5Controller):
         click.secho('\rReloading Config ... Done', **{'fg': 'green'})
         if controller.client.isconnected:
             if click.confirm(click.style(f"Sync Board", fg='blue'), default=True):
-                sync_controller(controller)
+                init_measuring_board(controller)
     except ConfigError as err:
         click.secho('\rReloading Config ... Failed', **{'fg': 'red'})
         click.secho(f'Config Error\n: {err}', **{'fg': 'red'})
@@ -192,7 +192,7 @@ def cli_app(ctx: click.Context, connect):
     if connect is True:
         start_client(ctx.obj)
         if ctx.obj.client.isconnected:
-            sync_controller(ctx.obj)
+            init_measuring_board(ctx.obj)
             ctx.obj.start_listening()
 
     click.echo('Type `help` to list commands or `quit` to close the app.')
@@ -232,7 +232,7 @@ def connect(obj: Dcs5Controller):
         start_client(obj)
 
     if obj.client.isconnected:
-        sync_controller(obj)
+        init_measuring_board(obj)
         obj.start_listening()
 
 
@@ -241,7 +241,7 @@ def connect(obj: Dcs5Controller):
 def restart(obj: Dcs5Controller):
     restart_client(obj)
     if obj.client.isconnected:
-        sync_controller(obj)
+        init_measuring_board(obj)
         obj.start_listening()
 
 
@@ -261,7 +261,7 @@ def unmute(obj: Dcs5Controller):
 @click.pass_obj
 def sync(obj: Dcs5Controller):
     if obj.client.isconnected:
-        sync_controller(obj)
+        init_measuring_board(obj)
     else:
         click.secho('Syncing impossible, device not Connected.', **{'fg': 'red'})
 
