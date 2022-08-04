@@ -31,7 +31,7 @@ from dcs5.control_box_parameters import load_control_box_parameters, ControlBoxP
 
 MONITORING_DELAY = 2 # WINDOWS ONLY
 
-AFTER_SENT_SLEEP = 0.02
+AFTER_SENT_SLEEP = 0.05
 
 HANDLER_SLEEP = 0.01
 
@@ -420,10 +420,13 @@ class Dcs5Controller:
     def init_controller_and_board(self):
         """Init measuring board.
         """
+        logging.debug('Initiating Board.')
         self.c_set_backlighting_level(0)
         time.sleep(1)  # Wait 1 second to give time to the socket buffer to be cleared.
 
-        logging.debug('Syncing Controller and Board.')
+        self.internal_board_state = InternalBoardState()
+        self.is_sync = False
+        logging.debug('Internal Board State Values cleared. is_sync set to False')
 
         was_listening = self.is_listening
         self.restart_listening()
@@ -431,40 +434,42 @@ class Dcs5Controller:
         reading_profile = self.config.reading_profiles[
             self.config.output_modes.mode_reading_profiles[self.output_mode]
         ]
-        # DEFAULT VALUES
+        # SET DEFAULT VALUES
         self.c_set_interface(1)
         self.c_set_sensor_mode(0)
         self.c_set_stylus_detection_message(False)
 
-        # USER VALUES
+        # SET USER VALUES
         self.c_set_stylus_settling_delay(reading_profile.settling_delay)
         self.c_set_stylus_max_deviation(reading_profile.max_deviation)
         self.c_set_stylus_number_of_reading(reading_profile.number_of_reading)
         self.c_set_backlighting_level(self.config.launch_settings.backlighting_level)
+        self.c_set_backlighting_sensitivity(self.config.launch_settings.backlighting_sensitivity)
+        self.c_set_backlighting_auto_mode(self.config.launch_settings.backlighting_auto_mode)
 
         self.c_check_calibration_state()
 
-        self.wait_for_ping()
-
-        if (
-                self.internal_board_state.sensor_mode == "length" and
-                self.internal_board_state.stylus_status_msg == "disable" and
-                self.internal_board_state.stylus_settling_delay == reading_profile.settling_delay and
-                self.internal_board_state.stylus_max_deviation == reading_profile.max_deviation and
-                self.internal_board_state.number_of_reading == reading_profile.number_of_reading
-        ):
-            self.is_sync = True
-            logging.debug("Syncing successful.")
+        if self.wait_for_ping() is True:
+            if (
+                    self.internal_board_state.sensor_mode == "length" and
+                    self.internal_board_state.stylus_status_msg == "disable" and
+                    self.internal_board_state.stylus_settling_delay == reading_profile.settling_delay and
+                    self.internal_board_state.stylus_max_deviation == reading_profile.max_deviation and
+                    self.internal_board_state.number_of_reading == reading_profile.number_of_reading
+            ):
+                self.is_sync = True
+                logging.debug("Board initiation succeeded.")
+            else:
+                logging.debug("Board initiation failed.")
+                state = [
+                    self.internal_board_state.sensor_mode,
+                    self.internal_board_state.stylus_status_msg,
+                    (self.internal_board_state.stylus_settling_delay, reading_profile.settling_delay),
+                    (self.internal_board_state.stylus_max_deviation, reading_profile.max_deviation),
+                    (self.internal_board_state.number_of_reading, reading_profile.number_of_reading)]
+                logging.debug(str(state))
         else:
-            logging.debug("Syncing  failed.")
-            state = [
-                self.internal_board_state.sensor_mode,
-                self.internal_board_state.stylus_status_msg,
-                (self.internal_board_state.stylus_settling_delay, reading_profile.settling_delay),
-                (self.internal_board_state.stylus_max_deviation, reading_profile.max_deviation),
-                (self.internal_board_state.number_of_reading, reading_profile.number_of_reading)]
-            logging.debug(str(state))
-            self.is_sync = False
+            logging.debug("Ping was not received. Board initiation failed.")
 
         if not was_listening:
             self.stop_listening()
