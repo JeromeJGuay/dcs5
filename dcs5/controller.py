@@ -210,17 +210,14 @@ class BluetoothClient:
                 pass
             else:
                 self._process_os_error_code(err)
-                self.reconnect()
+                self.close()
             return ""
 
     def reconnect(self):
-        self.close()
         while not self.isconnected:
             logging.error('Attempting to reconnect.')
             self.connect(self.mac_address, timeout=30)
             time.sleep(5)
-        if self.isconnected:
-            logging.error('Board Reconnected')
 
     def clear(self):
         self.receive()
@@ -286,6 +283,7 @@ class Dcs5Controller:
         self.listen_thread: threading.Thread = None
         self.command_thread: threading.Thread = None
         self.spam_thread: threading.Thread = None
+        self.monitor_thread: threading.Thread = None
 
         self.socket_listener = SocketListener(self)
         self.command_handler = CommandHandler(self)
@@ -327,7 +325,7 @@ class Dcs5Controller:
     def reload_configs(self):
         self.is_sync = False
         self._load_configs()
-        set_board_settings()
+        self.set_board_settings()
 
     def set_board_settings(self):
         self.dynamic_stylus_settings = self.config.launch_settings.dynamic_stylus_mode
@@ -342,6 +340,8 @@ class Dcs5Controller:
         """Create a socket and tries to connect with the board."""
         if self.client.isconnected:
             logging.debug("Client Already Connected.")
+            self.monitor_thread = threading.Thread(target=self.monitor_connection,name="monitor", daemon=True)
+            self.monitor_thread.start()
         else:
             mac_address = mac_address or self.config.client.mac_address
             self.client.connect(mac_address, timeout=30)
@@ -402,6 +402,15 @@ class Dcs5Controller:
         while self.is_listening:
             self.client.send(" ") # a space is not a recognized command. Thus nothing is return.
             time.sleep(MONITORING_DELAY)
+
+    def monitor_connection(self):
+        while True:
+            while self.client.isconnected:
+                time.sleep(1)
+            self.client.reconnect()
+            logging.error('Board Reconnected')
+            self.init_controller_and_board()
+
 
     def unmute_board(self):
         """Unmute board shout output"""
