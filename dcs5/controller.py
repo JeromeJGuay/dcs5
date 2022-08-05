@@ -31,7 +31,7 @@ from dcs5.control_box_parameters import load_control_box_parameters, ControlBoxP
 
 MONITORING_DELAY = 2 # WINDOWS ONLY
 
-AFTER_SENT_SLEEP = 0.05
+AFTER_SENT_SLEEP = 0.01
 
 HANDLER_SLEEP = 0.01
 
@@ -154,7 +154,6 @@ class BluetoothClient:
     def __init__(self):
         self._mac_address: str = None
         self._port: int = None
-        self._buffer: str = ''
         self.socket: socket.socket = None
         self.default_timeout = 0.1
         self.isconnected = False
@@ -196,10 +195,6 @@ class BluetoothClient:
     def port(self):
         return self._port
 
-    @property
-    def buffer(self):
-        return self._buffer
-
     def send(self, command: str):
         try:
             self.socket.sendall(command.encode(BOARD_MSG_ENCODING))
@@ -208,13 +203,14 @@ class BluetoothClient:
 
     def receive(self):
         try:
-            self._buffer = self.socket.recv(BUFFER_SIZE).decode(BOARD_MSG_ENCODING)
+            return self.socket.recv(BUFFER_SIZE).decode(BOARD_MSG_ENCODING)
         except OSError as err:
             if err.errno is None:
                 pass
             else:
                 self._process_os_error_code(err)
                 self.reconnect()
+            return ""
 
     def reconnect(self):
         self.close()
@@ -223,19 +219,8 @@ class BluetoothClient:
             self.connect(self.mac_address, timeout=30)
             time.sleep(5)
 
-    def clear_all(self):
+    def clear(self):
         self.receive()
-        self._buffer = ""
-
-    def pop(self, i=None):
-        """Return and clear the client buffer."""
-        i = len(self._buffer) if i is None else i
-        buffer, self._buffer = self._buffer[:i], self._buffer[i:]
-        return buffer
-
-    def put_back(self, msg):
-        """Appends at the beginning of the buffer."""
-        self._buffer = msg + self._buffer
 
     def close(self):
         self.socket.close()
@@ -425,7 +410,6 @@ class Dcs5Controller:
         """Init measuring board.
         """
         logging.debug('Initiating Board.')
-        self.c_set_backlighting_level(0)
         time.sleep(1)  # Wait 1 second to give time to the socket buffer to be cleared.
 
         self.internal_board_state = InternalBoardState()
@@ -434,6 +418,8 @@ class Dcs5Controller:
 
         was_listening = self.is_listening
         self.restart_listening()
+
+        self.c_set_backlighting_level(0)
 
         reading_profile = self.config.reading_profiles[
             self.config.output_modes.mode_reading_profiles[self.output_mode]
@@ -503,17 +489,17 @@ class Dcs5Controller:
 
         self.stop_listening()
 
-        self.client.clear_all()
+        self.client.clear()
         self.client.send(f"&{pt}r#")
         self.client.socket.settimeout(5)
-        self.client.receive()
+        msg = self.client.receive()
         self.stop_listening()
         try:
-            if f'&Xr#: X={pt}\r' in self.client.buffer:
+            if f'&Xr#: X={pt}\r' in msg:
                 pt_value = self.internal_board_state.__dict__[f"cal_pt_{pt}"]
                 logging.info(f"Calibration for point {pt}. Set stylus down at {pt_value} mm ...")
-                while f'&{pt}c' not in self.client.buffer:
-                    self.client.receive()
+                while f'&{pt}c' not in msg:
+                    msg += self.client.receive()
                 logging.info(f'Point {pt} calibrated.')
                 return 1
             else:
@@ -602,10 +588,11 @@ class Dcs5Controller:
             logging.debug(f"Shouted value {value}")
             self.shouter.shout(value)
 
-    def c_board_initialization(self):
-        self.command_handler.queue_command("&init#", "Setting EEPROM init flag.\r")
-        time.sleep(1)
-        self.close_client()
+    # command removed for safety reason.
+    #def c_board_initialization(self):
+    #    self.command_handler.queue_command("&init#", "Setting EEPROM init flag.\r")
+    #    time.sleep(1)
+    #    self.close_client()
 
     def c_ping(self):
         """This could use for something more useful. Like checking at regular interval if the board is still active:
@@ -644,8 +631,8 @@ class Dcs5Controller:
         else:
             logging.warning(f"Backlighting level range: (0, {self.control_box_parameters.max_backlighting_level})")
 
-    def c_set_backlighting_auto_mode(self, value: int):
-        self.command_handler.queue_command(f"&oa,{value}", None)
+    def c_set_backlighting_auto_mode(self, value: bool):
+        self.command_handler.queue_command(f"&oa,{int(value)}", None)
         self.internal_board_state.backlighting_auto_mode = {True: 'auto', False: 'manual'}
 
     def c_set_backlighting_sensitivity(self, value: int):
@@ -826,28 +813,38 @@ class SocketListener:
         self.message_queue = Queue()
         self.swipe_triggered = False
         self.with_ctrl = False
+        self.buffer = ""
+
+    def pop(self, i=None):
+        """Return and clear the client buffer."""
+        i = len(self.buffer) if i is None else i
+        out, self.buffer = self.buffer[:i], self.buffer[i:]
+        return out
 
     def listen(self):
-        self.controller.client.clear_all()
+        self.controller.client.clear()
         self.message_queue.queue.clear()
         logging.debug("Listener Queue and Client Buffers Cleared.")
         self.controller.thread_barrier.wait()
         logging.debug('Listener Queue cleared & Client Buffer Clear.')
         logging.debug('Listening started')
         while self.controller.is_listening:
-            self.controller.client.receive()
-            if len(self.controller.client.buffer) > 0:
+            self.buffer += self.controller.client.receive()
+            if len(self.buffer) > 0:
+                logging.debug(f'Raw Buffer: {[self.buffer]}')
                 self._split_board_message()
                 self._process_board_message()
             time.sleep(LISTENER_SLEEP)
         logging.debug('Listening stopped')
 
     def _split_board_message(self):
-        delimiters = ["\n", "\r", "#", "Rebooting in 2 seconds ..."]
+        delimiters = ["\n", "\r", "#"]
         for d in delimiters:
-            msg = self.controller.client.buffer.split(d)
+            msg = self.buffer.split(d, 1)
             if len(msg) > 1:
-                self.message_queue.put(self.controller.client.pop(len(msg[0] + d)))
+                self.message_queue.put(msg[0]+d)
+                self.buffer = msg[1]
+                break
 
     def _process_board_message(self):
         """ANALYZE SOLICITED VS UNSOLICITED MESSAGE"""

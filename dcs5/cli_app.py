@@ -41,7 +41,7 @@ class StatePrompt:
     def prompt(self):
         msg = ""
         if self._controller is not None:
-            msg += click.style('[', bold=True)
+            msg += click.style('\n[', bold=True)
             if self._debug_mode is True:
                 msg += click.style(f"Debug Mode", fg='red')
             else:
@@ -101,7 +101,7 @@ def init_dcs5_controller():
 
 
 def start_new_client(controller: Dcs5Controller):
-    click.secho('\nStarting Controller ...', **{'fg': 'red', 'blink': True}, nl=False)
+    click.secho('\nStarting Controller ...', **{'fg': 'yellow', 'blink': True}, nl=False)
     controller.restart_client()
     if controller.client.isconnected:
         click.secho('\rStarting Controller ... Done', **{'fg': 'green'})
@@ -110,21 +110,21 @@ def start_new_client(controller: Dcs5Controller):
 
 
 def init_measuring_board(controller: Dcs5Controller):
-    click.secho('\nInitiating Board ...', **{'fg': 'red', 'blink': True}, nl=False)
+    click.secho('\nSyncing Board ...', **{'fg': 'yellow', 'blink': True}, nl=False)
     controller.init_controller_and_board()
     if controller.is_sync:
-        click.secho('\rInitiating Board ... Done', **{'fg': 'green'})
+        click.secho('\rSyncing Board ... Done', **{'fg': 'green'})
     else:
-        click.secho('\rInitiating Board ... Failed', **{'fg': 'red'})
+        click.secho('\rSyncing Board ... Failed', **{'fg': 'red'})
 
 
 def _reload_config(controller: Dcs5Controller):
-    click.secho('\nReloading Config ...', **{'fg': 'red', 'blink': True}, nl=False)
+    click.secho('\nReloading Config ...', **{'fg': 'yellow', 'blink': True}, nl=False)
     try:
         controller.reload_configs()
         click.secho('\rReloading Config ... Done', **{'fg': 'green'})
         if controller.client.isconnected:
-            if click.confirm(click.style(f"Sync Board", fg='blue'), default=True):
+            if click.confirm(click.style(f"\nSync Board", fg='blue'), default=True):
                 init_measuring_board(controller)
     except ConfigError as err:
         click.secho('\rReloading Config ... Failed', **{'fg': 'red'})
@@ -192,8 +192,7 @@ def cli_app(ctx: click.Context, connect):
             click.echo(f'Board initiation failed. Restarting Client. (Attempt: {attempts})')
             time.sleep(5)
 
-    click.echo('Type `help` to list commands or `quit` to close the app.')
-    click.echo('')
+    click.echo('\nType `help` to list commands or `quit` to close the app.')
 
 
 @cli_app.command('activate', help='Use this command if the controller is not active but is connected.')
@@ -275,18 +274,30 @@ def sync(obj: Dcs5Controller):
 @cli_app.command('calibrate', help='To calibrate the board. Use the calpts command first to set the calibration points')
 @click.pass_obj
 def calibrate(obj: Dcs5Controller):
+    cal_pt_1 = False
+    cal_pt_2 = False
     if obj.client.isconnected:
         if obj.internal_board_state.cal_pt_1 is not None and obj.internal_board_state.cal_pt_2 is not None:
-            click.secho(f'\nSet stylus down for point 1: {obj.internal_board_state.cal_pt_1} mm ...', nl=False)
+            click.secho(f'\nSet stylus down for point 1: {obj.internal_board_state.cal_pt_1} mm ...', nl=False, **{'fg': 'yellow'})
             if obj.calibrate(1) == 1:
-                click.secho(f'\rSet stylus down for point 1: {obj.internal_board_state.cal_pt_1} mm ... Successful')
+                cal_pt_1 = True
+                click.secho(f'\rSet stylus down for point 1: {obj.internal_board_state.cal_pt_1} mm ... Successful', **{'fg': 'green'})
             else:
-                click.secho(f'\rSet stylus down for point 1 {obj.internal_board_state.cal_pt_1} mm ... Failed')
-            click.secho(f'\nSet stylus down for point 2: {obj.internal_board_state.cal_pt_2}', nl=False)
+                click.secho(f'\rSet stylus down for point 1 {obj.internal_board_state.cal_pt_1} mm ... Failed', **{'fg': 'red'})
+
+            click.secho(f'\nSet stylus down for point 2: {obj.internal_board_state.cal_pt_2}', nl=False, **{'fg': 'yellow'})
             if obj.calibrate(2) == 1:
-                click.secho(f'\rSet stylus down for point 2 {obj.internal_board_state.cal_pt_2} mm ... Successful')
+                cal_pt_2 = True
+                click.secho(f'\rSet stylus down for point 2 {obj.internal_board_state.cal_pt_2} mm ... Successful', **{'fg': 'green'})
             else:
-                click.secho(f'\rSet stylus down for point 2 {obj.internal_board_state.cal_pt_2} mm ... Failed')
+                click.secho(f'\rSet stylus down for point 2 {obj.internal_board_state.cal_pt_2} mm ... Failed', **{'fg': 'red'})
+            obj.c_check_calibration_state()
+
+            if cal_pt_1 and cal_pt_2 and obj.internal_board_state.calibrated:
+                click.secho(f'\nCalibration successful', **{'fg': 'green'})
+            else:
+                click.secho(f'\nCalibration failed.', **{'fg': 'red'})
+
         else:
             click.echo()
             click.secho('Cannot perform calibration, calibration points not set.', **{'fg': 'red'})
