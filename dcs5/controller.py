@@ -327,6 +327,7 @@ class Dcs5Controller:
     def reload_configs(self):
         self.is_sync = False
         self._load_configs()
+        set_board_settings()
 
     def set_board_settings(self):
         self.dynamic_stylus_settings = self.config.launch_settings.dynamic_stylus_mode
