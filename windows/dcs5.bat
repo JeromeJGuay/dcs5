@@ -1,0 +1,1 @@
+start "Dcs5 Controller" dcs5.exe cli -c
