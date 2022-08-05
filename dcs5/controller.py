@@ -285,7 +285,7 @@ class Dcs5Controller:
 
         self.listen_thread: threading.Thread = None
         self.command_thread: threading.Thread = None
-        self.monitoring_thread: threading.Thread = None
+        self.spam_thread: threading.Thread = None
 
         self.socket_listener = SocketListener(self)
         self.command_handler = CommandHandler(self)
@@ -379,8 +379,8 @@ class Dcs5Controller:
             self.listen_thread.start()
 
             if platform.system() == 'Windows':
-                self.monitoring_thread = threading.Thread(target=self.monitor_connection, name='listen', daemon=True)
-                self.monitoring_thread.start()
+                self.spam_thread = threading.Thread(target=self.spam_measuring_board, name='spam', daemon=True)
+                self.spam_thread.start()
 
         logging.info('Board is Active.')
 
@@ -396,7 +396,7 @@ class Dcs5Controller:
         self.stop_listening()
         self.start_listening()
 
-    def monitor_connection(self):
+    def spam_measuring_board(self):
         "This is to raise a connection OSError if the connection is lost."
         while self.is_listening:
             self.client.send(" ") # a space is not a recognized command. Thus nothing is return.
