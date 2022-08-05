@@ -9,6 +9,8 @@ from pathlib import Path
 import platform
 import os
 
+from dcs5 import LOG_FILES_PATH
+
 LOG_FILE_PREFIX = "dcs5_log"
 
 
@@ -78,14 +80,7 @@ def init_logging(
     handlers.append(stdout_handler)
 
     if write is True:
-        if platform.system() == 'Windows':
-            path = os.getenv('LOCALAPPDATA') + '/dcs5/logs'
-        else:
-            path = os.getenv('HOME') + '/.dcs5/logs'
-
-        Path(path).mkdir(parents=True, exist_ok=True)
-
-        filename = Path(path).joinpath(time.strftime("%y%m%dT%H%M%S", time.gmtime())).with_suffix('.log')
+        filename = LOG_FILES_PATH.joinpath(time.strftime("%y%m%dT%H%M%S", time.gmtime())).with_suffix('.log')
 
         file_handler = logging.FileHandler(filename)
         file_handler.setLevel(file_level.upper())
@@ -93,6 +88,8 @@ def init_logging(
         handlers.append(file_handler)
 
     logging.basicConfig(level="NOTSET", handlers=handlers)
+
+    logging.debug('Logging Started.')
     return filename
 
 

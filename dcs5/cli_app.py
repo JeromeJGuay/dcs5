@@ -23,7 +23,7 @@ from dcs5 import VERSION, DEVICES_SPECIFICATION_FILE, CONTROLLER_CONFIGURATION_F
     CONTROL_BOX_PARAMETERS, DEFAULT_CONTROLLER_CONFIGURATION_FILE, DEFAULT_DEVICES_SPECIFICATION_FILE
 from dcs5.controller_configurations import ConfigError
 from dcs5.controller import Dcs5Controller
-from dcs5.utils import resolve_relative_path
+#from dcs5.utils import resolve_relative_path
 
 
 class StatePrompt:
@@ -93,9 +93,9 @@ class StatePrompt:
 
 
 def init_dcs5_controller():
-    config_path = resolve_relative_path(CONTROLLER_CONFIGURATION_FILE, __file__)
-    devices_specifications_path = resolve_relative_path(DEVICES_SPECIFICATION_FILE, __file__)
-    control_box_parameters_path = resolve_relative_path(CONTROL_BOX_PARAMETERS, __file__)
+    config_path = CONTROLLER_CONFIGURATION_FILE
+    devices_specifications_path = DEVICES_SPECIFICATION_FILE
+    control_box_parameters_path = CONTROL_BOX_PARAMETERS
 
     return Dcs5Controller(config_path, devices_specifications_path, control_box_parameters_path)
 
@@ -168,7 +168,7 @@ def cli_app(ctx: click.Context, connect):
     except ConfigError as err:
         click.secho(f'Config Error: {err}', **{'fg': 'red'})
         click.secho(
-            f'Configfile\n: {resolve_relative_path(CONTROLLER_CONFIGURATION_FILE, __file__)}',
+            f'Configfile\n: {CONTROLLER_CONFIGURATION_FILE}',
             **{'fg': 'white'}
         )
         ctx.abort()
@@ -387,10 +387,7 @@ def edit():
 @click.pass_obj
 def edit_controller(obj: Dcs5Controller, reset, editor):
     if reset is True:
-        shutil.copyfile(
-            resolve_relative_path(DEFAULT_CONTROLLER_CONFIGURATION_FILE, __file__),
-            obj.config_path
-        )
+        shutil.copyfile(DEFAULT_CONTROLLER_CONFIGURATION_FILE, obj.config_path)
         click.echo('Controller configuration file reset.')
         _reload_config(obj)
     else:
@@ -415,10 +412,7 @@ def edit_controller(obj: Dcs5Controller, reset, editor):
 @click.pass_obj
 def edit_devices(obj: Dcs5Controller, reset, editor):
     if reset is True:
-        shutil.copyfile(
-            resolve_relative_path(DEFAULT_DEVICES_SPECIFICATION_FILE, __file__),
-            obj.devices_specifications_path
-        )
+        shutil.copyfile(DEFAULT_DEVICES_SPECIFICATION_FILE, obj.devices_specifications_path)
         click.echo('Devices specifications file reset.')
         _reload_config(obj)
     else:
