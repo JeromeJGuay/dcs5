@@ -233,6 +233,10 @@ class BluetoothClient:
         match err.errno:
             case None:
                 pass
+            case 22:
+                logging.error(f'Port {self.port} does not exist. (err22)')
+            case 111:
+                logging.error(f'Socket {self.port} unavailable. (Maybe) (err111)')
             case 104:
                 logging.error('Connection to device lost. (err104)')
             case 110:
@@ -242,7 +246,9 @@ class BluetoothClient:
             case 10022:
                 logging.error('Bluetooth turned off.')
             case 10048:
-                logging.error(f'Port {self.port} unavailable. (err10048)')
+                logging.error(f'Socket {self.port} unavailable. (Maybe) (err10048)')
+            case 10049:
+                logging.error(f'Port {self.port} does not exist. (err10049)')
             case 10050:
                 logging.error('Connection to device lost. (err10050)')
             case 10053:
@@ -327,6 +333,7 @@ class Dcs5Controller:
     def reload_configs(self):
         self.is_sync = False
         self._load_configs()
+        self.set_board_settings()
 
     def set_board_settings(self):
         self.dynamic_stylus_settings = self.config.launch_settings.dynamic_stylus_mode
