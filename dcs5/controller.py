@@ -24,6 +24,7 @@ from typing import *
 import platform
 
 import pyautogui as pag
+pag.FAILSAFE = False
 
 from dcs5.controller_configurations import load_config, ControllerConfiguration, ConfigError
 from dcs5.devices_specification import load_devices_specification, DevicesSpecification
@@ -218,6 +219,8 @@ class BluetoothClient:
             logging.error('Attempting to reconnect.')
             self.connect(self.mac_address, timeout=30)
             time.sleep(5)
+        if self.isconnected:
+            logging.error('Board Reconnected')
 
     def clear(self):
         self.receive()
@@ -226,8 +229,7 @@ class BluetoothClient:
         self.socket.close()
         self.isconnected = False
 
-    @staticmethod
-    def _process_os_error_code(err):
+    def _process_os_error_code(self, err):
         match err.errno:
             case None:
                 pass
@@ -235,14 +237,20 @@ class BluetoothClient:
                 logging.error('Connection to device lost. (err104)')
             case 110:
                 logging.error('Connection to device lost. (err110)')
-            case 103: #FIXME CHECK IF THE CODE IS GOOD
-                logging.error('Bluetooth turned off. Connection to device lost. (err103)')
             case 113:
                 logging.error('Bluetooth turned off. Connection to device lost. (err113)')
+            case 10022:
+                logging.error('Bluetooth turned off.')
+            case 10048:
+                logging.error(f'Port {self.port} unavailable. (err10048)')
             case 10050:
                 logging.error('Connection to device lost. (err10050)')
             case 10053:
-                logging.error('Bluetooth turned off. Connection to device lost. (err10053)')
+                logging.error('Connection to device lost. (err10053)')
+            case 10060:
+                logging.error('Connection to device lost. (err10060')
+            case 10064:
+                logging.error(f'Port {self.port} unavailable. (err10064)')
             case _:
                 logging.error(f'OSError (new): {err.errno}')
 
