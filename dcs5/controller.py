@@ -230,6 +230,7 @@ class BluetoothClient:
         self.isconnected = False
 
     def _process_os_error_code(self, err):
+        # ERROR 112 NEW LINUX no devices
         match err.errno:
             case None:
                 pass
