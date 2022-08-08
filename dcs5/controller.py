@@ -411,7 +411,6 @@ class Dcs5Controller:
             logging.error('Board Reconnected')
             self.init_controller_and_board()
 
-
     def unmute_board(self):
         """Unmute board shout output"""
         if self.is_muted:
