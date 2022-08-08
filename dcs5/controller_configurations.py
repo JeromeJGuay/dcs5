@@ -36,7 +36,7 @@ from typing import *
 
 from dcs5.utils import json2dict
 
-VALID_COMMANDS = ["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm"]
+VALID_COMMANDS = ["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm", "MODE"]
 VALID_SEGMENTS_MODE = ['length', 'top', 'bottom']
 VALID_KEYBOARD_KEYS = [
     '\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'",
