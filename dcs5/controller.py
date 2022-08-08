@@ -163,30 +163,31 @@ class BluetoothClient:
         self._mac_address = mac_address
         timeout = timeout or self.default_timeout
         logging.debug(f'Attempting to connect to board. Timeout: {timeout} seconds')
-        try:
-            for port in range(self.min_port, self.max_port):  # check for all available ports
-                self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
-                self.socket.settimeout(timeout)
-                try:
-                    logging.debug(f'port: {port}')
-                    self.socket.connect((self._mac_address, port))
-                    self._port = port
-                    self.isconnected = True
-                    logging.debug(f'Connected to port {self._port}')
-                    logging.debug(f'Socket name: {self.socket.getsockname()}')
-                    break
-                except PermissionError:
-                    logging.debug('Client.connect: PermissionError')
-                    pass
-                port += 1
-            if not self.isconnected:
-                logging.error('No available ports were found.')
 
-        except OSError as err:
-            self._process_os_error_code(err)
-        finally:
-            pass
-            self.socket.settimeout(self.default_timeout)
+        for port in range(self.min_port, self.max_port + 1):  # check for all available ports
+            self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
+            self.socket.settimeout(timeout)
+            try:
+                logging.debug(f'port: {port}')
+                self.socket.connect((self._mac_address, port))
+                self._port = port
+                self.isconnected = True
+                logging.debug(f'Connected to port {self._port}')
+                logging.debug(f'Socket name: {self.socket.getsockname()}')
+                break
+            except PermissionError:
+                logging.debug('Client.connect: PermissionError')
+                pass
+            except OSError as err:
+                match self._process_os_error_code(err):
+                    case 1:
+                        if port == self.max_port:
+                            logging.error('No available ports were found.')
+                        continue
+                    case _:
+                        break
+
+        self.socket.settimeout(self.default_timeout)
 
     @property
     def mac_address(self):
@@ -206,12 +207,11 @@ class BluetoothClient:
         try:
             return self.socket.recv(BUFFER_SIZE).decode(BOARD_MSG_ENCODING)
         except OSError as err:
-            if err.errno is None:
-                pass
-            else:
-                self._process_os_error_code(err)
-                self.reconnect()
-            return ""
+            match self._process_os_error_code(err):
+                case 0:
+                    pass
+                case _:
+                    self.reconnect()
 
     def reconnect(self):
         self.close()
@@ -229,37 +229,71 @@ class BluetoothClient:
         self.socket.close()
         self.isconnected = False
 
-    def _process_os_error_code(self, err):
+    def _process_os_error_code(self, err) -> int:
+        """
+        Parameters
+        ----------
+        err : OS error code.
+
+        Returns
+        -------
+        0: Socket timeout
+        1: Port Unavailable
+        2: Device not Found
+        3: Bluetooth turned off
+        4: Connection broken
+        5: Unknown Error
+
+        """
         # ERROR 112 NEW LINUX no devices
         match err.errno:
             case None:
-                pass
+                return 0
+            case 16:
+                logging.error(f'Port {self.port} unavailable. (err{err.errno})')
+                return 1
             case 22:
-                logging.error(f'Port {self.port} does not exist. (err22)')
+                logging.error(f'Port {self.port} does not exist. (err{err.errno})')
+                return 1
             case 111:
-                logging.error(f'Socket {self.port} unavailable. (Maybe) (err111)')
+                logging.error(f'Port {self.port} unavailable. (Maybe) (err{err.errno})')
+                return 1
+            case 112:
+                logging.error(f'Device not found. (err{err.errno})')
+                return 2
             case 104:
-                logging.error('Connection to device lost. (err104)')
+                logging.error(f'Connection broken. (err{err.errno})')
+                return 4
             case 110:
-                logging.error('Connection to device lost. (err110)')
+                logging.error(f'Connection broken. (err{err.errno})')
+                return 4
             case 113:
-                logging.error('Bluetooth turned off. Connection to device lost. (err113)')
+                logging.error(f'Bluetooth turned off. (err{err.errno})')
+                return 3
             case 10022:
-                logging.error('Bluetooth turned off.')
+                logging.error(f'Bluetooth turned off. (err{err.errno})')
+                return 3
             case 10048:
-                logging.error(f'Socket {self.port} unavailable. (Maybe) (err10048)')
+                logging.error(f'Port {self.port} unavailable. (Maybe) (err{err.errno})')
+                return 1
             case 10049:
-                logging.error(f'Port {self.port} does not exist. (err10049)')
+                logging.error(f'Port {self.port} does not exist. (err{err.errno})')
+                return 1
             case 10050:
-                logging.error('Connection to device lost. (err10050)')
+                logging.error(f'Bluetooth turned off. (err{err.errno})')
+                return 3
             case 10053:
-                logging.error('Connection to device lost. (err10053)')
+                logging.error(f'Connection broken. (err{err.errno})')
+                return 4
             case 10060:
-                logging.error('Connection to device lost. (err10060')
+                logging.error(f'Device not found. (err{err.errno})')
+                return 2
             case 10064:
-                logging.error(f'Port {self.port} unavailable. (err10064)')
+                logging.error(f'Port {self.port} unavailable. (err{err.errno})')
+                return 1
             case _:
                 logging.error(f'OSError (new): {err.errno}')
+                return 5
 
 
 class Dcs5Controller:
