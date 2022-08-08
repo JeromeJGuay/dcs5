@@ -5,7 +5,6 @@ This module contains the code for the cli application.
 
 TODO: catch error if board dcs
 
-OSError: [Errno 107] Transport endpoint is not connected
 
 
 """
