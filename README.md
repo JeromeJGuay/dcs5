@@ -33,7 +33,7 @@ To call the application ...
 ```
 
 ## cli app
-See the [user_guide/UserGuide_fr.pdf](user_guide/UserGuide_fr.pdf). French only.
+See the [user_guide/UserGuide_fr.pdf](doc/UserGuide_fr.pdf). French only.
 
 
 ## Calibration
@@ -60,7 +60,7 @@ The controller_configuration.json is used to configure the controller behavior.
   - settling_delay: (0-20) Delays after the stylus is first detected. (not seconds)
   - number_of_reading: Number of reading needed for a good measurements.
   - max_deviation: (1-100) Amount of deviation allowed between each reading.
-  - Notes: For more information : [user_guide/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](user_guide/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf)
+  - Notes: For more information : [user_guide/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf)
 + output_modes :
   - swipe_threshold: Minimal distance (mm) for a stylus swipe to be valid.
   - segments_limits: Define the limit of the different swipe segment.
@@ -86,7 +86,7 @@ The controller_configuration.json is used to configure the controller behavior.
   - Notes: These values will depend on the calibration.
 
 ### [dcs5/default_configs/control_box_parameters.json](dcs5/default_configs/control_box_parameters.json)
-Values of the builtin parameters of the control box. From BigFin documentation [user_guide/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](user_guide/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf).
+Values of the builtin parameters of the control box. From BigFin documentation [user_guide/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf).
 
 ## server
 
