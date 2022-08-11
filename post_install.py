@@ -1,5 +1,6 @@
 import shutil
 from pathlib import Path
+import click
 
 from dcs5 import \
     SERVER_CONFIGURATION_FILE, \
@@ -22,6 +23,15 @@ default_files = [
 
 
 def create_local_files():
+    print('\n\n')
+    overwrite_files = None
     for lf, df in zip(local_files, default_files):
         if not Path(lf).exists():
             shutil.copyfile(df, lf)
+        else:
+            if overwrite_files is None:
+                overwrite_files = click.confirm('Overwrite reinstall local files ?')
+            if overwrite_files:
+                shutil.copyfile(df, lf)
+                print(f'Writing file: {lf}')
+
