@@ -76,13 +76,11 @@ def init_logging(
 
     handlers.append(stdout_handler)
 
-    if write is True:
-        filename = LOG_FILES_PATH.joinpath(time.strftime("%y%m%dT%H%M%S", time.gmtime())).with_suffix('.log')
-
-        file_handler = logging.FileHandler(filename)
-        file_handler.setLevel(file_level.upper())
-        file_handler.setFormatter(formatter)
-        handlers.append(file_handler)
+    filename = LOG_FILES_PATH.joinpath(time.strftime("%y%m%dT%H%M%S", time.gmtime())).with_suffix('.log')
+    file_handler = logging.FileHandler(filename, delay=not write) # delay=True will make write a log only on crash.
+    file_handler.setLevel(file_level.upper())
+    file_handler.setFormatter(formatter)
+    handlers.append(file_handler)
 
     logging.basicConfig(level="NOTSET", handlers=handlers)
 
