@@ -1,6 +1,6 @@
 
 from setuptools import find_packages, setup
-from dcs5.__init__ import VERSION
+from dcs5 import VERSION
 
 setup(
     name="dcs5",
@@ -11,7 +11,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/JeromeJGuay/dcs5",
     packages=find_packages(),
-    package_data={"": ["configs/*.json", "default_configs/*.json"]},
+    package_data={"": ["default_configs/*.json"]},
     include_package_data=True,
     classifiers=["Programming Language :: Python :: 3"],
     python_requires="~=3.10",

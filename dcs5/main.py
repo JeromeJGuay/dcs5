@@ -13,7 +13,6 @@ from dcs5.logger import init_logging
 from dcs5.server import start_server
 
 
-
 def main():
     parser = argparse.ArgumentParser()
     parent_parser = argparse.ArgumentParser(add_help=False)

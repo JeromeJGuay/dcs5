@@ -5,9 +5,6 @@ This modules contains script to init the logger.
 import logging
 import sys
 import time
-from pathlib import Path
-import platform
-import os
 
 from dcs5 import LOG_FILES_PATH
 

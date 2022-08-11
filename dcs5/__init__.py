@@ -7,7 +7,7 @@ import shutil
 from dcs5.utils import resolve_relative_path
 
 
-VERSION = "1.0.0"
+VERSION = "2.0.0"
 
 ### PATHS ###
 if platform.system() == 'Windows':
