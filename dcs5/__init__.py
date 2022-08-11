@@ -1,8 +1,7 @@
-import logging
 import os
 import platform
 from pathlib import Path
-import shutil
+
 
 from dcs5.utils import resolve_relative_path
 
@@ -32,18 +31,3 @@ DEFAULT_SERVER_CONFIGURATION_FILE = resolve_relative_path("default_configs/serve
 DEFAULT_CONTROLLER_CONFIGURATION_FILE = resolve_relative_path("default_configs/controller_configuration.json", __file__)
 DEFAULT_DEVICES_SPECIFICATION_FILE = resolve_relative_path("default_configs/devices_specification.json", __file__)
 DEFAULT_CONTROL_BOX_PARAMETERS = resolve_relative_path("default_configs/control_box_parameters.json", __file__)
-
-### LOCAL FILES ###
-local_files = [
-    SERVER_CONFIGURATION_FILE, CONTROLLER_CONFIGURATION_FILE,
-    DEVICES_SPECIFICATION_FILE, CONTROL_BOX_PARAMETERS
-]
-default_files = [
-    DEFAULT_SERVER_CONFIGURATION_FILE, DEFAULT_CONTROLLER_CONFIGURATION_FILE,
-    DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROL_BOX_PARAMETERS
-]
-
-for lf, df in zip(local_files, default_files):
-    if not Path(lf).exists():
-        logging.debug(f'creating local file: {lf}')
-        shutil.copyfile(df, lf)
