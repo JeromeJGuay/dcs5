@@ -30,7 +30,8 @@ def create_local_files():
             shutil.copyfile(df, lf)
         else:
             if overwrite_files is None:
-                overwrite_files = click.confirm('Overwrite reinstall local files ?')
+                overwrite_files=True #FIXME
+                #overwrite_files = click.confirm('Overwrite reinstall local files ?')
             if overwrite_files:
                 shutil.copyfile(df, lf)
                 print(f'Writing file: {lf}')
