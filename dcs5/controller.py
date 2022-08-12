@@ -185,7 +185,6 @@ class BluetoothClient:
         except OSError as err:
             self._process_os_error_code(err)
         finally:
-            pass
             self.socket.settimeout(self.default_timeout)
 
     @property

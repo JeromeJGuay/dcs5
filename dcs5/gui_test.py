@@ -16,6 +16,13 @@ def main():
     run_example_2()
 
 
+def clean_input_layout():
+    return [[sg.Push(), sg.Text('Name'), sg.Input(key='-NAME-')],
+              [sg.Push(), sg.Text('Address'), sg.Input(key='-ADDRESS-')],
+              [sg.Push(), sg.Text('City and State'), sg.Input(key='-CITY AND STATE-')],
+              [sg.Ok(), sg.Cancel()]]
+
+
 def button_example():
     radio_keys = ['Play', 'Stop', 'Pause', 'Off']
     selected_color = ('red', 'white')
@@ -298,6 +305,7 @@ def run_example_2():
 
     window.close()
     exit(0)
+
 
 if __name__ == "__main__":
     main()
