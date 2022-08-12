@@ -10,17 +10,24 @@ from dcs5 import LOG_FILES_PATH
 
 LOG_FILE_PREFIX = "dcs5_log"
 
+RED_TEXT = "\x1b[31;20m"
+YELLOW_TEXT = "\x1b[33;20m"
+RESET_TEXT = "\x1b[0m"
 
 class BasicLoggerFormatter(logging.Formatter):
     level_width = 10
     thread_width = 10
+    colors = {'WARNING': YELLOW_TEXT, 'ERROR': RED_TEXT}
 
     def format(self, record):
+        color = ''
+        if record.levelname in self.colors:
+            color = self.colors[record.levelname]
         fmt_time = "("+self.formatTime(record, self.datefmt)+")"
         fmt_thread = f"{'{'}{record.threadName}{'}'}".ljust(self.thread_width)
         fmt_level = f"[{record.levelname}]".ljust(self.level_width)
         fmt_message = record.getMessage()
-        return f"{fmt_time} - {fmt_thread} - {fmt_level} - {fmt_message}"
+        return f"{color}{fmt_time} - {fmt_thread} - {fmt_level} - {fmt_message}{RESET_TEXT}"
 
 
 class UiLoggerFormatter(logging.Formatter):
