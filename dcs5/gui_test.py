@@ -9,11 +9,11 @@ TOGGLE_BTN_ON = b'iVBORw0KGgoAAAANSUhEUgAAAGQAAAAoCAYAAAAIeF9DAAARfUlEQVRoge1bCZ
 
 def main():
 
-    button_example()
-    # led_example()
+    #button_example()
+    #led_example()
     #slide_example()
     #run_example()
-    #run_example_2()
+    run_example_2()
 
 
 def clean_input_layout():

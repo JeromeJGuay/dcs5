@@ -555,14 +555,14 @@ class Dcs5Controller:
             else:
                 self.flash_lights(2, interval=.25)
 
+            if self.dynamic_stylus_settings is True:
+                reading_profile = self.config.reading_profiles[
+                    self.config.output_modes.mode_reading_profiles[self.output_mode]
+                ]
+                self.c_set_stylus_settling_delay(reading_profile.settling_delay)
+                self.c_set_stylus_max_deviation(reading_profile.max_deviation)
+                self.c_set_stylus_number_of_reading(reading_profile.number_of_reading)
         logging.debug(f'Board entry: {self.output_mode}.')
-        if self.dynamic_stylus_settings is True:
-            reading_profile = self.config.reading_profiles[
-                self.config.output_modes.mode_reading_profiles[self.output_mode]
-            ]
-            self.c_set_stylus_settling_delay(reading_profile.settling_delay)
-            self.c_set_stylus_max_deviation(reading_profile.max_deviation)
-            self.c_set_stylus_number_of_reading(reading_profile.number_of_reading)
 
     def backlight_up(self):
         if self.internal_board_state.backlighting_level < self.control_box_parameters.max_backlighting_level:
