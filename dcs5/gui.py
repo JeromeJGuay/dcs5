@@ -14,6 +14,8 @@ sg.user_settings_set_entry('-theme-', my_new_theme)
 
 # TODO Add command to menu button
 """
+from pathlib import Path
+import shutil
 import logging
 import threading
 
@@ -22,9 +24,21 @@ import PySimpleGUI as sg
 import pyautogui as pag
 
 from dcs5.logger import init_logging
-from dcs5 import VERSION, DEVICES_SPECIFICATION_FILE, CONTROLLER_CONFIGURATION_FILE, \
-    CONTROL_BOX_PARAMETERS, DEFAULT_CONTROLLER_CONFIGURATION_FILE, DEFAULT_DEVICES_SPECIFICATION_FILE
+
 #from dcs5.controller_configurations import ConfigError
+
+from dcs5 import VERSION, \
+    SERVER_CONFIGURATION_FILE, \
+    CONTROLLER_CONFIGURATION_FILE, \
+    DEVICES_SPECIFICATION_FILE, \
+    CONTROL_BOX_PARAMETERS, \
+    DEFAULT_SERVER_CONFIGURATION_FILE, \
+    DEFAULT_CONTROLLER_CONFIGURATION_FILE, \
+    DEFAULT_DEVICES_SPECIFICATION_FILE, \
+    DEFAULT_CONTROL_BOX_PARAMETERS, \
+    CONFIG_FILES_PATH
+
+
 from dcs5.controller import Dcs5Controller
 
 
@@ -100,6 +114,11 @@ def make_window():
     _calibration_layout = [[button('Calibrate', size=(15, 1), key='-CALIBRATE-'), button('Set Cal. Pts.', size=(15, 1), key='-CALPTS-')]] #TODO
     calibration_layout = [[sg.Frame('Calibration', _calibration_layout, font=TAB_FONT)]]
 
+    _reading_profile_layout = [[sg.Text(dotted('Settling delay', "", 25),font=REG_FONT), sg.Text("N\A", font=REG_FONT, background_color='white', size=(3,1), key='-SD-')],
+                               [sg.Text(dotted('Number of reading', "", 25),font=REG_FONT), sg.Text("N\A", font=REG_FONT, background_color='white', size=(3,1), key='-NR-')],
+                               [sg.Text(dotted('Max deviation', "", 25),font=REG_FONT), sg.Text("N\A", font=REG_FONT, background_color='white', size=(3,1), key='-MD-')]]
+    reading_profile_layout = [[sg.Frame('Reading Profile', _reading_profile_layout, font=TAB_FONT)]]
+
     #--- TABS ---#
 
     logging_tab_layout = [
@@ -111,12 +130,13 @@ def make_window():
     controller_tab_layout = [
         col([device_layout, status_layout]),
         col([sync_layout, calibration_layout]),
+        col([reading_profile_layout]),
         [button('Restart', size=(10, 1), key='-RESTART-')]
     ]
 
     # --- MENU ---#
 
-    _menu_layout = [['&Dcs5', ['Load', 'Connect', 'Activate', 'Synchronize', 'Restart', 'Exit']], ['Edit']]
+    _menu_layout = [['&Dcs5', ['Load', 'Connect', 'Activate', 'Synchronize', 'Restart', 'Exit']], ['&Edit', ['controller configuration', 'device specification']]]
     menu_layout = [sg.Menu(_menu_layout, k='-MENU-', p=0, font=REG_FONT)]
 
     # --- GLOBAL ---#
@@ -142,6 +162,9 @@ def run():
         icon=LOGO,
         auto_size_buttons=True,
     )
+
+    load_settings()
+
     window = make_window()
 
     for key in ['-ACTIVATE-', '-RESTART-', '-MUTED-', '-SYNC-', '-CALIBRATE-', '-CALPTS-']:
@@ -153,15 +176,20 @@ def run():
     window['-NAME-'].update(dotted("Name", controller.config.client.device_name or "N/A", 50))
     window['-MAC-'].update(dotted("MAC address", controller.config.client.mac_address or "N/A", 50))
 
+    window['-SD-'].update(controller.internal_board_state.stylus_settling_delay)
+    window['-NR-'].update(controller.internal_board_state.number_of_reading)
+    window['-MD-'].update(controller.internal_board_state.stylus_max_deviation)
+
     while True:
         event, values = window.read(timeout=1)
 
         if event != "__TIMEOUT__" and event is not None:
             logging.info(f'{event}, {values}')
+
         match event:
             case sg.WIN_CLOSED | 'Exit':
                 break
-            case "-CONNECT-":
+            case "-CONNECT-" | "Connect":
                 window["-CONNECT-"].update(disabled=True)
                 window["-C_LED-"].update(text_color='orange')
                 window.perform_long_operation(controller.start_client, end_key='-END_CONNECT-')
@@ -169,17 +197,43 @@ def run():
                 window["-C_LED-"].update(text_color='red')
                 sg.PopupAnimated(None)
                 window["-CONNECT-"].update(disabled=False)
-            case "-ACTIVATE-":
+            case "-ACTIVATE-" | "Activate":
                 window["-ACTIVATE-"].update(disabled=True)
-            case "-RESTART-":
+            case "-RESTART-" | "Restart":
                 window["-RESTART-"].update(disabled=True)
+            case '-SYNC-' | "Synchronize":
+                print('sync not mapped')
+            case "-CALPTS-":
+                print('Calpts not mapped')
+            case "-CALIBRATE-":
+                print('Calibrate not mapped')
+            case "controller configuration":
+                sg.execute_editor(sg.user_settings()['configs_path']+'/controller_configuration.json')
+            case "devices specifications":
+                pass #TODO
+            case 'Load':
+                _load_settings()
+
 
         if controller.client.isconnected:
+            # TODO make a function to activate buttons on connect
             window["-C_LED-"].update(text_color='Green')
             window["-ACTIVATE-"].update(disabled=False)
             window['-PORT-'].update(dotted("Port (Bt Channel)", controller.client.port or "N/A", 50))
 
     window.close()
+
+
+def _load_settings():
+    sg.user_settings().update({'configs_path': sg.popup_get_folder('Select config folder.', default_path=CONFIG_FILES_PATH)})
+    sg.user_settings_save()
+
+
+def load_settings():
+    sg.user_settings_load()
+    print(f'User Settings: {sg.user_settings()}')
+    if not sg.user_settings():
+        _load_settings()
 
 
 def dotted(key, value, length=50):
@@ -204,6 +258,29 @@ def button(label, size, key):
 
 def col(cols_layout):
     return [sg.Col(c, p=0) for c in cols_layout]
+
+
+def create_local_files():
+    local_files = [
+        SERVER_CONFIGURATION_FILE, CONTROLLER_CONFIGURATION_FILE,
+        DEVICES_SPECIFICATION_FILE, CONTROL_BOX_PARAMETERS
+    ]
+    default_files = [
+        DEFAULT_SERVER_CONFIGURATION_FILE, DEFAULT_CONTROLLER_CONFIGURATION_FILE,
+        DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROL_BOX_PARAMETERS
+    ]
+
+    print('\n\n')
+    overwrite_files = None
+    for lf, df in zip(local_files, default_files):
+        if not Path(lf).exists():
+            shutil.copyfile(df, lf)
+        else:
+            if overwrite_files is None:
+                overwrite_files=True #FIXME
+            if overwrite_files:
+                shutil.copyfile(df, lf)
+                print(f'Writing file: {lf}')
 
 
 if __name__ == "__main__":

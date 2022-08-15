@@ -9,11 +9,11 @@ TOGGLE_BTN_ON = b'iVBORw0KGgoAAAANSUhEUgAAAGQAAAAoCAYAAAAIeF9DAAARfUlEQVRoge1bCZ
 
 def main():
 
-    # button_example()
+    button_example()
     # led_example()
-    # slide_example()
-    # run_example()
-    run_example_2()
+    #slide_example()
+    #run_example()
+    #run_example_2()
 
 
 def clean_input_layout():
@@ -113,7 +113,7 @@ def make_window(theme=None):
 
     treedata = sg.TreeData()
 
-    layout_header = [sg.Image('../windows/bigfin_logo.png'), sg.T('Dcs5 Controller App', font='_ 20', justification='c')]
+    layout_header = [sg.Image('../static/bigfin_logo.png'), sg.T('Dcs5 Controller App', font='_ 20', justification='c')]
     layout_l = [
         [name('Combo'),
          sg.Combo(sg.theme_list(), default_value=sg.theme(), s=(15, 22), enable_events=True, readonly=True,
