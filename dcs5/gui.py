@@ -14,18 +14,19 @@ sg.user_settings_set_entry('-theme-', my_new_theme)
 
 # TODO Add command to menu button
 """
+import os
 from pathlib import Path
 import shutil
 import logging
 import threading
-
+import click
 
 import PySimpleGUI as sg
 import pyautogui as pag
 
 from dcs5.logger import init_logging
 
-#from dcs5.controller_configurations import ConfigError
+from dcs5.controller_configurations import ConfigError
 
 from dcs5 import VERSION, \
     SERVER_CONFIGURATION_FILE, \
@@ -76,11 +77,16 @@ def main():
 
 
 def init_dcs5_controller():
-    config_path = CONTROLLER_CONFIGURATION_FILE
+    controller_config_path = CONTROLLER_CONFIGURATION_FILE
     devices_specifications_path = DEVICES_SPECIFICATION_FILE
     control_box_parameters_path = CONTROL_BOX_PARAMETERS
 
-    return Dcs5Controller(config_path, devices_specifications_path, control_box_parameters_path)
+    try:
+        Dcs5Controller(controller_config_path, devices_specifications_path, control_box_parameters_path)
+    except ConfigError:
+        print('Error in the config file. Loading default')
+
+    return Dcs5Controller(DEFAULT_CONTROLLER_CONFIGURATION_FILE, DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROL_BOX_PARAMETERS)
 
 
 def make_window():
@@ -136,7 +142,7 @@ def make_window():
 
     # --- MENU ---#
 
-    _menu_layout = [['&Dcs5', ['Load', 'Connect', 'Activate', 'Synchronize', 'Restart', 'Exit']], ['&Edit', ['controller configuration', 'device specification']]]
+    _menu_layout = [['&Dcs5', ['Load', 'Connect', 'Activate', 'Synchronize', 'Restart', 'Exit']], ['&Edit', ['controller configuration', 'devices specification']]]
     menu_layout = [sg.Menu(_menu_layout, k='-MENU-', p=0, font=REG_FONT)]
 
     # --- GLOBAL ---#
@@ -156,6 +162,7 @@ def make_window():
 
 
 def run():
+    print(os.environ.get('EDITOR'))
     sg.theme('lightgrey')
     sg.theme_border_width(.2)
     sg.set_options(
@@ -171,6 +178,7 @@ def run():
         window[key].update(disabled=True)
 
     controller = init_dcs5_controller()
+
 
     # UPDATE with new CONFIG
     window['-NAME-'].update(dotted("Name", controller.config.client.device_name or "N/A", 50))
@@ -208,12 +216,20 @@ def run():
             case "-CALIBRATE-":
                 print('Calibrate not mapped')
             case "controller configuration":
-                sg.execute_editor(sg.user_settings()['configs_path']+'/controller_configuration.json')
-            case "devices specifications":
-                pass #TODO
+                click.edit(sg.user_settings()['configs_path']+'/controller_configuration.json')
+                if controller.client.isconnected:
+                    if sg.popup_yes_no('Do you want to synchronize board ?'):
+                        controller.reload_configs()
+                        controller.init_controller_and_board()
+
+            case "devices specification":
+                click.edit(sg.user_settings()['configs_path'] + '/devices_specification.json')
+                if controller.client.isconnected:
+                    if sg.popup_yes_no('Do you want to synchronize board ?'):
+                        controller.reload_configs()
+                        controller.init_controller_and_board()
             case 'Load':
                 _load_settings()
-
 
         if controller.client.isconnected:
             # TODO make a function to activate buttons on connect
