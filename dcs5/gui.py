@@ -112,26 +112,28 @@ def make_window():
         [button('Activate', size=(10, 1), key='-ACTIVATE-')]]
     mute_layout = [[sg.Text('Muted', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-M_LED-', font=LED_SIZE)],
                    [button('Muted', size=(10, 1), key='-MUTED-')]]
-    #restart_layout = [sg.Push(), button('Restart', size=(10, 1), key='-RESTART-')]
+    # restart_layout = [sg.Push(), button('Restart', size=(10, 1), key='-RESTART-')]
     restart_layout = [sg.Push(),
-                      sg.Button('Restart', size=(10,1),
-                      font=REG_FONT,
-                      pad=(1, 1),
-                      button_color=('white', 'red3'),
-                      border_width=1,
-                      disabled_button_color=DISABLED_BUTTON_COLOR,
-                      key='-RESTART-',
-                      use_ttk_buttons=True)]
+                      sg.Button('Restart', size=(10, 1),
+                                font=REG_FONT,
+                                pad=(1, 1),
+                                button_color=('white', 'red3'),
+                                border_width=1,
+                                disabled_button_color=DISABLED_BUTTON_COLOR,
+                                key='-RESTART-',
+                                use_ttk_buttons=True)]
     _status_layout = col([connection_layout, activate_layout, mute_layout])
     status_layout = [[sg.Frame('Status', [_status_layout, restart_layout], font=TAB_FONT, expand_x=True)]]
     ###
-    _sync_layout = [[sg.Text('Synchronized', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-S_LED-', font=LED_SIZE)],
+    _sync_layout = [
+        [sg.Text('Synchronized', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-S_LED-', font=LED_SIZE)],
         [button('Synchronize', size=(15, 1), key='-SYNC-'), button('Reload Config', size=(15, 1), key='-RELOAD-')]]
     sync_layout = [[sg.Frame('Synchronize', _sync_layout, font=TAB_FONT)]]
     ###
-    _calibration_layout = [[sg.Text('Calibrated', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-CAL_LED-', font=LED_SIZE)],
-                           [button('Calibrate', size=(15, 1), key='-CALIBRATE-'),
-                            button('Set Cal. Pts.', size=(15, 1), key='-CALPTS-')]]  # TODO
+    _calibration_layout = [
+        [sg.Text('Calibrated', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-CAL_LED-', font=LED_SIZE)],
+        [button('Calibrate', size=(15, 1), key='-CALIBRATE-'),
+         button('Set Cal. Pts.', size=(15, 1), key='-CALPTS-')]]  # TODO
     calibration_layout = [[sg.Frame('Calibration', _calibration_layout, font=TAB_FONT)]]
     ###
     _reading_profile_layout = [[sg.Text(dotted('Settling delay', "", 25), font=REG_FONT),
@@ -222,7 +224,7 @@ def run():
     controller = init_dcs5_controller()
 
     window['-BACKLIGHT-'].update(
-        range = (0, controller.control_box_parameters.max_backlighting_level)
+        range=(0, controller.control_box_parameters.max_backlighting_level)
     )
 
     while True:
@@ -304,7 +306,8 @@ def _refresh_layout(window: sg.Window, controller: Dcs5Controller):
         if controller.is_listening:
             window["-ACTIVATE-"].update(disabled=True)
             window["-A_LED-"].update(text_color='Green')
-            window['-BACKLIGHT-'].update(disabled=False, value=controller.internal_board_state.backlighting_level or None)
+            window['-BACKLIGHT-'].update(disabled=False,
+                                         value=controller.internal_board_state.backlighting_level or None)
         else:
             window["-ACTIVATE-"].update(disabled=False)
             window['-BACKLIGHT-'].update(disabled=True, value=None)
@@ -330,7 +333,7 @@ def _refresh_layout(window: sg.Window, controller: Dcs5Controller):
 
 def _load_settings():
     sg.user_settings().update(
-        {'configs_path': sg.popup_get_folder('Select config folder.', default_path=CONFIG_FILES_PATH)})
+        {'configs_path': sg.popup_get_folder('Select config folder.', default_path=CONFIG_FILES_PATH, initial_folder=CONFIG_FILES_PATH)})
     sg.user_settings_save()
 
 
