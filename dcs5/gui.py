@@ -41,6 +41,9 @@ from dcs5 import VERSION, \
 
 from dcs5.controller import Dcs5Controller
 
+if os.environ.get('EDITOR') == 'EMACS':
+    print('Text editor changed')
+    os.environ.update({'EDITOR':'pluma'}) #FIXME
 
 def scale_font(font_size: int) -> int:
     monitor_width, monitor_height = pag.size()
@@ -213,8 +216,6 @@ def make_window():
 
     global_layout += [[sg.Text(f'version: v{VERSION}', font=SMALL_FONT)]]
 
-    # global_layout[-1].append(sg.Sizegrip())
-
     window = sg.Window(f'Dcs5 Controller', global_layout, finalize=True, resizable=True, keep_on_top=False)
 
     return window
@@ -288,9 +289,10 @@ def run():
                 edit(controller, DEVICES_SPECIFICATION_FILE_NAME)
 
             case 'New':
-                create_new_configs()
+                create_new_configs(controller)
             case 'Select':
-                select_configs_folder()
+                select_configs_folder(controller)
+
             case '-UNITS-MM-':
                 controller.change_length_units_mm()
             case '-UNITS-CM-':
@@ -363,10 +365,12 @@ def _refresh_layout(window: sg.Window, controller: Dcs5Controller):
             window["-CAL_LED-"].update(text_color='Red')
 
 
-def select_configs_folder():
+def select_configs_folder(controller):
     sg.user_settings().update(
         {'configs_path': sg.popup_get_folder('Select config folder.', default_path=CONFIG_FILES_PATH, initial_folder=CONFIG_FILES_PATH)})
     sg.user_settings_save()
+    if controller is not None:
+        controller.reload_configs()
 
 
 def get_configs_folder():
@@ -374,7 +378,7 @@ def get_configs_folder():
         select_configs_folder()
 
 
-def create_new_configs():
+def create_new_configs(controller):
     folder_name = sg.popup_get_text('Enter a name for the configuration:', default_text='config01', font=REG_FONT)
     new_configs_path = CONFIG_FILES_PATH.joinpath(folder_name)
     new_configs_path.mkdir(parents=True, exist_ok=True)
@@ -402,13 +406,17 @@ def create_new_configs():
                 shutil.copyfile(df, lf)
                 print(f'Writing file: {lf}')
 
+    if controller is not None:
+        controller.reload_configs()
+
 
 def edit(controller, filename):
+    print(Path(sg.user_settings()['configs_path']).joinpath(filename))
     if sg.user_settings()['configs_path'] is not None:
-        click.edit(Path(sg.user_settings()['configs_path']).joinpath(filename))
+        click.edit(filename=str(Path(sg.user_settings()['configs_path']).joinpath(filename)))
+        controller.reload_configs()
         if controller.client.isconnected:
             if sg.popup_yes_no('Do you want to synchronize board ?'):
-                controller.reload_configs()
                 controller.init_controller_and_board()
     else:
         sg.popup_ok("No configs folder is selected.")
