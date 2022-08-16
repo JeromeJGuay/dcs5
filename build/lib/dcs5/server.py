@@ -5,7 +5,7 @@ import json
 import time
 
 from dcs5 import VERSION, DEVICES_SPECIFICATION_FILE, CONTROLLER_CONFIGURATION_FILE, \
-    CONTROL_BOX_PARAMETERS, SERVER_CONFIGURATION_FILE
+    CONTROL_BOX_PARAMETERS_FILE, SERVER_CONFIGURATION_FILE
 
 from dcs5.controller import Dcs5Controller
 from dcs5.utils import resolve_relative_path, json2dict
@@ -29,7 +29,7 @@ def load_server_config(path: str):
 def start_dcs5_controller(
         config_path=CONTROLLER_CONFIGURATION_FILE,
         devices_specifications_path=DEVICES_SPECIFICATION_FILE,
-        control_box_parameters_path=CONTROL_BOX_PARAMETERS
+        control_box_parameters_path=CONTROL_BOX_PARAMETERS_FILE
 ):
     config_path = resolve_relative_path(config_path, __file__)
     devices_specifications_path = resolve_relative_path(devices_specifications_path, __file__)

@@ -29,10 +29,10 @@ from dcs5.logger import init_logging
 from dcs5.controller_configurations import ConfigError
 
 from dcs5 import VERSION, \
-    SERVER_CONFIGURATION_FILE, \
-    CONTROLLER_CONFIGURATION_FILE, \
-    DEVICES_SPECIFICATION_FILE, \
-    CONTROL_BOX_PARAMETERS, \
+    SERVER_CONFIGURATION_FILE_NAME, \
+    CONTROLLER_CONFIGURATION_FILE_NAME, \
+    DEVICES_SPECIFICATION_FILE_NAME, \
+    CONTROL_BOX_PARAMETERS_FILE_NAME, \
     DEFAULT_SERVER_CONFIGURATION_FILE, \
     DEFAULT_CONTROLLER_CONFIGURATION_FILE, \
     DEFAULT_DEVICES_SPECIFICATION_FILE, \
@@ -63,8 +63,6 @@ ENABLED_BUTTON_COLOR = ('black', "light blue")
 DISABLED_BUTTON_COLOR = ('gray', "light grey")
 
 LOGO = '../static/bigfin_logo.png'
-LOADING_GIF = '../static/circle-loading-gif.gif'
-CANADA_GIF = '../static/canada-flag-icon-animation.gif'
 
 
 def main():
@@ -75,30 +73,44 @@ def main():
     exit(0)
 
 
-def init_dcs5_controller():
-    controller_config_path = CONTROLLER_CONFIGURATION_FILE
-    devices_specifications_path = DEVICES_SPECIFICATION_FILE
-    control_box_parameters_path = CONTROL_BOX_PARAMETERS
+def init_dcs5_controller(configs_path: str):
+    controller_config_path = Path(configs_path).joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)
+    devices_specifications_path = Path(configs_path).joinpath(DEVICES_SPECIFICATION_FILE_NAME)
+    control_box_parameters_path = Path(configs_path).joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)
+
+    if not controller_config_path.exists():
+        sg.popup_ok('`controller_config.json` was missing from the directory. One was created.')
+        shutil.copyfile(DEFAULT_CONTROLLER_CONFIGURATION_FILE, controller_config_path)
+    if not devices_specifications_path.exists():
+        sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created.')
+        shutil.copyfile(DEFAULT_DEVICES_SPECIFICATION_FILE, devices_specifications_path)
+    if not devices_specifications_path.exists():
+        shutil.copyfile(DEFAULT_CONTROL_BOX_PARAMETERS, devices_specifications_path)
+        sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created.')
 
     try:
         Dcs5Controller(controller_config_path, devices_specifications_path, control_box_parameters_path)
     except ConfigError:
-        print('Error in the config file. Loading default')
+        sg.popup_ok('Error in the configurations files, cannot load configuration files.', title='Error')
 
     return Dcs5Controller(DEFAULT_CONTROLLER_CONFIGURATION_FILE, DEFAULT_DEVICES_SPECIFICATION_FILE,
                           DEFAULT_CONTROL_BOX_PARAMETERS)
 
 
 def make_window():
-    header_layout = [[sg.Image(LOGO)]]
 
     device_layout = [[
         sg.Frame(
             'Device', [
-                [sg.Text(dotted("Name", "N/A", 40), justification='c', pad=(5, 0), font=REG_FONT, key='-NAME-')],
-                [sg.Text(dotted("MAC address", "N/A", 40), justification='c', pad=(5, 0), font=REG_FONT, key='-MAC-')],
-                [sg.Text(dotted("Port (Bt Channel)", "N/A", 40), justification='c', pad=(5, 0), font=REG_FONT,
-                         key='-PORT-')]
+                [sg.Text(dotted("Name", 20), pad=(5, 1), font=REG_FONT),
+                 sg.Text("N\A", font=REG_FONT, justification='c', background_color='white', size=(20, 1), p=(0, 0), key='-NAME-')
+                 ],
+                [sg.Text(dotted("MAC address", 20), pad=(5, 1), font=REG_FONT),
+                 sg.Text("N\A", font=REG_FONT, justification='c', background_color='white', size=(20, 1), p=(0, 0), key='-MAC-')
+                 ],
+                [sg.Text(dotted("Port (Bt Channel)", 20),  pad=(5, 1), font=REG_FONT),
+                 sg.Text("N\A", font=REG_FONT, justification='c', background_color='white', size=(20, 1), p=(0, 0), key='-PORT-')
+                 ]
             ],
             font=TAB_FONT
         )
@@ -112,7 +124,7 @@ def make_window():
         [button('Activate', size=(10, 1), key='-ACTIVATE-')]]
     mute_layout = [[sg.Text('Muted', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-M_LED-', font=LED_SIZE)],
                    [button('Muted', size=(10, 1), key='-MUTED-')]]
-    # restart_layout = [sg.Push(), button('Restart', size=(10, 1), key='-RESTART-')]
+
     restart_layout = [sg.Push(),
                       sg.Button('Restart', size=(10, 1),
                                 font=REG_FONT,
@@ -136,12 +148,12 @@ def make_window():
          button('Set Cal. Pts.', size=(15, 1), key='-CALPTS-')]]  # TODO
     calibration_layout = [[sg.Frame('Calibration', _calibration_layout, font=TAB_FONT)]]
     ###
-    _reading_profile_layout = [[sg.Text(dotted('Settling delay', "", 25), font=REG_FONT),
-                                sg.Text("N\A", font=REG_FONT, background_color='white', size=(3, 1), key='-SD-')],
-                               [sg.Text(dotted('Number of reading', "", 25), font=REG_FONT),
-                                sg.Text("N\A", font=REG_FONT, background_color='white', size=(3, 1), key='-NR-')],
-                               [sg.Text(dotted('Max deviation', "", 25), font=REG_FONT),
-                                sg.Text("N\A", font=REG_FONT, background_color='white', size=(3, 1), key='-MD-')]]
+    _reading_profile_layout = [[sg.Text(dotted('Settling delay', 25), font=REG_FONT),
+                                sg.Text("N\A", font=REG_FONT, background_color='white', size=(3, 1), p=(0, 0), key='-SETTLING-DELAY-')],
+                               [sg.Text(dotted('Number of reading', 25), font=REG_FONT),
+                                sg.Text("N\A", font=REG_FONT, background_color='white', size=(3, 1), p=(0, 0), key='-NUMBER-READING-')],
+                               [sg.Text(dotted('Max deviation', 25), font=REG_FONT),
+                                sg.Text("N\A", font=REG_FONT, background_color='white', size=(3, 1), p=(0, 0), key='-MAX-DEVIATION-')]]
     reading_profile_layout = [[sg.Frame('Reading Profile', _reading_profile_layout, font=TAB_FONT)]]
 
     ###
@@ -184,9 +196,13 @@ def make_window():
 
     # --- MENU ---#
 
-    _menu_layout = [['&Dcs5', ['Load', 'Connect', 'Activate', 'Synchronize', 'Restart', 'Exit']],
-                    ['&Edit', ['controller configuration', 'devices specification']]]
-    menu_layout = [sg.Menu(_menu_layout, k='-MENU-', p=0, font=REG_FONT)]
+    _menu_layout = [['&Dcs5', ['&New',
+                               '&Select',
+                               '---',
+                               '&Exit']],
+                    ['&Edit', ['Controller Configuration', 'Devices Specification']]]
+
+    menu_layout = [sg.Menu(_menu_layout, k='-MENU-', p=0, font=REG_FONT, disabled_text_color='grey'),]
 
     # --- GLOBAL ---#
     global_layout = [menu_layout]
@@ -212,20 +228,26 @@ def run():
         auto_size_buttons=True,
     )
 
-    load_settings()
-
     window = make_window()
-    window.metadata = {'is_connecting': False}
 
-    # TODO DISABLE BUTTONS IN UPDATE
-    # for key in ['-ACTIVATE-', '-MUTED-', '-SYNC-', '-CALIBRATE-', '-CALPTS-']:
-    #     window[key].update(disabled=True)
+    window.metadata = {
+        'is_connecting': False,
+    }
 
-    controller = init_dcs5_controller()
+    controller = None
 
-    window['-BACKLIGHT-'].update(
-        range=(0, controller.control_box_parameters.max_backlighting_level)
-    )
+    sg.user_settings_load()
+    print(f'User Settings: {sg.user_settings()}')
+
+    get_configs_folder()
+
+    if sg.user_settings()['configs_path'] is not None:
+        controller = init_dcs5_controller(sg.user_settings()['configs_path'])
+
+    if controller is not None:
+        window['-BACKLIGHT-'].update(
+            range=(0, controller.control_box_parameters.max_backlighting_level)
+        )
 
     while True:
         event, values = window.read(timeout=1)
@@ -236,37 +258,39 @@ def run():
         match event:
             case sg.WIN_CLOSED | 'Exit':
                 break
-            case "-CONNECT-" | "Connect":
+            case "-CONNECT-":
                 window.metadata['is_connecting'] = True
                 window.perform_long_operation(controller.start_client, end_key='-END_CONNECT-')
+
             case "-END_CONNECT-":
                 window.metadata['is_connecting'] = False
-            case "-ACTIVATE-" | "Activate":
+
+            case "-ACTIVATE-":
                 controller.start_listening()
-            case "-RESTART-" | "Restart":
+
+            case "-RESTART-":
                 window.metadata['is_connecting'] = True
                 window.perform_long_operation(controller.restart_client, end_key='-END_CONNECT-')
-            case '-SYNC-' | "Synchronize":
+
+            case '-SYNC-':
                 print('sync not mapped')
+
             case "-CALPTS-":
                 print('Calpts not mapped')
+
             case "-CALIBRATE-":
                 print('Calibrate not mapped')
-            case "controller configuration":
-                click.edit(sg.user_settings()['configs_path'] + '/controller_configuration.json')
-                if controller.client.isconnected:
-                    if sg.popup_yes_no('Do you want to synchronize board ?'):
-                        controller.reload_configs()
-                        controller.init_controller_and_board()
 
-            case "devices specification":
-                click.edit(sg.user_settings()['configs_path'] + '/devices_specification.json')
-                if controller.client.isconnected:
-                    if sg.popup_yes_no('Do you want to synchronize board ?'):
-                        controller.reload_configs()
-                        controller.init_controller_and_board()
-            case 'Load':
-                _load_settings()
+            case "Controller Configuration":
+                edit(controller, CONTROLLER_CONFIGURATION_FILE_NAME)
+
+            case "Devices Specification":
+                edit(controller, DEVICES_SPECIFICATION_FILE_NAME)
+
+            case 'New':
+                create_new_configs()
+            case 'Select':
+                select_configs_folder()
             case '-UNITS-MM-':
                 controller.change_length_units_mm()
             case '-UNITS-CM-':
@@ -278,18 +302,26 @@ def run():
             case '-MODE-BOTTOM-':
                 controller.change_board_output_mode('bottom')
 
-        _refresh_layout(window, controller)
+        if controller is not None:
+            _refresh_layout(window, controller)
+        else:
+            for key in ['-CONNECT-', '-ACTIVATE-',
+                        '-RESTART-', '-MUTED-',
+                        '-SYNC-', '-CALIBRATE-',
+                        '-CALPTS-', '-BACKLIGHT-',
+                        '-UNITS-MM-', '-UNITS-CM-', '-MODE-TOP-', '-MODE-BOTTOM-', '-MODE-LENGTH-']:
+                window[key].update(disabled=True)
 
     window.close()
 
 
 def _refresh_layout(window: sg.Window, controller: Dcs5Controller):
-    window['-NAME-'].update(dotted("Name", controller.config.client.device_name or "N/A", 40))
-    window['-MAC-'].update(dotted("MAC address", controller.config.client.mac_address or "N/A", 40))
+    window['-NAME-'].update(controller.config.client.device_name)
+    window['-MAC-'].update(controller.config.client.mac_address)
 
-    window['-SD-'].update(controller.internal_board_state.stylus_settling_delay)
-    window['-NR-'].update(controller.internal_board_state.number_of_reading)
-    window['-MD-'].update(controller.internal_board_state.stylus_max_deviation)
+    window['-SETTLING-DELAY-'].update(controller.internal_board_state.stylus_settling_delay)
+    window['-NUMBER-READING-'].update(controller.internal_board_state.number_of_reading)
+    window['-MAX-DEVIATION-'].update(controller.internal_board_state.stylus_max_deviation)
 
     window['-MODE-TOP-'].update(disabled=not controller.output_mode != 'top')
     window['-MODE-LENGTH-'].update(disabled=not controller.output_mode != 'length')
@@ -331,22 +363,60 @@ def _refresh_layout(window: sg.Window, controller: Dcs5Controller):
             window["-CAL_LED-"].update(text_color='Red')
 
 
-def _load_settings():
+def select_configs_folder():
     sg.user_settings().update(
         {'configs_path': sg.popup_get_folder('Select config folder.', default_path=CONFIG_FILES_PATH, initial_folder=CONFIG_FILES_PATH)})
     sg.user_settings_save()
 
 
-def load_settings():
-    sg.user_settings_load()
-    print(f'User Settings: {sg.user_settings()}')
+def get_configs_folder():
     if not sg.user_settings():
-        _load_settings()
+        select_configs_folder()
 
 
-def dotted(key, value, length=50):
-    dots = length - len(key) - len(value) - 2
-    return key + ' ' + '.' * dots + ' ' + value
+def create_new_configs():
+    folder_name = sg.popup_get_text('Enter a name for the configuration:', default_text='config01', font=REG_FONT)
+    new_configs_path = CONFIG_FILES_PATH.joinpath(folder_name)
+    new_configs_path.mkdir(parents=True, exist_ok=True)
+
+    local_files = [
+        new_configs_path.joinpath(SERVER_CONFIGURATION_FILE_NAME),
+        new_configs_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME),
+        new_configs_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME),
+        new_configs_path.joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)
+    ]
+    default_files = [
+        DEFAULT_SERVER_CONFIGURATION_FILE, DEFAULT_CONTROLLER_CONFIGURATION_FILE,
+        DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROL_BOX_PARAMETERS
+    ]
+
+    print('\n\n')
+    overwrite_files = None
+    for lf, df in zip(local_files, default_files):
+        if not Path(lf).exists():
+            shutil.copyfile(df, lf)
+        else:
+            if overwrite_files is None:
+                overwrite_files = True  # FIXME
+            if overwrite_files:
+                shutil.copyfile(df, lf)
+                print(f'Writing file: {lf}')
+
+
+def edit(controller, filename):
+    if sg.user_settings()['configs_path'] is not None:
+        click.edit(Path(sg.user_settings()['configs_path']).joinpath(filename))
+        if controller.client.isconnected:
+            if sg.popup_yes_no('Do you want to synchronize board ?'):
+                controller.reload_configs()
+                controller.init_controller_and_board()
+    else:
+        sg.popup_ok("No configs folder is selected.")
+
+
+def dotted(value, length=50):
+    ndots = length - len(value)
+    return value + ' ' + '.' * ndots
 
 
 def led(color, key=None, font=None):
@@ -366,29 +436,6 @@ def button(label, size, key):
 
 def col(cols_layout):
     return [sg.Col(c, p=0) for c in cols_layout]
-
-
-def create_local_files():
-    local_files = [
-        SERVER_CONFIGURATION_FILE, CONTROLLER_CONFIGURATION_FILE,
-        DEVICES_SPECIFICATION_FILE, CONTROL_BOX_PARAMETERS
-    ]
-    default_files = [
-        DEFAULT_SERVER_CONFIGURATION_FILE, DEFAULT_CONTROLLER_CONFIGURATION_FILE,
-        DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROL_BOX_PARAMETERS
-    ]
-
-    print('\n\n')
-    overwrite_files = None
-    for lf, df in zip(local_files, default_files):
-        if not Path(lf).exists():
-            shutil.copyfile(df, lf)
-        else:
-            if overwrite_files is None:
-                overwrite_files = True  # FIXME
-            if overwrite_files:
-                shutil.copyfile(df, lf)
-                print(f'Writing file: {lf}')
 
 
 if __name__ == "__main__":

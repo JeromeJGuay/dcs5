@@ -22,12 +22,19 @@ Path(local_file_path).mkdir(parents=True, exist_ok=True)
 LOG_FILES_PATH.mkdir(parents=True, exist_ok=True)
 CONFIG_FILES_PATH.mkdir(parents=True, exist_ok=True)
 
-SERVER_CONFIGURATION_FILE = CONFIG_FILES_PATH.joinpath("server_configuration.json")
-CONTROLLER_CONFIGURATION_FILE = CONFIG_FILES_PATH.joinpath("controller_configuration.json")
-DEVICES_SPECIFICATION_FILE = CONFIG_FILES_PATH.joinpath("devices_specification.json")
-CONTROL_BOX_PARAMETERS = CONFIG_FILES_PATH.joinpath("control_box_parameters.json")
+SERVER_CONFIGURATION_FILE_NAME = "server_configuration.json"
+CONTROLLER_CONFIGURATION_FILE_NAME = 'controller_configuration.json'
+DEVICES_SPECIFICATION_FILE_NAME = 'devices_specification.json'
+CONTROL_BOX_PARAMETERS_FILE_NAME = "control_box_parameters.json"
 
-DEFAULT_SERVER_CONFIGURATION_FILE = resolve_relative_path("default_configs/server_configuration.json", __file__)
-DEFAULT_CONTROLLER_CONFIGURATION_FILE = resolve_relative_path("default_configs/controller_configuration.json", __file__)
-DEFAULT_DEVICES_SPECIFICATION_FILE = resolve_relative_path("default_configs/devices_specification.json", __file__)
-DEFAULT_CONTROL_BOX_PARAMETERS = resolve_relative_path("default_configs/control_box_parameters.json", __file__)
+SERVER_CONFIGURATION_FILE = CONFIG_FILES_PATH.joinpath(SERVER_CONFIGURATION_FILE_NAME)
+CONTROLLER_CONFIGURATION_FILE = CONFIG_FILES_PATH.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)
+DEVICES_SPECIFICATION_FILE = CONFIG_FILES_PATH.joinpath(DEVICES_SPECIFICATION_FILE_NAME)
+CONTROL_BOX_PARAMETERS_FILE = CONFIG_FILES_PATH.joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)
+
+DEFAULT_CONFIG_PATH = "default_configs/"
+
+DEFAULT_SERVER_CONFIGURATION_FILE = resolve_relative_path(DEFAULT_CONFIG_PATH + SERVER_CONFIGURATION_FILE_NAME, __file__)
+DEFAULT_CONTROLLER_CONFIGURATION_FILE = resolve_relative_path(DEFAULT_CONFIG_PATH + CONTROLLER_CONFIGURATION_FILE_NAME, __file__)
+DEFAULT_DEVICES_SPECIFICATION_FILE = resolve_relative_path(DEFAULT_CONFIG_PATH + DEVICES_SPECIFICATION_FILE_NAME, __file__)
+DEFAULT_CONTROL_BOX_PARAMETERS = resolve_relative_path(DEFAULT_CONFIG_PATH + CONTROL_BOX_PARAMETERS_FILE_NAME, __file__)
