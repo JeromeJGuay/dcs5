@@ -45,6 +45,7 @@ if os.environ.get('EDITOR') == 'EMACS':
     print('Text editor changed')
     os.environ.update({'EDITOR':'pluma'}) #FIXME
 
+
 def scale_font(font_size: int) -> int:
     monitor_width, monitor_height = pag.size()
     return int(font_size * monitor_height / 1080)
@@ -82,22 +83,20 @@ def init_dcs5_controller(configs_path: str):
     control_box_parameters_path = Path(configs_path).joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)
 
     if not controller_config_path.exists():
-        sg.popup_ok('`controller_config.json` was missing from the directory. One was created.')
+        sg.popup_ok('`controller_config.json` was missing from the directory. One was created.', title='Missing file')
         shutil.copyfile(DEFAULT_CONTROLLER_CONFIGURATION_FILE, controller_config_path)
     if not devices_specifications_path.exists():
-        sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created.')
+        sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created.', title='Missing file')
         shutil.copyfile(DEFAULT_DEVICES_SPECIFICATION_FILE, devices_specifications_path)
     if not devices_specifications_path.exists():
         shutil.copyfile(DEFAULT_CONTROL_BOX_PARAMETERS, devices_specifications_path)
-        sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created.')
+        sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created.', title='Missing file')
 
     try:
-        Dcs5Controller(controller_config_path, devices_specifications_path, control_box_parameters_path)
+        return Dcs5Controller(controller_config_path, devices_specifications_path, control_box_parameters_path)
     except ConfigError:
         sg.popup_ok('Error in the configurations files, cannot load configuration files.', title='Error')
-
-    return Dcs5Controller(DEFAULT_CONTROLLER_CONFIGURATION_FILE, DEFAULT_DEVICES_SPECIFICATION_FILE,
-                          DEFAULT_CONTROL_BOX_PARAMETERS)
+        return None
 
 
 def make_window():
@@ -126,7 +125,7 @@ def make_window():
         [sg.Text('Activated', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-A_LED-', font=LED_SIZE)],
         [button('Activate', size=(10, 1), key='-ACTIVATE-')]]
     mute_layout = [[sg.Text('Muted', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-M_LED-', font=LED_SIZE)],
-                   [button('Muted', size=(10, 1), key='-MUTED-')]]
+                   [button('Mute', size=(10, 1), key='-MUTE-')]]
 
     restart_layout = [sg.Push(),
                       sg.Button('Restart', size=(10, 1),
@@ -235,20 +234,14 @@ def run():
         'is_connecting': False,
     }
 
-    controller = None
-
     sg.user_settings_load()
     print(f'User Settings: {sg.user_settings()}')
 
     get_configs_folder()
 
+    controller = None
     if sg.user_settings()['configs_path'] is not None:
         controller = init_dcs5_controller(sg.user_settings()['configs_path'])
-
-    if controller is not None:
-        window['-BACKLIGHT-'].update(
-            range=(0, controller.control_box_parameters.max_backlighting_level)
-        )
 
     while True:
         event, values = window.read(timeout=1)
@@ -282,16 +275,23 @@ def run():
             case "-CALIBRATE-":
                 print('Calibrate not mapped')
 
+            case "-RELOAD-":
+                reload_controller_config(controller)
+
             case "Controller Configuration":
-                edit(controller, CONTROLLER_CONFIGURATION_FILE_NAME)
+                edit(CONTROLLER_CONFIGURATION_FILE_NAME)
+                reload_controller_config(controller)
 
             case "Devices Specification":
-                edit(controller, DEVICES_SPECIFICATION_FILE_NAME)
+                edit(DEVICES_SPECIFICATION_FILE_NAME)
+                reload_controller_config(controller)
 
             case 'New':
-                create_new_configs(controller)
+                create_new_configs()
+                reload_controller_config(controller)
             case 'Select':
-                select_configs_folder(controller)
+                select_configs_folder()
+                reload_controller_config(controller)
 
             case '-UNITS-MM-':
                 controller.change_length_units_mm()
@@ -303,12 +303,17 @@ def run():
                 controller.change_board_output_mode('length')
             case '-MODE-BOTTOM-':
                 controller.change_board_output_mode('bottom')
+            case '-MUTE-':
+                if controller.is_muted:
+                    controller.unmute_board()
+                else:
+                    controller.mute_board()
 
         if controller is not None:
             _refresh_layout(window, controller)
         else:
             for key in ['-CONNECT-', '-ACTIVATE-',
-                        '-RESTART-', '-MUTED-',
+                        '-RESTART-', '-MUTE-',
                         '-SYNC-', '-CALIBRATE-',
                         '-CALPTS-', '-BACKLIGHT-',
                         '-UNITS-MM-', '-UNITS-CM-', '-MODE-TOP-', '-MODE-BOTTOM-', '-MODE-LENGTH-']:
@@ -332,11 +337,21 @@ def _refresh_layout(window: sg.Window, controller: Dcs5Controller):
     window['-UNITS-MM-'].update(disabled=controller.length_units == 'mm')
     window['-UNITS-CM-'].update(disabled=controller.length_units == 'cm')
 
+    window['-M_LED-'].update(text_color='Green' if controller.is_muted else 'Red')
+    window['-MUTE-'].update(disabled=False)
+
+    window['-BACKLIGHT-'].update(
+        range=(0, controller.control_box_parameters.max_backlighting_level)
+    )
+
     if controller.client.isconnected:
         # TODO make a function to activate buttons on connect
         window["-C_LED-"].update(text_color='Green')
         window['-PORT-'].update(dotted("Port (Bt Channel)", controller.client.port or "N/A", 50))
-        window['-SYNCHRONIZE-'].update(disabled=False)
+        window['-SYNC-'].update(disabled=False)
+        window['-CALIBRATE-'].update(disabled=False)
+        window['-CALPTS-'].update(disabled=False)
+
         if controller.is_listening:
             window["-ACTIVATE-"].update(disabled=True)
             window["-A_LED-"].update(text_color='Green')
@@ -352,7 +367,11 @@ def _refresh_layout(window: sg.Window, controller: Dcs5Controller):
             window["-CAL_LED-"].update(text_color='Green')
     else:
         window['-BACKLIGHT-'].update(disabled=True, value=None)
-        sg.Slider()
+        window['-SYNC-'].update(disabled=True)
+        window['-CALIBRATE-'].update(disabled=True)
+        window['-CALPTS-'].update(disabled=True)
+        window['-ACTIVATE-'].update(disabled=True)
+
         if window.metadata['is_connecting']:
             window["-RESTART-"].update(disabled=True)
             window["-CONNECT-"].update(disabled=True)
@@ -365,12 +384,12 @@ def _refresh_layout(window: sg.Window, controller: Dcs5Controller):
             window["-CAL_LED-"].update(text_color='Red')
 
 
-def select_configs_folder(controller):
+def select_configs_folder():
     sg.user_settings().update(
-        {'configs_path': sg.popup_get_folder('Select config folder.', default_path=CONFIG_FILES_PATH, initial_folder=CONFIG_FILES_PATH)})
+        {'configs_path': sg.popup_get_folder('Select config folder.',
+                                             default_path=CONFIG_FILES_PATH,
+                                             initial_folder=CONFIG_FILES_PATH)})
     sg.user_settings_save()
-    if controller is not None:
-        controller.reload_configs()
 
 
 def get_configs_folder():
@@ -378,7 +397,7 @@ def get_configs_folder():
         select_configs_folder()
 
 
-def create_new_configs(controller):
+def create_new_configs():
     folder_name = sg.popup_get_text('Enter a name for the configuration:', default_text='config01', font=REG_FONT)
     new_configs_path = CONFIG_FILES_PATH.joinpath(folder_name)
     new_configs_path.mkdir(parents=True, exist_ok=True)
@@ -406,18 +425,22 @@ def create_new_configs(controller):
                 shutil.copyfile(df, lf)
                 print(f'Writing file: {lf}')
 
+
+def reload_controller_config(controller):
     if controller is not None:
-        controller.reload_configs()
-
-
-def edit(controller, filename):
-    print(Path(sg.user_settings()['configs_path']).joinpath(filename))
-    if sg.user_settings()['configs_path'] is not None:
-        click.edit(filename=str(Path(sg.user_settings()['configs_path']).joinpath(filename)))
         controller.reload_configs()
         if controller.client.isconnected:
             if sg.popup_yes_no('Do you want to synchronize board ?'):
                 controller.init_controller_and_board()
+    else:
+        if sg.user_settings()['configs_path'] is not None:
+            controller = init_dcs5_controller(sg.user_settings()['configs_path'])
+    return controller
+
+
+def edit(filename):
+    if sg.user_settings()['configs_path'] is not None:
+        click.edit(filename=str(Path(sg.user_settings()['configs_path']).joinpath(filename)))
     else:
         sg.popup_ok("No configs folder is selected.")
 
