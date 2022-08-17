@@ -15,6 +15,7 @@ sg.user_settings_set_entry('-theme-', my_new_theme)
 # TODO Add command to menu button
 """
 import os
+import sys
 from pathlib import Path
 import shutil
 import logging
@@ -70,11 +71,11 @@ LOGO = '../static/bigfin_logo.png'
 
 
 def main():
-    init_logging(stdout_level='debug', write=False)
 
     run()
 
-    exit(0)
+    exit()
+
 
 
 def init_dcs5_controller(configs_path: str):
@@ -175,9 +176,7 @@ def make_window():
 
     logging_tab_layout = [
         [sg.Text("Logging (Not Wokring)")],
-        [sg.Multiline(size=(60, 15), font=SMALL_FONT, expand_x=True, expand_y=True, write_only=True,
-                      reroute_stdout=True, reroute_stderr=True, echo_stdout_stderr=True, reroute_cprint=True,
-                      autoscroll=True, key='-STDOUT-')]]
+        [sg.Multiline(size=(60, 15), expand_x=True, expand_y=True, write_only=True, auto_size_text=True, autoscroll=True, key='-STDOUT-')]]
 
     # controller_tab_layout = [
     #     col([device_layout, status_layout]),
@@ -229,14 +228,16 @@ def run():
     )
 
     window = make_window()
+    init_logging(stdout_level='debug', write=False, window=window)
+    logging.getLogger().propagate = True
 
     window.metadata = {
         'is_connecting': False,
     }
 
     sg.user_settings_load()
+    #logging.debug(f'User Settings: {sg.user_settings()}')
     print(f'User Settings: {sg.user_settings()}')
-
     get_configs_folder()
 
     controller = None
@@ -267,13 +268,13 @@ def run():
                 window.perform_long_operation(controller.restart_client, end_key='-END_CONNECT-')
 
             case '-SYNC-':
-                print('sync not mapped')
+                logging.debug('sync not mapped')
 
             case "-CALPTS-":
-                print('Calpts not mapped')
+                logging.debug('Calpts not mapped')
 
             case "-CALIBRATE-":
-                print('Calibrate not mapped')
+                logging.debug('Calibrate not mapped')
 
             case "-RELOAD-":
                 reload_controller_config(controller)
@@ -413,7 +414,7 @@ def create_new_configs():
         DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROL_BOX_PARAMETERS
     ]
 
-    print('\n\n')
+    logging.debug('\n\n')
     overwrite_files = None
     for lf, df in zip(local_files, default_files):
         if not Path(lf).exists():
@@ -423,7 +424,7 @@ def create_new_configs():
                 overwrite_files = True  # FIXME
             if overwrite_files:
                 shutil.copyfile(df, lf)
-                print(f'Writing file: {lf}')
+                logging.debug(f'Writing file: {lf}')
 
 
 def reload_controller_config(controller):

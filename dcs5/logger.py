@@ -5,6 +5,7 @@ This modules contains script to init the logger.
 import logging
 import sys
 import time
+import re
 
 from dcs5 import LOG_FILES_PATH
 
@@ -13,6 +14,7 @@ LOG_FILE_PREFIX = "dcs5_log"
 RED_TEXT = "\x1b[31;20m"
 YELLOW_TEXT = "\x1b[33;20m"
 RESET_TEXT = "\x1b[0m"
+
 
 class BasicLoggerFormatter(logging.Formatter):
     level_width = 10
@@ -30,26 +32,27 @@ class BasicLoggerFormatter(logging.Formatter):
         return f"{color}{fmt_time} - {fmt_thread} - {fmt_level} - {fmt_message}{RESET_TEXT}"
 
 
-class UiLoggerFormatter(logging.Formatter):
-    level_width = 10
-    thread_width = 10
 
-    def format(self, record):
-        fmt_time = "("+self.formatTime(record, self.datefmt)+")"
-        fmt_message = record.getMessage().strip("ui: ")
-        return f"{fmt_time} - {fmt_message}"
+class StdHandler:
+    def __init__(self, window):
+        self.window = window
+        self.ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
 
+    def write(self, s):
+        c = 'red' if RED_TEXT in s else 'yellow' if YELLOW_TEXT in s else None
+        _s = self.ansi_escape.sub('', s)
+        #self.window['-STDOUT-'].print(s)
+        self.window['-STDOUT-'].update(value=_s, append=True, text_color_for_value = c)
 
-class UserInterfaceFilter(logging.Filter):
-    def filter(self, record):
-        return record.getMessage().startswith("ui:")
+    def flush(self):
+        return
 
 
 def init_logging(
         stdout_level="INFO",
-        ui=False,
         file_level="DEBUG",
         write=False,
+        window=None
 ):
     """
 
@@ -57,8 +60,6 @@ def init_logging(
     ----------
     stdout_level :
         Level of the sys.output logging.
-    ui :
-        Show ui (user interface) log messages. (logging.Filter).
     file_level :
         Level of the file logging.
     write :
@@ -71,27 +72,31 @@ def init_logging(
 
     formatter = BasicLoggerFormatter()
     handlers = []
-    filename=None
-    stdout_handler = logging.StreamHandler(sys.stdout)
-    if ui is True:
-        stdout_handler.setLevel("INFO")
-        stdout_handler.addFilter(UserInterfaceFilter())
-        stdout_handler.setFormatter(UiLoggerFormatter())
-    else:
-        stdout_handler.setLevel(stdout_level.upper())
-        stdout_handler.setFormatter(formatter)
 
+    # console
+    stdout_handler = logging.StreamHandler(sys.stdout)
+
+    stdout_handler.setLevel(stdout_level.upper())
+    stdout_handler.setFormatter(formatter)
     handlers.append(stdout_handler)
 
+    # file
     filename = LOG_FILES_PATH.joinpath(time.strftime("%y%m%dT%H%M%S", time.gmtime())).with_suffix('.log')
-    file_handler = logging.FileHandler(filename, delay=not write) # delay=True will make write a log only on crash.
+    file_handler = logging.FileHandler(filename, delay=not write) # delay=True will write a log only on crash.
     file_handler.setLevel(file_level.upper())
     file_handler.setFormatter(formatter)
     handlers.append(file_handler)
 
+    # window (PySimpleGui)
+    if window is not None:
+        window_handler = logging.StreamHandler(StdHandler(window))
+        window_handler.setLevel(stdout_level.upper())
+        window_handler.setFormatter(formatter)
+        handlers.append(window_handler)
+
     logging.basicConfig(level="NOTSET", handlers=handlers)
 
     logging.debug('Logging Started.')
-    return filename
 
+    return filename
 
