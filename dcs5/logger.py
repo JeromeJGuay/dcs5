@@ -32,27 +32,36 @@ class BasicLoggerFormatter(logging.Formatter):
         return f"{color}{fmt_time} - {fmt_thread} - {fmt_level} - {fmt_message}{RESET_TEXT}"
 
 
-
-class StdHandler:
-    def __init__(self, window):
+class MultilineStdHandler:
+    """
+    Handler for PySimpleGui Multiline.
+    """
+    def __init__(self, window, key):
         self.window = window
+        self.key = key
         self.ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
 
     def write(self, s):
         c = 'red' if RED_TEXT in s else 'yellow' if YELLOW_TEXT in s else None
         _s = self.ansi_escape.sub('', s)
-        #self.window['-STDOUT-'].print(s)
-        self.window['-STDOUT-'].update(value=_s, append=True, text_color_for_value = c)
+        self.window[self.key].update(value=_s, append=True, text_color_for_value = c)
 
     def flush(self):
         return
+
+
+def get_multiline_handler(window, key, level='DEBUG"'):
+    window_handler = logging.StreamHandler(MultilineStdHandler(window=window, key=key))
+    window_handler.setLevel(level.upper())
+    window_handler.setFormatter(BasicLoggerFormatter())
+
+    return window_handler
 
 
 def init_logging(
         stdout_level="INFO",
         file_level="DEBUG",
         write=False,
-        window=None
 ):
     """
 
@@ -86,13 +95,6 @@ def init_logging(
     file_handler.setLevel(file_level.upper())
     file_handler.setFormatter(formatter)
     handlers.append(file_handler)
-
-    # window (PySimpleGui)
-    if window is not None:
-        window_handler = logging.StreamHandler(StdHandler(window))
-        window_handler.setLevel(stdout_level.upper())
-        window_handler.setFormatter(formatter)
-        handlers.append(window_handler)
 
     logging.basicConfig(level="NOTSET", handlers=handlers)
 

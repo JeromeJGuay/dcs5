@@ -25,7 +25,7 @@ import click
 import PySimpleGUI as sg
 import pyautogui as pag
 
-from dcs5.logger import init_logging
+from dcs5.logger import init_logging, get_multiline_handler
 
 from dcs5.controller_configurations import ConfigError
 
@@ -71,11 +71,10 @@ LOGO = '../static/bigfin_logo.png'
 
 
 def main():
-
+    init_logging()
     run()
 
     exit()
-
 
 
 def init_dcs5_controller(configs_path: str):
@@ -228,8 +227,10 @@ def run():
     )
 
     window = make_window()
-    init_logging(stdout_level='debug', write=False, window=window)
-    logging.getLogger().propagate = True
+
+    logger = logging.getLogger()
+    logger.addHandler(get_multiline_handler(window=window, key="-STDOUT-", level='DEBUG'))
+    logger.propagate = True
 
     window.metadata = {
         'is_connecting': False,
@@ -237,15 +238,21 @@ def run():
 
     sg.user_settings_load()
     logging.debug(f'User Settings: {sg.user_settings()}')
-    #print(f'User Settings: {sg.user_settings()}')
     get_configs_folder()
 
     controller = None
+
     if sg.user_settings()['configs_path'] is not None:
         controller = init_dcs5_controller(sg.user_settings()['configs_path'])
 
+    refresh_layout(window, controller)
+
+    _run(window, controller)
+
+
+def _run(window, controller):
     while True:
-        event, values = window.read(timeout=1)
+        event, values = window.read(timeout=.01)
 
         if event != "__TIMEOUT__" and event is not None:
             logging.info(f'{event}, {values}')
@@ -256,44 +263,33 @@ def run():
             case "-CONNECT-":
                 window.metadata['is_connecting'] = True
                 window.perform_long_operation(controller.start_client, end_key='-END_CONNECT-')
-
             case "-END_CONNECT-":
                 window.metadata['is_connecting'] = False
-
             case "-ACTIVATE-":
                 controller.start_listening()
-
             case "-RESTART-":
                 window.metadata['is_connecting'] = True
                 window.perform_long_operation(controller.restart_client, end_key='-END_CONNECT-')
-
             case '-SYNC-':
                 logging.debug('sync not mapped')
-
             case "-CALPTS-":
                 logging.debug('Calpts not mapped')
-
             case "-CALIBRATE-":
                 logging.debug('Calibrate not mapped')
-
             case "-RELOAD-":
                 reload_controller_config(controller)
-
             case "Controller Configuration":
                 edit(CONTROLLER_CONFIGURATION_FILE_NAME)
                 reload_controller_config(controller)
-
             case "Devices Specification":
                 edit(DEVICES_SPECIFICATION_FILE_NAME)
                 reload_controller_config(controller)
-
             case 'New':
                 create_new_configs()
                 reload_controller_config(controller)
             case 'Select':
                 select_configs_folder()
                 reload_controller_config(controller)
-
             case '-UNITS-MM-':
                 controller.change_length_units_mm()
             case '-UNITS-CM-':
@@ -310,17 +306,21 @@ def run():
                 else:
                     controller.mute_board()
 
-        if controller is not None:
-            _refresh_layout(window, controller)
-        else:
-            for key in ['-CONNECT-', '-ACTIVATE-',
-                        '-RESTART-', '-MUTE-',
-                        '-SYNC-', '-CALIBRATE-',
-                        '-CALPTS-', '-BACKLIGHT-',
-                        '-UNITS-MM-', '-UNITS-CM-', '-MODE-TOP-', '-MODE-BOTTOM-', '-MODE-LENGTH-']:
-                window[key].update(disabled=True)
+        refresh_layout(window, controller)
 
     window.close()
+
+
+def refresh_layout(window, controller):
+    if controller is not None:
+        _refresh_layout(window, controller)
+    else:
+        for key in ['-CONNECT-', '-ACTIVATE-',
+                    '-RESTART-', '-MUTE-',
+                    '-SYNC-', '-CALIBRATE-',
+                    '-CALPTS-', '-BACKLIGHT-',
+                    '-UNITS-MM-', '-UNITS-CM-', '-MODE-TOP-', '-MODE-BOTTOM-', '-MODE-LENGTH-']:
+            window[key].update(disabled=True)
 
 
 def _refresh_layout(window: sg.Window, controller: Dcs5Controller):
@@ -348,41 +348,58 @@ def _refresh_layout(window: sg.Window, controller: Dcs5Controller):
     if controller.client.isconnected:
         # TODO make a function to activate buttons on connect
         window["-C_LED-"].update(text_color='Green')
+        window["-CONNECT-"].update(disabled=True)
+
         window['-PORT-'].update(dotted("Port (Bt Channel)", controller.client.port or "N/A", 50))
         window['-SYNC-'].update(disabled=False)
         window['-CALIBRATE-'].update(disabled=False)
         window['-CALPTS-'].update(disabled=False)
 
         if controller.is_listening:
-            window["-ACTIVATE-"].update(disabled=True)
             window["-A_LED-"].update(text_color='Green')
+            window["-ACTIVATE-"].update(disabled=True)
+
             window['-BACKLIGHT-'].update(disabled=False,
                                          value=controller.internal_board_state.backlighting_level or None)
         else:
+            window["-A_LED-"].update(text_color='Red')
             window["-ACTIVATE-"].update(disabled=False)
             window['-BACKLIGHT-'].update(disabled=True, value=None)
             window["-A_LED-"].update(text_color='Red')
+
         if controller.is_sync:
             window["-S_LED-"].update(text_color='Green')
+        else:
+            window["-S_LED-"].update(text_color='Red')
+
         if controller.internal_board_state.calibrated is True:
             window["-CAL_LED-"].update(text_color='Green')
+        else:
+            window["-CAL_LED-"].update(text_color='Red')
+
     else:
         window['-BACKLIGHT-'].update(disabled=True, value=None)
+
+        window["-S_LED-"].update(text_color='Red')
         window['-SYNC-'].update(disabled=True)
+
         window['-CALIBRATE-'].update(disabled=True)
         window['-CALPTS-'].update(disabled=True)
+        window["-CAL_LED-"].update(text_color='Red')
+
         window['-ACTIVATE-'].update(disabled=True)
 
         if window.metadata['is_connecting']:
-            window["-RESTART-"].update(disabled=True)
-            window["-CONNECT-"].update(disabled=True)
             window["-C_LED-"].update(text_color='orange')
+            window["-CONNECT-"].update(disabled=True)
+            window["-RESTART-"].update(disabled=True)
+
         else:
+            window["-C_LED-"].update(text_color='red')
             window["-CONNECT-"].update(disabled=False)
             window["-RESTART-"].update(disabled=False)
-            window["-C_LED-"].update(text_color='red')
-            window["-S_LED-"].update(text_color='Red')
-            window["-CAL_LED-"].update(text_color='Red')
+
+
 
 
 def select_configs_folder():
