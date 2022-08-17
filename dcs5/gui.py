@@ -119,12 +119,12 @@ def make_window():
     ]]
 
     connection_layout = [
-        [sg.Text('Connected', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-C_LED-', font=LED_SIZE)],
+        [sg.Text('Connected', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-CONNECTED_LED-', font=LED_SIZE)],
         [button('Connect', size=(10, 0), key='-CONNECT-')]]
     activate_layout = [
-        [sg.Text('Activated', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-A_LED-', font=LED_SIZE)],
+        [sg.Text('Activated', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-ACTIVATED_LED-', font=LED_SIZE)],
         [button('Activate', size=(10, 1), key='-ACTIVATE-')]]
-    mute_layout = [[sg.Text('Muted', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-M_LED-', font=LED_SIZE)],
+    mute_layout = [[sg.Text('Muted', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-MUTED_LED-', font=LED_SIZE)],
                    [button('Mute', size=(10, 1), key='-MUTE-')]]
 
     restart_layout = [sg.Push(),
@@ -140,7 +140,7 @@ def make_window():
     status_layout = [[sg.Frame('Status', [_status_layout, restart_layout], font=TAB_FONT, expand_x=True)]]
     ###
     _sync_layout = [
-        [sg.Text('Synchronized', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-S_LED-', font=LED_SIZE)],
+        [sg.Text('Synchronized', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-SYNC_LED-', font=LED_SIZE)],
         [button('Synchronize', size=(15, 1), key='-SYNC-'), button('Reload Config', size=(15, 1), key='-RELOAD-')]]
     sync_layout = [[sg.Frame('Synchronize', _sync_layout, font=TAB_FONT)]]
     ###
@@ -303,8 +303,10 @@ def _run(window, controller):
             case '-MUTE-':
                 if controller.is_muted:
                     controller.unmute_board()
+                    window['-MUTE-'].update(text='Mute')
                 else:
                     controller.mute_board()
+                    window['-MUTE-'].update(text='Unmute')
 
         refresh_layout(window, controller)
 
@@ -319,8 +321,12 @@ def refresh_layout(window, controller):
                     '-RESTART-', '-MUTE-',
                     '-SYNC-', '-CALIBRATE-',
                     '-CALPTS-', '-BACKLIGHT-',
-                    '-UNITS-MM-', '-UNITS-CM-', '-MODE-TOP-', '-MODE-BOTTOM-', '-MODE-LENGTH-']:
+                    '-UNITS-MM-', '-UNITS-CM-',
+                    '-MODE-TOP-', '-MODE-BOTTOM-',
+                    '-MODE-LENGTH-']:
             window[key].update(disabled=True)
+        for key in ['-CONNECTED_LED-', 'ACTIVATED_LED', 'SYNC_LED', 'MUTED_LED', 'CAL_LED']:
+            window[key].update(text_color='Red')
 
 
 def _refresh_layout(window: sg.Window, controller: Dcs5Controller):
@@ -338,7 +344,7 @@ def _refresh_layout(window: sg.Window, controller: Dcs5Controller):
     window['-UNITS-MM-'].update(disabled=controller.length_units == 'mm')
     window['-UNITS-CM-'].update(disabled=controller.length_units == 'cm')
 
-    window['-M_LED-'].update(text_color='Green' if controller.is_muted else 'Red')
+    window['-MUTED_LED-'].update(text_color='Green' if controller.is_muted else 'Red')
     window['-MUTE-'].update(disabled=False)
 
     window['-BACKLIGHT-'].update(
@@ -347,8 +353,9 @@ def _refresh_layout(window: sg.Window, controller: Dcs5Controller):
 
     if controller.client.isconnected:
         # TODO make a function to activate buttons on connect
-        window["-C_LED-"].update(text_color='Green')
+        window["-CONNECTED_LED-"].update(text_color='Green')
         window["-CONNECT-"].update(disabled=True)
+        window["-RESTART-"].update(disabled=False)
 
         window['-PORT-'].update(dotted("Port (Bt Channel)", controller.client.port or "N/A", 50))
         window['-SYNC-'].update(disabled=False)
@@ -356,21 +363,21 @@ def _refresh_layout(window: sg.Window, controller: Dcs5Controller):
         window['-CALPTS-'].update(disabled=False)
 
         if controller.is_listening:
-            window["-A_LED-"].update(text_color='Green')
+            window["-ACTIVATED_LED-"].update(text_color='Green')
             window["-ACTIVATE-"].update(disabled=True)
 
             window['-BACKLIGHT-'].update(disabled=False,
                                          value=controller.internal_board_state.backlighting_level or None)
         else:
-            window["-A_LED-"].update(text_color='Red')
+            window["-ACTIVATED_LED-"].update(text_color='Red')
             window["-ACTIVATE-"].update(disabled=False)
+
             window['-BACKLIGHT-'].update(disabled=True, value=None)
-            window["-A_LED-"].update(text_color='Red')
 
         if controller.is_sync:
-            window["-S_LED-"].update(text_color='Green')
+            window["-SYNC_LED-"].update(text_color='Green')
         else:
-            window["-S_LED-"].update(text_color='Red')
+            window["-SYNC_LED-"].update(text_color='Red')
 
         if controller.internal_board_state.calibrated is True:
             window["-CAL_LED-"].update(text_color='Green')
@@ -380,26 +387,24 @@ def _refresh_layout(window: sg.Window, controller: Dcs5Controller):
     else:
         window['-BACKLIGHT-'].update(disabled=True, value=None)
 
-        window["-S_LED-"].update(text_color='Red')
+        window["-SYNC_LED-"].update(text_color='Red')
         window['-SYNC-'].update(disabled=True)
 
+        window["-CAL_LED-"].update(text_color='Red')
         window['-CALIBRATE-'].update(disabled=True)
         window['-CALPTS-'].update(disabled=True)
-        window["-CAL_LED-"].update(text_color='Red')
 
         window['-ACTIVATE-'].update(disabled=True)
 
         if window.metadata['is_connecting']:
-            window["-C_LED-"].update(text_color='orange')
+            window["-CONNECTED_LED-"].update(text_color='orange')
             window["-CONNECT-"].update(disabled=True)
             window["-RESTART-"].update(disabled=True)
 
         else:
-            window["-C_LED-"].update(text_color='red')
+            window["-CONNECTED_LED-"].update(text_color='red')
             window["-CONNECT-"].update(disabled=False)
             window["-RESTART-"].update(disabled=False)
-
-
 
 
 def select_configs_folder():

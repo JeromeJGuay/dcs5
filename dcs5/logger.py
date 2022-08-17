@@ -44,8 +44,10 @@ class MultilineStdHandler:
     def write(self, s):
         c = 'red' if RED_TEXT in s else 'yellow' if YELLOW_TEXT in s else None
         _s = self.ansi_escape.sub('', s)
-        self.window[self.key].update(value=_s, append=True, text_color_for_value = c)
-
+        try:
+            self.window[self.key].update(value=_s, append=True, text_color_for_value = c)
+        except RuntimeError:
+            pass
     def flush(self):
         return
 
