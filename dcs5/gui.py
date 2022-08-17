@@ -211,7 +211,7 @@ def make_window():
                                      sg.Tab('Logging', logging_tab_layout)]],
                                    key='-TAB GROUP-', font=REG_FONT)]]
 
-    global_layout += [[sg.Text(f'version: v{VERSION}', font=SMALL_FONT)]]
+    global_layout += [[sg.Text(f'version: v{VERSION}', font=SMALL_FONT), sg.Push(), sg.Text('Config:', font=SMALL_FONT), sg.Text('', font=SMALL_FONT, key='-CONFIGS-')]]
 
     window = sg.Window(f'Dcs5 Controller', global_layout, finalize=True, resizable=True, keep_on_top=False)
 
@@ -314,6 +314,7 @@ def _run(window, controller):
 
 
 def refresh_layout(window, controller):
+    window['-CONFIGS-'].update(Path(sg.user_settings()['configs_path']).stem)
     if controller is not None:
         _refresh_layout(window, controller)
     else:
@@ -421,37 +422,43 @@ def get_configs_folder():
 
 
 def create_new_configs():
-    folder_name = sg.popup_get_text('Enter a name for the configuration:', default_text='config01', font=REG_FONT)
-    new_configs_path = CONFIG_FILES_PATH.joinpath(folder_name)
-    new_configs_path.mkdir(parents=True, exist_ok=True)
+    folder_name = sg.popup_get_text('Enter a name for the configuration:', default_text='', font=REG_FONT)
+    if folder_name is not None:
+        new_configs_path = CONFIG_FILES_PATH.joinpath(folder_name)
+        new_configs_path.mkdir(parents=True, exist_ok=True)
 
-    local_files = [
-        new_configs_path.joinpath(SERVER_CONFIGURATION_FILE_NAME),
-        new_configs_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME),
-        new_configs_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME),
-        new_configs_path.joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)
-    ]
-    default_files = [
-        DEFAULT_SERVER_CONFIGURATION_FILE, DEFAULT_CONTROLLER_CONFIGURATION_FILE,
-        DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROL_BOX_PARAMETERS
-    ]
+        sg.user_settings()['configs_path'] = new_configs_path
 
-    logging.debug('\n\n')
-    overwrite_files = None
-    for lf, df in zip(local_files, default_files):
-        if not Path(lf).exists():
-            shutil.copyfile(df, lf)
-        else:
-            if overwrite_files is None:
-                overwrite_files = True  # FIXME
-            if overwrite_files:
+        local_files = [
+            new_configs_path.joinpath(SERVER_CONFIGURATION_FILE_NAME),
+            new_configs_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME),
+            new_configs_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME),
+            new_configs_path.joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)
+        ]
+        default_files = [
+            DEFAULT_SERVER_CONFIGURATION_FILE, DEFAULT_CONTROLLER_CONFIGURATION_FILE,
+            DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROL_BOX_PARAMETERS
+        ]
+
+        logging.debug('\n\n')
+        overwrite_files = None
+        for lf, df in zip(local_files, default_files):
+            if not Path(lf).exists():
                 shutil.copyfile(df, lf)
-                logging.debug(f'Writing file: {lf}')
+            else:
+                if overwrite_files is None:
+                    overwrite_files = True  # FIXME
+                if overwrite_files:
+                    shutil.copyfile(df, lf)
+                    logging.debug(f'Writing file: {lf}')
+    else:
+        sg.popup_ok('Not name provided. Aborted')
 
 
 def reload_controller_config(controller):
     if controller is not None:
         controller.reload_configs()
+        logging.debug('Controller reloaded.')
         if controller.client.isconnected:
             if sg.popup_yes_no('Do you want to synchronize board ?'):
                 controller.init_controller_and_board()
