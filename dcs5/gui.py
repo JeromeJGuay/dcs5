@@ -175,8 +175,8 @@ def make_window():
     # --- TABS ---#
 
     logging_tab_layout = [
-        [sg.Text("Logging (Not Wokring)")],
-        [sg.Multiline(size=(60, 15), expand_x=True, expand_y=True, write_only=True, auto_size_text=True, autoscroll=True, key='-STDOUT-')]]
+        [sg.Text("Logging")],
+        [sg.Multiline(size=(60, 15), horizontal_scroll=True, pad=(1, 1), font=REG_FONT, expand_x=True, expand_y=True, write_only=True, auto_size_text=True, autoscroll=True, key='-STDOUT-')]]
 
     # controller_tab_layout = [
     #     col([device_layout, status_layout]),
@@ -236,8 +236,8 @@ def run():
     }
 
     sg.user_settings_load()
-    #logging.debug(f'User Settings: {sg.user_settings()}')
-    print(f'User Settings: {sg.user_settings()}')
+    logging.debug(f'User Settings: {sg.user_settings()}')
+    #print(f'User Settings: {sg.user_settings()}')
     get_configs_folder()
 
     controller = None
