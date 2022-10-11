@@ -44,7 +44,7 @@ from dcs5.controller import Dcs5Controller
 
 if os.environ.get('EDITOR') == 'EMACS':
     print('Text editor changed')
-    os.environ.update({'EDITOR':'pluma'}) #FIXME
+    os.environ.update({'EDITOR': 'pluma'})  # FIXME
 
 
 def scale_font(font_size: int) -> int:
@@ -87,11 +87,13 @@ def init_dcs5_controller(configs_path: str):
         sg.popup_ok('`controller_config.json` was missing from the directory. One was created.', title='Missing file')
         shutil.copyfile(DEFAULT_CONTROLLER_CONFIGURATION_FILE, controller_config_path)
     if not devices_specifications_path.exists():
-        sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created.', title='Missing file')
+        sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created.',
+                    title='Missing file')
         shutil.copyfile(DEFAULT_DEVICES_SPECIFICATION_FILE, devices_specifications_path)
-    if not devices_specifications_path.exists():
-        shutil.copyfile(DEFAULT_CONTROL_BOX_PARAMETERS, devices_specifications_path)
-        sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created.', title='Missing file')
+    if not control_box_parameters_path.exists():
+        shutil.copyfile(DEFAULT_CONTROL_BOX_PARAMETERS, control_box_parameters_path)
+        sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created.',
+                    title='Missing file')
 
     try:
         return Dcs5Controller(controller_config_path, devices_specifications_path, control_box_parameters_path)
@@ -101,18 +103,20 @@ def init_dcs5_controller(configs_path: str):
 
 
 def make_window():
-
     device_layout = [[
         sg.Frame(
             'Device', [
                 [sg.Text(dotted("Name", 20), pad=(5, 1), font=REG_FONT),
-                 sg.Text("N\A", font=REG_FONT, justification='c', background_color='white', size=(20, 1), p=(0, 0), key='-NAME-')
+                 sg.Text("N\A", font=REG_FONT, justification='c', background_color='white', size=(20, 1), p=(0, 0),
+                         key='-NAME-')
                  ],
                 [sg.Text(dotted("MAC address", 20), pad=(5, 1), font=REG_FONT),
-                 sg.Text("N\A", font=REG_FONT, justification='c', background_color='white', size=(20, 1), p=(0, 0), key='-MAC-')
+                 sg.Text("N\A", font=REG_FONT, justification='c', background_color='white', size=(20, 1), p=(0, 0),
+                         key='-MAC-')
                  ],
-                [sg.Text(dotted("Port (Bt Channel)", 20),  pad=(5, 1), font=REG_FONT),
-                 sg.Text("N\A", font=REG_FONT, justification='c', background_color='white', size=(20, 1), p=(0, 0), key='-PORT-')
+                [sg.Text(dotted("Port (Bt Channel)", 20), pad=(5, 1), font=REG_FONT),
+                 sg.Text("N\A", font=REG_FONT, justification='c', background_color='white', size=(20, 1), p=(0, 0),
+                         key='-PORT-')
                  ]
             ],
             font=TAB_FONT
@@ -125,8 +129,9 @@ def make_window():
     activate_layout = [
         [sg.Text('Activated', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-ACTIVATED_LED-', font=LED_SIZE)],
         [button('Activate', size=(10, 1), key='-ACTIVATE-')]]
-    mute_layout = [[sg.Text('Muted', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-MUTED_LED-', font=LED_SIZE)],
-                   [button('Mute', size=(10, 1), key='-MUTE-')]]
+    mute_layout = [
+        [sg.Text('Muted', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-MUTED_LED-', font=LED_SIZE)],
+        [button('Mute', size=(10, 1), key='-MUTE-')]]
 
     restart_layout = [sg.Push(),
                       sg.Button('Restart', size=(10, 1),
@@ -152,11 +157,14 @@ def make_window():
     calibration_layout = [[sg.Frame('Calibration', _calibration_layout, font=TAB_FONT)]]
     ###
     _reading_profile_layout = [[sg.Text(dotted('Settling delay', 25), font=REG_FONT),
-                                sg.Text("N\A", font=REG_FONT, background_color='white', size=(3, 1), p=(0, 0), key='-SETTLING-DELAY-')],
+                                sg.Text("N\A", font=REG_FONT, background_color='white', size=(3, 1), p=(0, 0),
+                                        key='-SETTLING-DELAY-')],
                                [sg.Text(dotted('Number of reading', 25), font=REG_FONT),
-                                sg.Text("N\A", font=REG_FONT, background_color='white', size=(3, 1), p=(0, 0), key='-NUMBER-READING-')],
+                                sg.Text("N\A", font=REG_FONT, background_color='white', size=(3, 1), p=(0, 0),
+                                        key='-NUMBER-READING-')],
                                [sg.Text(dotted('Max deviation', 25), font=REG_FONT),
-                                sg.Text("N\A", font=REG_FONT, background_color='white', size=(3, 1), p=(0, 0), key='-MAX-DEVIATION-')]]
+                                sg.Text("N\A", font=REG_FONT, background_color='white', size=(3, 1), p=(0, 0),
+                                        key='-MAX-DEVIATION-')]]
     reading_profile_layout = [[sg.Frame('Reading Profile', _reading_profile_layout, font=TAB_FONT)]]
 
     ###
@@ -176,7 +184,8 @@ def make_window():
 
     logging_tab_layout = [
         [sg.Text("Logging")],
-        [sg.Multiline(size=(60, 15), horizontal_scroll=True, pad=(1, 1), font=REG_FONT, expand_x=True, expand_y=True, write_only=True, auto_size_text=True, autoscroll=True, key='-STDOUT-')]]
+        [sg.Multiline(size=(60, 15), horizontal_scroll=True, pad=(1, 1), font=REG_FONT, expand_x=True, expand_y=True,
+                      write_only=True, auto_size_text=True, autoscroll=True, key='-STDOUT-')]]
 
     # controller_tab_layout = [
     #     col([device_layout, status_layout]),
@@ -203,7 +212,7 @@ def make_window():
                                '&Exit']],
                     ['&Edit', ['Controller Configuration', 'Devices Specification']]]
 
-    menu_layout = [sg.Menu(_menu_layout, k='-MENU-', p=0, font=REG_FONT, disabled_text_color='grey'),]
+    menu_layout = [sg.Menu(_menu_layout, k='-MENU-', p=0, font=REG_FONT, disabled_text_color='grey'), ]
 
     # --- GLOBAL ---#
     global_layout = [menu_layout]
@@ -212,7 +221,8 @@ def make_window():
                                      sg.Tab('Logging', logging_tab_layout)]],
                                    key='-TAB GROUP-', font=REG_FONT)]]
 
-    global_layout += [[sg.Text(f'version: v{VERSION}', font=SMALL_FONT), sg.Push(), sg.Text('Config:', font=SMALL_FONT), sg.Text('', font=SMALL_FONT, key='-CONFIGS-')]]
+    global_layout += [[sg.Text(f'version: v{VERSION}', font=SMALL_FONT), sg.Push(), sg.Text('Config:', font=SMALL_FONT),
+                       sg.Text('', font=SMALL_FONT, key='-CONFIGS-')]]
 
     window = sg.Window(f'Dcs5 Controller', global_layout, finalize=True, resizable=True, keep_on_top=False)
 
@@ -319,7 +329,6 @@ def _run(window, controller):
 def refresh_layout(window, controller):
     while window.metadata['is_connecting']:
         pass
-       # sg.PopupAnimated(LOADING, time_between_frames=.01, alpha_channel=0.5)
     window['-CONFIGS-'].update(Path(sg.user_settings()['configs_path']).stem)
     if controller is not None:
         _refresh_layout(window, controller)
@@ -332,7 +341,7 @@ def refresh_layout(window, controller):
                     '-MODE-TOP-', '-MODE-BOTTOM-',
                     '-MODE-LENGTH-']:
             window[key].update(disabled=True)
-        for key in ['-CONNECTED_LED-', 'ACTIVATED_LED', 'SYNC_LED', 'MUTED_LED', 'CAL_LED']:
+        for key in ['-CONNECTED_LED-', '-ACTIVATED_LED-', '-SYNC_LED-', '-MUTED_LED-', '-CAL_LED-']:
             window[key].update(text_color='Red')
 
 
@@ -414,11 +423,35 @@ def _refresh_layout(window: sg.Window, controller: Dcs5Controller):
             window["-RESTART-"].update(disabled=False)
 
 
+def popup_select_config(default):
+    layout = [[sg.Text('Select configuration', size=(20, 1), font='Lucida', justification='left')],
+              [sg.Listbox(values=[x.stem for x in Path(CONFIG_FILES_PATH).glob('**/')],
+                          default_values=[default],
+                          select_mode='single', key='-CONFIG-', size=(30, 6))],
+              [sg.Button('SAVE', font=('Times New Roman', 12,)), sg.Button('CANCEL', font=('Times New Roman', 12))]]
+
+    window = sg.Window('Select configuration', layout)
+
+    event, value = window.read()
+
+    window.close()
+
+    if event == 'SAVE' and value['-CONFIG-'][0]:
+        return str(Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0]))
+    else:
+        return None
+
+
 def select_configs_folder():
+    current_config = None
+    if user_settings := sg.user_settings():
+        if config := user_settings['configs_path']:
+            current_config = Path(config).stem
     sg.user_settings().update(
-        {'configs_path': sg.popup_get_folder('Select config folder.',
-                                             default_path=CONFIG_FILES_PATH,
-                                             initial_folder=CONFIG_FILES_PATH)})
+        {
+            'configs_path': popup_select_config(default=current_config)
+         }
+    )
     sg.user_settings_save()
 
 
