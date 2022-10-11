@@ -84,7 +84,7 @@ def init_dcs5_controller(configs_path: str):
     control_box_parameters_path = Path(configs_path).joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)
 
     if not controller_config_path.exists():
-        sg.popup_ok('`controller_config.json` was missing from the directory. One was created.', title='Missing file')
+        sg.popup_ok(f'`controller_config.json` was missing from the directory: {controller_config_path.parent}. One was created.', title='Missing file')
         shutil.copyfile(DEFAULT_CONTROLLER_CONFIGURATION_FILE, controller_config_path)
     if not devices_specifications_path.exists():
         sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created.',
@@ -92,7 +92,7 @@ def init_dcs5_controller(configs_path: str):
         shutil.copyfile(DEFAULT_DEVICES_SPECIFICATION_FILE, devices_specifications_path)
     if not control_box_parameters_path.exists():
         shutil.copyfile(DEFAULT_CONTROL_BOX_PARAMETERS, control_box_parameters_path)
-        sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created.',
+        sg.popup_ok(f'`devices_specifications.json` was missing from the directory {control_box_parameters_path.parent}. One was created.',
                     title='Missing file')
 
     try:
@@ -247,12 +247,9 @@ def run():
         'is_connecting': False,
     }
 
-    sg.user_settings_load()
-    logging.debug(f'User Settings: {sg.user_settings()}')
-    get_configs_folder()
+    load_user_settings()
 
     controller = None
-
     if sg.user_settings()['configs_path'] is not None:
         controller = init_dcs5_controller(sg.user_settings()['configs_path'])
 
@@ -273,18 +270,14 @@ def _run(window, controller):
                 break
             case "-CONNECT-":
                 window.metadata['is_connecting'] = True
-                controller.start_client()
-                #TODO FIXME
-                #window.perform_long_operation(controller.start_client, end_key='-END_CONNECT-')
-                #sg.PopupAnimated(LOADING, time_between_frames=.01, alpha_channel=0.5)
+                window.perform_long_operation(controller.start_client, end_key='-END_CONNECT-')
             case "-END_CONNECT-":
                 window.metadata['is_connecting'] = False
-                #sg.PopupAnimated(None)
             case "-ACTIVATE-":
                 controller.start_listening()
             case "-RESTART-":
                 window.metadata['is_connecting'] = True
-                window.perform_long_operation(controller.restart_client, end_key='-END_CONNECT-')
+                window.perform_long_operation(controller.start_client, end_key='-END_CONNECT-')
             case '-SYNC-':
                 logging.debug('sync not mapped')
             case "-CALPTS-":
@@ -329,9 +322,14 @@ def _run(window, controller):
 
 
 def refresh_layout(window, controller):
-    while window.metadata['is_connecting']:
-        pass
-    window['-CONFIGS-'].update(Path(sg.user_settings()['configs_path']).stem)
+    # while window.metadata['is_connecting']:
+    #     pass
+    # FIXME modification here
+    if (configs_path := sg.user_settings()['configs_path']) is not None:
+        window['-CONFIGS-'].update(Path(configs_path).stem)
+    else:
+        window['-CONFIGS-'].update('No Config Selected')
+
     if controller is not None:
         _refresh_layout(window, controller)
     else:
@@ -425,12 +423,14 @@ def _refresh_layout(window: sg.Window, controller: Dcs5Controller):
             window["-RESTART-"].update(disabled=False)
 
 
-def popup_select_config(default):
+def popup_select_config(default_config: str):
+    # FIXME Modified
     layout = [[sg.Text('Select configuration', size=(20, 1), font='Lucida', justification='left')],
-              [sg.Listbox(values=[x.stem for x in Path(CONFIG_FILES_PATH).glob('**/')],
-                          default_values=[default],
-                          select_mode='single', key='-CONFIG-', size=(30, 6))],
-              [sg.Button('SAVE', font=('Times New Roman', 12,)), sg.Button('CANCEL', font=('Times New Roman', 12))]]
+              [sg.Listbox(values=[x.stem for x in Path(CONFIG_FILES_PATH).glob('**/*') if x.is_dir()],
+                          default_values=[default_config],
+                          select_mode='single', key='-CONFIG-', size=(30, 6),
+                          expand_y=True)],
+              [sg.Button('Select', font=REG_FONT), sg.Button('Delete', font=REG_FONT), sg.Button('Cancel', font=REG_FONT)]]
 
     window = sg.Window('Select configuration', layout)
 
@@ -438,27 +438,43 @@ def popup_select_config(default):
 
     window.close()
 
-    if event == 'SAVE' and value['-CONFIG-'][0]:
-        return str(Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0]))
-    else:
-        return None
+    selected_config = default_config
+    if value['-CONFIG-']:
+        if event == 'Select':
+            selected_config = value['-CONFIG-'][0]
+        if event == 'Delete':
+            if default_config == value['-CONFIG-'][0]:
+                sg.popup_ok('Cannot delete the configuration currently in use.')
+            else:
+                if sg.popup_yes_no(f"Are you sure you want to delete `{value['-CONFIG-'][0]}`"):
+                    shutil.rmtree(str(Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0])))
+
+    return selected_config
 
 
 def select_configs_folder():
+    # FIXME Modified
     current_config = None
     if user_settings := sg.user_settings():
         if config := user_settings['configs_path']:
             current_config = Path(config).stem
-    sg.user_settings().update(
-        {
-            'configs_path': popup_select_config(default=current_config)
-         }
-    )
+
+    config_path = None
+    if (selected_config := popup_select_config(default_config=current_config)) is not None:
+        config_path = str(Path(CONFIG_FILES_PATH).joinpath(selected_config))
+
+    sg.user_settings().update({
+        'configs_path': config_path
+    })
+
     sg.user_settings_save()
 
 
-def get_configs_folder():
-    if not sg.user_settings():
+def load_user_settings():
+    #FIXME Modified
+    sg.user_settings_load()
+    logging.debug(f'User Settings: {sg.user_settings()}')
+    if 'configs_path' not in sg.user_settings():
         select_configs_folder()
 
 
