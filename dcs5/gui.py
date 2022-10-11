@@ -86,23 +86,34 @@ def init_dcs5_controller(configs_path: str):
     if not Path(configs_path).exists():
         create_new_configs()
     else:
-        if not controller_config_path.exists():
-            sg.popup_ok(f'`controller_config.json` was missing from the directory: {controller_config_path.parent}. One was created.', title='Missing file')
-            shutil.copyfile(DEFAULT_CONTROLLER_CONFIGURATION_FILE, controller_config_path)
-        if not devices_specifications_path.exists():
-            sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created.',
-                        title='Missing file')
-            shutil.copyfile(DEFAULT_DEVICES_SPECIFICATION_FILE, devices_specifications_path)
-        if not control_box_parameters_path.exists():
-            shutil.copyfile(DEFAULT_CONTROL_BOX_PARAMETERS, control_box_parameters_path)
-            sg.popup_ok(f'`devices_specifications.json` was missing from the directory {control_box_parameters_path.parent}. One was created.',
-                        title='Missing file')
+        check_config_integrity(
+            controller_config_path=controller_config_path,
+            devices_specifications_path=devices_specifications_path,
+            control_box_parameters_path=control_box_parameters_path
+            )
 
     try:
         return Dcs5Controller(controller_config_path, devices_specifications_path, control_box_parameters_path)
     except ConfigError:
         sg.popup_ok('Error in the configurations files, cannot load configuration files.', title='Error')
         return None
+
+
+def check_config_integrity(controller_config_path, devices_specifications_path, control_box_parameters_path):
+    if not controller_config_path.exists():
+        sg.popup_ok(
+            f'`controller_config.json` was missing from the directory: {controller_config_path.parent}. One was created.',
+            title='Missing file')
+        shutil.copyfile(DEFAULT_CONTROLLER_CONFIGURATION_FILE, controller_config_path)
+    if not devices_specifications_path.exists():
+        sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created.',
+                    title='Missing file')
+        shutil.copyfile(DEFAULT_DEVICES_SPECIFICATION_FILE, devices_specifications_path)
+    if not control_box_parameters_path.exists():
+        shutil.copyfile(DEFAULT_CONTROL_BOX_PARAMETERS, control_box_parameters_path)
+        sg.popup_ok(
+            f'`devices_specifications.json` was missing from the directory {control_box_parameters_path.parent}. One was created.',
+            title='Missing file')
 
 
 def make_window():
@@ -325,9 +336,6 @@ def _run(window, controller):
 
 
 def refresh_layout(window, controller):
-    # while window.metadata['is_connecting']:
-    #     pass
-    # FIXME modification here
     if (configs_path := sg.user_settings()['configs_path']) is not None:
         window['-CONFIGS-'].update(Path(configs_path).stem)
     else:
@@ -426,8 +434,31 @@ def _refresh_layout(window: sg.Window, controller: Dcs5Controller):
             window["-RESTART-"].update(disabled=False)
 
 
-def popup_select_config(default_config: str):
-    # FIXME Modified
+def load_user_settings():
+    sg.user_settings_load()
+    logging.debug(f'User Settings: {sg.user_settings()}')
+    if 'configs_path' not in sg.user_settings():
+        select_configs_folder()
+
+
+def select_configs_folder():
+    current_config = None
+    if user_settings := sg.user_settings():
+        if config := user_settings['configs_path']:
+            current_config = Path(config).stem
+
+    config_path = None
+    if (selected_config := popup_window_select_config(default_config=current_config)) is not None:
+        config_path = str(Path(CONFIG_FILES_PATH).joinpath(selected_config))
+
+    sg.user_settings().update({
+        'configs_path': config_path
+    })
+
+    sg.user_settings_save()
+
+
+def popup_window_select_config(default_config: str):
     layout = [[sg.Text('Select configuration', size=(20, 1), font='Lucida', justification='left')],
               [sg.Listbox(values=[x.stem for x in Path(CONFIG_FILES_PATH).glob('**/*') if x.is_dir()],
                           default_values=[default_config],
@@ -453,32 +484,6 @@ def popup_select_config(default_config: str):
                     shutil.rmtree(str(Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0])))
 
     return selected_config
-
-
-def select_configs_folder():
-    # FIXME Modified
-    current_config = None
-    if user_settings := sg.user_settings():
-        if config := user_settings['configs_path']:
-            current_config = Path(config).stem
-
-    config_path = None
-    if (selected_config := popup_select_config(default_config=current_config)) is not None:
-        config_path = str(Path(CONFIG_FILES_PATH).joinpath(selected_config))
-
-    sg.user_settings().update({
-        'configs_path': config_path
-    })
-
-    sg.user_settings_save()
-
-
-def load_user_settings():
-    #FIXME Modified
-    sg.user_settings_load()
-    logging.debug(f'User Settings: {sg.user_settings()}')
-    if 'configs_path' not in sg.user_settings():
-        select_configs_folder()
 
 
 def create_new_configs():
@@ -515,16 +520,26 @@ def create_new_configs():
         sg.popup_ok('Not name provided. Aborted')
 
 
+def update_controller_config_paths(controller):
+    configs_path = sg.user_settings()['configs_path']
+    controller.controller_config_path = Path(configs_path).joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)
+    controller.devices_specifications_path = Path(configs_path).joinpath(DEVICES_SPECIFICATION_FILE_NAME)
+    controller.control_box_parameters_path = Path(configs_path).joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)
+    logging.debug('Config files path updated.')
+
+
 def reload_controller_config(controller):
     if controller is not None:
+        update_controller_config_paths(controller)
         controller.reload_configs()
         logging.debug('Controller reloaded.')
+
         if controller.client.isconnected:
             if sg.popup_yes_no('Do you want to synchronize board ?'):
                 controller.init_controller_and_board()
     else:
-        if sg.user_settings()['configs_path'] is not None:
-            controller = init_dcs5_controller(sg.user_settings()['configs_path'])
+        controller = init_dcs5_controller(sg.user_settings()['configs_path'])
+
     return controller
 
 
