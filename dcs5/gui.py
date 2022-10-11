@@ -83,17 +83,20 @@ def init_dcs5_controller(configs_path: str):
     devices_specifications_path = Path(configs_path).joinpath(DEVICES_SPECIFICATION_FILE_NAME)
     control_box_parameters_path = Path(configs_path).joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)
 
-    if not controller_config_path.exists():
-        sg.popup_ok(f'`controller_config.json` was missing from the directory: {controller_config_path.parent}. One was created.', title='Missing file')
-        shutil.copyfile(DEFAULT_CONTROLLER_CONFIGURATION_FILE, controller_config_path)
-    if not devices_specifications_path.exists():
-        sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created.',
-                    title='Missing file')
-        shutil.copyfile(DEFAULT_DEVICES_SPECIFICATION_FILE, devices_specifications_path)
-    if not control_box_parameters_path.exists():
-        shutil.copyfile(DEFAULT_CONTROL_BOX_PARAMETERS, control_box_parameters_path)
-        sg.popup_ok(f'`devices_specifications.json` was missing from the directory {control_box_parameters_path.parent}. One was created.',
-                    title='Missing file')
+    if not Path(configs_path).exists():
+        create_new_configs()
+    else:
+        if not controller_config_path.exists():
+            sg.popup_ok(f'`controller_config.json` was missing from the directory: {controller_config_path.parent}. One was created.', title='Missing file')
+            shutil.copyfile(DEFAULT_CONTROLLER_CONFIGURATION_FILE, controller_config_path)
+        if not devices_specifications_path.exists():
+            sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created.',
+                        title='Missing file')
+            shutil.copyfile(DEFAULT_DEVICES_SPECIFICATION_FILE, devices_specifications_path)
+        if not control_box_parameters_path.exists():
+            shutil.copyfile(DEFAULT_CONTROL_BOX_PARAMETERS, control_box_parameters_path)
+            sg.popup_ok(f'`devices_specifications.json` was missing from the directory {control_box_parameters_path.parent}. One was created.',
+                        title='Missing file')
 
     try:
         return Dcs5Controller(controller_config_path, devices_specifications_path, control_box_parameters_path)
@@ -222,7 +225,7 @@ def make_window():
                                    key='-TAB GROUP-', font=REG_FONT)]]
 
     global_layout += [[sg.Text(f'version: v{VERSION}', font=SMALL_FONT), sg.Push(), sg.Text('Config:', font=SMALL_FONT),
-                       sg.Text('', font=SMALL_FONT, key='-CONFIGS-')]]
+                       sg.Text('No Config Selected', font=SMALL_FONT, key='-CONFIGS-')]]
 
     window = sg.Window(f'Dcs5 Controller', global_layout, finalize=True, resizable=True, keep_on_top=False)
 
@@ -528,8 +531,8 @@ def reload_controller_config(controller):
 def edit(filename):
     if sg.user_settings()['configs_path'] is not None:
         click.edit(filename=str(Path(sg.user_settings()['configs_path']).joinpath(filename)))
-    else:
-        sg.popup_ok("No configs folder is selected.")
+    else: # This should never happen tho... I think.
+        sg.popup_ok("No config is selected.")
 
 
 def dotted(value, length=50):
