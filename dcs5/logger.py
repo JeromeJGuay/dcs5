@@ -48,6 +48,7 @@ class MultilineStdHandler:
             self.window[self.key].update(value=_s, append=True, text_color_for_value = c)
         except RuntimeError:
             pass
+
     def flush(self):
         return
 
@@ -92,7 +93,7 @@ def init_logging(
     handlers.append(stdout_handler)
 
     # file
-    filename = LOG_FILES_PATH.joinpath(time.strftime("%y%m%dT%H%M%S", time.gmtime())).with_suffix('.log')
+    filename = LOG_FILES_PATH.joinpath(time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())).with_suffix('.log')
     file_handler = logging.FileHandler(filename, delay=not write) # delay=True will write a log only on crash.
     file_handler.setLevel(file_level.upper())
     file_handler.setFormatter(formatter)
