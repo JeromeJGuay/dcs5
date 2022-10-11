@@ -273,11 +273,13 @@ def _run(window, controller):
                 break
             case "-CONNECT-":
                 window.metadata['is_connecting'] = True
-                window.perform_long_operation(controller.start_client, end_key='-END_CONNECT-')
-                sg.PopupAnimated(LOADING, time_between_frames=.01, alpha_channel=0.5)
+                controller.start_client()
+                #TODO FIXME
+                #window.perform_long_operation(controller.start_client, end_key='-END_CONNECT-')
+                #sg.PopupAnimated(LOADING, time_between_frames=.01, alpha_channel=0.5)
             case "-END_CONNECT-":
                 window.metadata['is_connecting'] = False
-                sg.PopupAnimated(None)
+                #sg.PopupAnimated(None)
             case "-ACTIVATE-":
                 controller.start_listening()
             case "-RESTART-":
