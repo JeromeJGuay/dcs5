@@ -269,10 +269,10 @@ def run():
 
     refresh_layout(window, controller)
 
-    _run(window, controller)
+    loop_run(window, controller)
 
 
-def _run(window, controller):
+def loop_run(window, controller):
     while True:
         event, values = window.read(timeout=.01)
 
