@@ -68,6 +68,7 @@ ENABLED_BUTTON_COLOR = ('black', "light blue")
 DISABLED_BUTTON_COLOR = ('gray', "light grey")
 
 LOGO = '../static/bigfin_logo.png'
+LOADING = '../static/circle-loading-gif.gif'
 
 
 def main():
@@ -263,8 +264,10 @@ def _run(window, controller):
             case "-CONNECT-":
                 window.metadata['is_connecting'] = True
                 window.perform_long_operation(controller.start_client, end_key='-END_CONNECT-')
+                sg.PopupAnimated(LOADING, time_between_frames=.01, alpha_channel=0.5)
             case "-END_CONNECT-":
                 window.metadata['is_connecting'] = False
+                sg.PopupAnimated(None)
             case "-ACTIVATE-":
                 controller.start_listening()
             case "-RESTART-":
@@ -314,6 +317,9 @@ def _run(window, controller):
 
 
 def refresh_layout(window, controller):
+    while window.metadata['is_connecting']:
+        pass
+       # sg.PopupAnimated(LOADING, time_between_frames=.01, alpha_channel=0.5)
     window['-CONFIGS-'].update(Path(sg.user_settings()['configs_path']).stem)
     if controller is not None:
         _refresh_layout(window, controller)
