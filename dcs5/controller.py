@@ -318,16 +318,20 @@ class Dcs5Controller:
             self.shouter = ServerInput()
 
     def _load_configs(self):
-        if (control_box_parameters := load_control_box_parameters(self.control_box_parameters_path)) is not None:
-            self.control_box_parameters = control_box_parameters
-        if (devices_spec := load_devices_specification(self.devices_specifications_path)) is not None:
-            self.devices_spec = devices_spec
-        if (config := load_config(self.config_path)) is not None:
-            if self.control_box_parameters is not None:
-                self.config = validate_config(config, self.control_box_parameters)
+        control_box_parameters = load_control_box_parameters(self.control_box_parameters_path)
+        devices_spec = load_devices_specification(self.devices_specifications_path)
+        config = load_config(self.config_path)
 
-        if any([x is None for x in (self.control_box_parameters, self.devices_spec, self.config)]):
-            raise ConfigError('One or more config file could not be loaded.')
+        if control_box_parameters is None:
+            raise ConfigError(f'Error in {self.control_box_parameters_path}. File could not be loaded.')
+        if devices_spec is None:
+            raise ConfigError(f'Error in {self.devices_specifications_path}. File could not be loaded.')
+        if config is None:
+            raise ConfigError(f'Error in {self.config_path}. File could not be loaded.')
+
+        self.control_box_parameters = control_box_parameters
+        self.devices_spec = devices_spec
+        self.config = validate_config(config, self.control_box_parameters)
 
     def reload_configs(self):
         self.is_sync = False
