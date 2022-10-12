@@ -95,6 +95,7 @@ def init_dcs5_controller(configs_path: str):
     try:
         return Dcs5Controller(controller_config_path, devices_specifications_path, control_box_parameters_path)
     except ConfigError:
+        logging.debug('ConfigError while initiating controller.')
         sg.popup_ok('Error in the configurations files, cannot load configuration files.', title='Error')
         return None
 
@@ -531,7 +532,14 @@ def update_controller_config_paths(controller):
 def reload_controller_config(controller):
     if controller is not None:
         update_controller_config_paths(controller)
-        controller.reload_configs()
+
+        try:
+            controller.reload_configs()
+        except ConfigError:
+            logging.debug('ConfigError while reloading config files.')
+            sg.popup_ok('Error in one the config files.')
+            return controller
+
         logging.debug('Controller reloaded.')
 
         if controller.client.isconnected:

@@ -255,10 +255,6 @@ class BluetoothClient:
 
 
 class Dcs5Controller:
-    config: ControllerConfiguration
-    device_specs: DevicesSpecification
-    control_box_parameters: ControlBoxParameters
-
     dynamic_stylus_settings: bool
     output_mode: str
     reading_profile: str
@@ -280,6 +276,9 @@ class Dcs5Controller:
         self.config_path = config_path
         self.devices_specifications_path = devices_specifications_path
         self.control_box_parameters_path = control_box_parameters_path
+        self.config: ControllerConfiguration = None
+        self.device_specs: DevicesSpecification = None
+        self.control_box_parameters: ControlBoxParameters = None
         self._load_configs()
 
         self.listen_thread: threading.Thread = None
@@ -319,9 +318,16 @@ class Dcs5Controller:
             self.shouter = ServerInput()
 
     def _load_configs(self):
-        self.control_box_parameters = load_control_box_parameters(self.control_box_parameters_path)
-        self.devices_spec = load_devices_specification(self.devices_specifications_path)
-        self.config = check_config(load_config(self.config_path), self.control_box_parameters)
+        if (control_box_parameters := load_control_box_parameters(self.control_box_parameters_path)) is not None:
+            self.control_box_parameters = control_box_parameters
+        if (devices_spec := load_devices_specification(self.devices_specifications_path)) is not None:
+            self.devices_spec = devices_spec
+        if (config := load_config(self.config_path)) is not None:
+            if self.control_box_parameters is not None:
+                self.config = validate_config(config, self.control_box_parameters)
+
+        if any([x is None for x in (self.control_box_parameters, self.devices_spec, self.config)]):
+            raise ConfigError('One or more config file could not be loaded.')
 
     def reload_configs(self):
         self.is_sync = False
@@ -934,7 +940,7 @@ class SocketListener:
                     break
 
 
-def check_config(config: ControllerConfiguration, control_box: ControlBoxParameters):
+def validate_config(config: ControllerConfiguration, control_box: ControlBoxParameters):
     if not 0 <= config.launch_settings.backlighting_level <= control_box.max_backlighting_level:
         raise ConfigError(f'launch_settings/Backlight_level outside range {(0, control_box.max_backlighting_level)}')
 

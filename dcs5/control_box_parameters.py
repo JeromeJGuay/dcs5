@@ -21,5 +21,8 @@ class ControlBoxParameters:
 
 def load_control_box_parameters(path: str):
     settings = json2dict(path)
-    return ControlBoxParameters(**settings)
+    try:
+        return ControlBoxParameters(**settings)
+    except TypeError: #Catch Missing keys error.
+        return None
 

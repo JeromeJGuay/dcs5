@@ -174,7 +174,6 @@ class ControllerConfiguration:
 
         if self.launch_settings.reading_profile not in self.reading_profiles:
             raise ConfigError('launch_settings/reading_profile values is not a reading_profile name.')
-
         if self.output_modes.mode_reading_profiles.top not in self.reading_profiles:
             raise ConfigError('output_mode/mode_reading_profile/top values is not a reading_profile name.')
         if self.output_modes.mode_reading_profiles.length not in self.reading_profiles:
@@ -184,6 +183,9 @@ class ControllerConfiguration:
 
 
 def load_config(path: str):
-    return ControllerConfiguration(**json2dict(path))
+    try:
+        return ControllerConfiguration(**json2dict(path))
+    except TypeError:  # Catch Missing keys error.
+        return None
 
 

@@ -34,5 +34,8 @@ class DevicesSpecification:
 
 def load_devices_specification(path: str):
     specification = json2dict(path)
-    return DevicesSpecification(**specification)
+    try:
+        return DevicesSpecification(**specification)
+    except TypeError:  # Catch Missing keys error.
+        return None
 
