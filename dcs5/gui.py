@@ -145,14 +145,14 @@ def make_window():
     ]]
 
     connection_layout = [
-        [sg.Text('Connected', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-CONNECTED_LED-', font=LED_SIZE)],
-        [button('Connect', size=(10, 0), key='-CONNECT-')]]
+        [sg.Text('Connected', font=REG_FONT), led(key='-CONNECTED_LED-')],
+        [ibutton('Connect', size=(10, 0), key='-CONNECT-')]]
     activate_layout = [
-        [sg.Text('Activated', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-ACTIVATED_LED-', font=LED_SIZE)],
-        [button('Activate', size=(10, 1), key='-ACTIVATE-')]]
+        [sg.Text('Activated', font=REG_FONT), led(key='-ACTIVATED_LED-')],
+        [ibutton('Activate', size=(10, 1), key='-ACTIVATE-')]]
     mute_layout = [
-        [sg.Text('Muted', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-MUTED_LED-', font=LED_SIZE)],
-        [button('Mute', size=(10, 1), key='-MUTE-')]]
+        [sg.Text('Muted', font=REG_FONT), led(key='-MUTED_LED-')],
+        [ibutton('Mute', size=(10, 1), key='-MUTE-')]]
 
     restart_layout = [sg.Push(),
                       sg.Button('Restart', size=(10, 1),
@@ -167,14 +167,14 @@ def make_window():
     status_layout = [[sg.Frame('Status', [_status_layout, restart_layout], font=TAB_FONT, expand_x=True)]]
     ###
     _sync_layout = [
-        [sg.Text('Synchronized', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-SYNC_LED-', font=LED_SIZE)],
-        [button('Synchronize', size=(15, 1), key='-SYNC-'), button('Reload Config', size=(15, 1), key='-RELOAD-')]]
+        [sg.Text('Synchronized', font=REG_FONT), led(key='-SYNC_LED-')],
+        [ibutton('Synchronize', size=(15, 1), key='-SYNC-'), ibutton('Reload Config', size=(15, 1), key='-RELOAD-')]]
     sync_layout = [[sg.Frame('Synchronize', _sync_layout, font=TAB_FONT)]]
     ###
     _calibration_layout = [
-        [sg.Text('Calibrated', font=REG_FONT), sg.Text(CIRCLE, text_color='red', key='-CAL_LED-', font=LED_SIZE)],
-        [button('Calibrate', size=(15, 1), key='-CALIBRATE-'),
-         button('Set Cal. Pts.', size=(15, 1), key='-CALPTS-')]]  # TODO
+        [sg.Text('Calibrated', font=REG_FONT), led(key='-CAL_LED-')],
+        [ibutton('Calibrate', size=(15, 1), key='-CALIBRATE-'),
+         ibutton('Set Cal. Pts.', size=(15, 1), key='-CALPTS-')]]  # TODO
     calibration_layout = [[sg.Frame('Calibration', _calibration_layout, font=TAB_FONT)]]
     ###
     _reading_profile_layout = [[sg.Text(dotted('Settling delay', 25), font=REG_FONT),
@@ -192,28 +192,21 @@ def make_window():
     _backlight_layout = [sg.Slider(orientation='h', key='-BACKLIGHT-', font=SMALL_FONT)]
     backlight_layout = [[sg.Frame('Backlight level', [_backlight_layout], font=REG_FONT)]]
     ###
-    _units_layout = [[button('mm', size=(5, 1), key='-UNITS-MM-'), button('cm', size=(5, 1), key='-UNITS-CM-')]]
+    _units_layout = [[ibutton('mm', size=(5, 1), key='-UNITS-MM-'), ibutton('cm', size=(5, 1), key='-UNITS-CM-')]]
     units_layout = [[sg.Frame('Units', _units_layout, font=TAB_FONT)]]
     ###
     _mode_layout = [
-        [button('Top', size=(8, 1), key='-MODE-TOP-'),
-         button('Length', size=(8, 1), key='-MODE-LENGTH-'),
-         button('Bottom', size=(8, 1), key='-MODE-BOTTOM-')]]
+        [ibutton('Top', size=(8, 1), key='-MODE-TOP-'),
+         ibutton('Length', size=(8, 1), key='-MODE-LENGTH-'),
+         ibutton('Bottom', size=(8, 1), key='-MODE-BOTTOM-')]]
     mode_layout = [[sg.Frame('Mode', _mode_layout, font=TAB_FONT)]]
 
-    # --- TABS ---#
+    #### --- TABS ---#####
 
     logging_tab_layout = [
         [sg.Text("Logging")],
-        [sg.Multiline(size=(60, 15), horizontal_scroll=True, pad=(1, 1), font=REG_FONT, expand_x=True, expand_y=True,
+        [sg.Multiline(size=(30, 15), horizontal_scroll=True, pad=(1, 1), font=SMALL_FONT, expand_x=True, expand_y=True,
                       write_only=True, auto_size_text=True, autoscroll=True, key='-STDOUT-')]]
-
-    # controller_tab_layout = [
-    #     col([device_layout, status_layout]),
-    #     [sg.HorizontalSeparator()],
-    #     col([sync_layout, calibration_layout]),
-    #     col([reading_profile_layout, units_layout, mode_layout, backlight_layout]),
-    # ]
 
     controller_tab_layout = [
         col([device_layout]),
@@ -227,11 +220,12 @@ def make_window():
 
     # --- MENU ---#
 
-    _menu_layout = [['&Dcs5', ['&New Config',
+    _menu_layout = [
+        ['&Dcs5', ['&New Config',
                                '&Select Config',
                                '---',
                                '&Exit']],
-                    ['&Edit', ['Controller Configuration', 'Devices Specification']]]
+    ]
 
     menu_layout = [sg.Menu(_menu_layout, k='-MENU-', p=0, font=REG_FONT, disabled_text_color='grey'), ]
 
@@ -240,13 +234,23 @@ def make_window():
 
     global_layout += [[sg.TabGroup([[sg.Tab('Controller', controller_tab_layout),
                                      sg.Tab('Logging', logging_tab_layout)]],
+                                   expand_x=True, expand_y=True,
                                    key='-TAB GROUP-', font=REG_FONT)]]
 
     global_layout += [[sg.Text(f'version: v{VERSION}', font=SMALL_FONT), sg.Push(), sg.Text('Config:', font=SMALL_FONT),
                        sg.Text('No Config Selected', font=SMALL_FONT, key='-CONFIGS-')]]
 
-    window = sg.Window(f'Dcs5 Controller', global_layout, finalize=True, resizable=True, keep_on_top=False)
-
+    global_layout[-1].append(sg.Sizegrip())
+    window = sg.Window(
+        f'Dcs5 Controller',
+        global_layout,
+        margins=(0, 0),
+        finalize=True,
+        grab_anywhere=True,
+        resizable=True,
+        keep_on_top=False,
+    )
+    window.set_min_size(window.size)
     return window
 
 
@@ -310,20 +314,6 @@ def loop_run(window, controller):
                     controller = init_dcs5_controller(sg.user_settings()['configs_path'])
                 else:
                     reload_controller_config(controller)
-            case "Controller Configuration":
-                edit(CONTROLLER_CONFIGURATION_FILE_NAME)
-                # if sg.user_settings()['configs_path'] is not None:
-                #     if controller is None:
-                #         controller = init_dcs5_controller(sg.user_settings()['configs_path'])
-                #     else:
-                #         reload_controller_config(controller)
-            case "Devices Specification":
-                edit(DEVICES_SPECIFICATION_FILE_NAME)
-                # if sg.user_settings()['configs_path'] is not None:
-                #     if controller is None:
-                #         controller = init_dcs5_controller(sg.user_settings()['configs_path'])
-                #     else:
-                #         reload_controller_config(controller)
             case 'New Config':
                 create_new_configs()
                 if controller is None:
@@ -490,28 +480,75 @@ def select_configs_folder():
 def popup_window_select_config(default_config_path: str):
     default_config = Path(default_config_path).stem if default_config_path is not None else None
 
-    layout = [[sg.Text('Select configuration', size=(20, 1), font='Lucida', justification='left')],
-              [sg.Listbox(values=[x.stem for x in Path(CONFIG_FILES_PATH).glob('**/*') if x.is_dir()],
-                          default_values=[default_config],
-                          select_mode='single', key='-CONFIG-', size=(30, 6),
-                          expand_y=True)],
-              [sg.Button('Select', font=REG_FONT, button_color='green'), sg.Button('Delete', font=REG_FONT, button_color='red'), sg.Button('Cancel', font=REG_FONT)]]
+    select_layout = [
+        [sg.Text('Select configuration', font=REG_FONT, justification='left')],
+        [sg.Listbox(
+            values=[x.stem for x in Path(CONFIG_FILES_PATH).glob('**/*') if x.is_dir()],
+            default_values=[default_config],
+            select_mode='single', key='-CONFIG-', size=(24, 6),
+            expand_y=True,
+            expand_x=True,
+            font=REG_FONT,
+            pad=(0, 0),
+        )],
+        [
+            button('New', size=(6, 1), button_color=('black', "orange")),
+            button('Select', size=(6, 1), button_color=('white', "dark green")),
+            button('Delete', size=(6, 1), button_color=('white', "red3")),
+            button('Cancel', size=(6, 1), button_color=ENABLED_BUTTON_COLOR),
+
+        ]
+    ]
+
+    edit_layout = [
+        [sg.Text('Edit', font=REG_FONT, justification='left')],
+        [
+            sg.Listbox(
+                values=['Controller Configuration', 'Devices Specification'],
+                default_values=['Controller Configuration'],
+                select_mode='single', key='-EDIT-', size=(25, 2),
+                expand_y=True,
+                expand_x=True,
+                font=REG_FONT,
+                pad=(0, 0),
+            ),
+            button('Edit', size=(4, 1), button_color=('black', "orange")),
+        ],
+
+    ]
+
+    layout = [[sg.Column(select_layout, vertical_alignment='top'), sg.VSeperator(pad=(10, 20)), sg.Column(edit_layout, vertical_alignment='top')]]
 
     window = sg.Window('Select configuration', layout)
 
-    event, value = window.read()
+    while True:
+        event, value = window.read()
+        selected_config = default_config
+        if event in ['Cancel', sg.WIN_CLOSED]:
+            break
+
+        if value is not None:
+            if value['-CONFIG-'] is not None:
+                if event == 'Select':
+                    selected_config = value['-CONFIG-'][0]
+                    break
+
+                if event == 'Delete':
+                    if default_config == value['-CONFIG-'][0]:
+                        sg.popup_ok('Cannot delete the configuration currently in use.', title='Deletion error')
+                    elif sg.popup_yes_no(f"Are you sure you want to delete `{value['-CONFIG-'][0]}`") == 'Yes':
+                        shutil.rmtree(str(Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0])))
+                    break
+
+                if event == 'Edit':
+                    config_path = Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0])
+                    match value['-EDIT-'][0]:
+                        case 'Controller Configuration':
+                            click.edit(filename=str(config_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)))
+                        case 'Devices Specification':
+                            click.edit(filename=str(config_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME)))
 
     window.close()
-
-    selected_config = default_config
-    if value['-CONFIG-']:
-        if event == 'Select':
-            selected_config = value['-CONFIG-'][0]
-        if event == 'Delete':
-            if default_config == value['-CONFIG-'][0]:
-                sg.popup_ok('Cannot delete the configuration currently in use.', title='Deletion error')
-            elif sg.popup_yes_no(f"Are you sure you want to delete `{value['-CONFIG-'][0]}`") == 'Yes':
-                shutil.rmtree(str(Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0])))
 
     return str(Path(CONFIG_FILES_PATH).joinpath(selected_config))
 
@@ -575,27 +612,32 @@ def reload_controller_config(controller: Dcs5Controller):
         sg.user_settings_save()
 
 
-def edit(filename):
-    if sg.user_settings()['configs_path'] is not None:
-        click.edit(filename=str(Path(sg.user_settings()['configs_path']).joinpath(filename)))
-    else: # This should never happen tho... I think.
-        sg.popup_ok("No config is selected.")
-
-
 def dotted(value, length=50):
     ndots = length - len(value)
     return value + ' ' + '.' * ndots
 
 
-def led(color, key=None, font=None):
-    return sg.Text(CIRCLE, text_color=color, key=key, font=font)
+def led(key=None):
+    return sg.Text(CIRCLE, key=key, text_color='red3', font=LED_SIZE)
 
 
-def button(label, size, key):
+def ibutton(label, size, key):
     return sg.Button(label, size=size,
                      font=REG_FONT,
                      pad=(1, 1),
                      button_color=ENABLED_BUTTON_COLOR,
+                     border_width=1,
+                     disabled_button_color=DISABLED_BUTTON_COLOR,
+                     key=key,
+                     use_ttk_buttons=True)
+
+
+def button(label, button_color, size, key=None):
+    return sg.Button(label,
+                     size=size,
+                     font=REG_FONT,
+                     pad=(1, 1),
+                     button_color=button_color,
                      border_width=1,
                      disabled_button_color=DISABLED_BUTTON_COLOR,
                      key=key,
