@@ -166,10 +166,7 @@ def make_window():
     ###
     _sync_layout = [
         [sg.Text('Synchronized', font=REG_FONT), led(key='-SYNC_LED-')],
-        [
-            ibutton('Synchronize', size=(15, 1), key='-SYNC-'),
-            #ibutton('Reload Config', size=(15, 1), key='-RELOAD-')
-         ]]
+        [ibutton('Synchronize', size=(15, 1), key='-SYNC-'),]]
     sync_layout = [[sg.Frame('Synchronize', _sync_layout, font=TAB_FONT)]]
     ###
     _calibration_layout = [
@@ -347,8 +344,6 @@ def refresh_layout(window, controller):
     else:
         window['-CONFIGS-'].update('No Config Selected')
 
-    # window['-RELOAD-'].update(disabled=sg.user_settings()['configs_path'] is None)
-
     if controller is not None:
         _controller_refresh_layout(window, controller)
     else:
@@ -458,11 +453,11 @@ def config_window(default_config):
         current_config = 'No Configuration Selected'
 
     select_layout = [
-        [sg.Text('Configuration:', font=REG_FONT, justification='left'),
-         sg.Text(current_config, font=REG_FONT, key='-CONFIGURATION-')],
+        [sg.Text('Current:', font=REG_FONT, justification='left', pad=(0, 0)),
+         sg.Text(current_config, font=REG_FONT+' bold', key='-CONFIGURATION-', background_color='white', pad=(0,0))],
+        [],
         [sg.Listbox(
             values=list_configs(),
-            default_values=[default_config],
             select_mode='single', key='-CONFIG-', size=(24, 6),
             expand_y=True,
             expand_x=True,
@@ -483,7 +478,6 @@ def config_window(default_config):
         [
             sg.Listbox(
                 values=['Controller Configuration', 'Devices Specification'],
-                #default_values=['Controller Configuration'],
                 select_mode='single', key='-EDIT-', size=(25, 2),
                 expand_y=True,
                 expand_x=True,
@@ -543,15 +537,13 @@ def popup_window_select_config(controller: Dcs5Controller):
                         changes = None
                         match value['-EDIT-'][0]:
                             case 'Controller Configuration':
-                                changes = click.edit(filename=str(config_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)))
+                                click.edit(filename=str(config_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)))
                             case 'Devices Specification':
-                                changes = click.edit(filename=str(config_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME)))
+                                click.edit(filename=str(config_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME)))
 
                         if value['-CONFIG-'][0] == current_config:
-                            if changes is not None:
-                                if sg.popup_yes_no('The current configuration has been modified.\n'
-                                                   'Do you want to reload the configuration ?') == 'Yes':
-                                    reload_controller_config(controller)
+                            if sg.popup_yes_no('Do you want to reload the configuration ?') == 'Yes':
+                                reload_controller_config(controller)
 
                     if event == 'New':
                         create_new_configs()
