@@ -446,7 +446,7 @@ def load_user_settings():
         sg.user_settings().update({'previous_config_path': None})
 
 
-def config_window(default_config):
+def config_window():
     if (configs_path := sg.user_settings()['configs_path']) is not None:
         current_config = Path(configs_path).stem
     else:
@@ -462,7 +462,7 @@ def config_window(default_config):
             expand_y=True,
             expand_x=True,
             font=REG_FONT,
-            pad=(0, 0)
+            pad=(0, 0),
         )],
         [
             button('New', size=(6, 1), button_color=('black', "orange")),
@@ -504,7 +504,7 @@ def popup_window_select_config(controller: Dcs5Controller):
 
     current_config = Path(current_config_path).stem if current_config_path is not None else None
 
-    window = config_window(default_config=current_config)
+    window = config_window()
 
     while True:
         event, value = window.read()
@@ -534,7 +534,6 @@ def popup_window_select_config(controller: Dcs5Controller):
 
                     if event == 'Edit':
                         config_path = Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0])
-                        changes = None
                         match value['-EDIT-'][0]:
                             case 'Controller Configuration':
                                 click.edit(filename=str(config_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)))
