@@ -15,11 +15,9 @@ sg.user_settings_set_entry('-theme-', my_new_theme)
 # TODO Add command to menu button
 """
 import os
-#import sys
 from pathlib import Path
 import shutil
 import logging
-#import threading
 import click
 
 import PySimpleGUI as sg
@@ -43,7 +41,7 @@ from dcs5 import VERSION, \
 from dcs5.controller import Dcs5Controller
 
 if os.environ.get('EDITOR') == 'EMACS':
-    print('Text editor changed')
+    print('Text editor changed.')
     os.environ.update({'EDITOR': 'pluma'})  # FIXME
 
 
@@ -162,13 +160,16 @@ def make_window():
                                 border_width=1,
                                 disabled_button_color=DISABLED_BUTTON_COLOR,
                                 key='-RESTART-',
-                                use_ttk_buttons=True)]
+                                )]
     _status_layout = col([connection_layout, activate_layout, mute_layout])
     status_layout = [[sg.Frame('Status', [_status_layout, restart_layout], font=TAB_FONT, expand_x=True)]]
     ###
     _sync_layout = [
         [sg.Text('Synchronized', font=REG_FONT), led(key='-SYNC_LED-')],
-        [ibutton('Synchronize', size=(15, 1), key='-SYNC-'), ibutton('Reload Config', size=(15, 1), key='-RELOAD-')]]
+        [
+            ibutton('Synchronize', size=(15, 1), key='-SYNC-'),
+            #ibutton('Reload Config', size=(15, 1), key='-RELOAD-')
+         ]]
     sync_layout = [[sg.Frame('Synchronize', _sync_layout, font=TAB_FONT)]]
     ###
     _calibration_layout = [
@@ -221,10 +222,10 @@ def make_window():
     # --- MENU ---#
 
     _menu_layout = [
-        ['&Dcs5', ['&New Config',
-                               '&Select Config',
-                               '---',
-                               '&Exit']],
+        ['&Dcs5', [
+            '&Configuration',
+            '---',
+            '&Exit']],
     ]
 
     menu_layout = [sg.Menu(_menu_layout, k='-MENU-', p=0, font=REG_FONT, disabled_text_color='grey'), ]
@@ -232,15 +233,16 @@ def make_window():
     # --- GLOBAL ---#
     global_layout = [menu_layout]
 
-    global_layout += [[sg.TabGroup([[sg.Tab('Controller', controller_tab_layout),
-                                     sg.Tab('Logging', logging_tab_layout)]],
+    global_layout += [[sg.TabGroup([[
+        sg.Tab('Controller', controller_tab_layout),
+        sg.Tab('Logging', logging_tab_layout)
+    ]],
                                    expand_x=True, expand_y=True,
                                    key='-TAB GROUP-', font=REG_FONT)]]
 
     global_layout += [[sg.Text(f'version: v{VERSION}', font=SMALL_FONT), sg.Push(), sg.Text('Config:', font=SMALL_FONT),
-                       sg.Text('No Config Selected', font=SMALL_FONT, key='-CONFIGS-')]]
+                       sg.Text('No Configuration Selected', font=SMALL_FONT, key='-CONFIGS-')]]
 
-    global_layout[-1].append(sg.Sizegrip())
     window = sg.Window(
         f'Dcs5 Controller',
         global_layout,
@@ -260,6 +262,7 @@ def run():
     sg.set_options(
         icon=LOGO,
         auto_size_buttons=True,
+        use_ttk_buttons=True,
     )
 
     window = make_window()
@@ -281,6 +284,8 @@ def run():
     refresh_layout(window, controller)
 
     loop_run(window, controller)
+
+    sg.user_settings_save()
 
 
 def loop_run(window, controller):
@@ -309,23 +314,10 @@ def loop_run(window, controller):
                 logging.debug('Calpts not mapped')
             case "-CALIBRATE-":
                 logging.debug('Calibrate not mapped')
-            case "-RELOAD-":
-                if controller is None:
-                    controller = init_dcs5_controller(sg.user_settings()['configs_path'])
-                else:
-                    reload_controller_config(controller)
-            case 'New Config':
-                create_new_configs()
-                if controller is None:
-                    controller = init_dcs5_controller(sg.user_settings()['configs_path'])
-                else:
-                    reload_controller_config(controller)
-            case 'Select Config':
-                select_configs_folder()
-                if controller is None:
-                    controller = init_dcs5_controller(sg.user_settings()['configs_path'])
-                else:
-                    reload_controller_config(controller)
+            # case "-RELOAD-":
+            #     reload_controller_config(controller)
+            case 'Configuration':
+                popup_window_select_config(controller=controller)
             case '-UNITS-MM-':
                 controller.change_length_units_mm()
             case '-UNITS-CM-':
@@ -355,10 +347,10 @@ def refresh_layout(window, controller):
     else:
         window['-CONFIGS-'].update('No Config Selected')
 
-    window['-RELOAD-'].update(disabled=sg.user_settings()['configs_path'] is None)
+    # window['-RELOAD-'].update(disabled=sg.user_settings()['configs_path'] is None)
 
     if controller is not None:
-        _refresh_layout(window, controller)
+        _controller_refresh_layout(window, controller)
     else:
         for key in ['-CONNECT-', '-ACTIVATE-',
                     '-RESTART-', '-MUTE-',
@@ -372,7 +364,7 @@ def refresh_layout(window, controller):
             window[key].update(text_color='Red')
 
 
-def _refresh_layout(window: sg.Window, controller: Dcs5Controller):
+def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
     window['-NAME-'].update(controller.config.client.device_name)
     window['-MAC-'].update(controller.config.client.mac_address)
 
@@ -459,41 +451,27 @@ def load_user_settings():
         sg.user_settings().update({'previous_config_path': None})
 
 
-def select_configs_folder():
-    current_config_path = None
-    if user_settings := sg.user_settings():
-        current_config_path = user_settings['configs_path']
-
-    selected_config_path = None
-    if (selected_config := popup_window_select_config(default_config_path=current_config_path)) is not None:
-        selected_config_path = str(Path(CONFIG_FILES_PATH).joinpath(selected_config))
-        logging.debug(f'Selected config: {selected_config}, current config: {current_config_path}')
-
-    sg.user_settings().update({
-        'configs_path': selected_config_path,
-        'previous_config_path': current_config_path
-    })
-
-    sg.user_settings_save()
-
-
-def popup_window_select_config(default_config_path: str):
-    default_config = Path(default_config_path).stem if default_config_path is not None else None
+def config_window(default_config):
+    if (configs_path := sg.user_settings()['configs_path']) is not None:
+        current_config = Path(configs_path).stem
+    else:
+        current_config = 'No Configuration Selected'
 
     select_layout = [
-        [sg.Text('Select configuration', font=REG_FONT, justification='left')],
+        [sg.Text('Configuration:', font=REG_FONT, justification='left'),
+         sg.Text(current_config, font=REG_FONT, key='-CONFIGURATION-')],
         [sg.Listbox(
-            values=[x.stem for x in Path(CONFIG_FILES_PATH).glob('**/*') if x.is_dir()],
+            values=list_configs(),
             default_values=[default_config],
             select_mode='single', key='-CONFIG-', size=(24, 6),
             expand_y=True,
             expand_x=True,
             font=REG_FONT,
-            pad=(0, 0),
+            pad=(0, 0)
         )],
         [
             button('New', size=(6, 1), button_color=('black', "orange")),
-            button('Select', size=(6, 1), button_color=('white', "dark green")),
+            button('Load', size=(6, 1), button_color=('white', "dark green")),
             button('Delete', size=(6, 1), button_color=('white', "red3")),
             button('Cancel', size=(6, 1), button_color=ENABLED_BUTTON_COLOR),
 
@@ -501,11 +479,11 @@ def popup_window_select_config(default_config_path: str):
     ]
 
     edit_layout = [
-        [sg.Text('Edit', font=REG_FONT, justification='left')],
+        [sg.Text('Files', font=REG_FONT, justification='left')],
         [
             sg.Listbox(
                 values=['Controller Configuration', 'Devices Specification'],
-                default_values=['Controller Configuration'],
+                #default_values=['Controller Configuration'],
                 select_mode='single', key='-EDIT-', size=(25, 2),
                 expand_y=True,
                 expand_x=True,
@@ -517,40 +495,80 @@ def popup_window_select_config(default_config_path: str):
 
     ]
 
-    layout = [[sg.Column(select_layout, vertical_alignment='top'), sg.VSeperator(pad=(10, 20)), sg.Column(edit_layout, vertical_alignment='top')]]
+    layout = [[sg.Column(select_layout, vertical_alignment='top'), sg.VSeperator(pad=(10, 20)),
+               sg.Column(edit_layout, vertical_alignment='top')]]
 
-    window = sg.Window('Select configuration', layout)
+    window = sg.Window('Configurations', layout)
+
+    return window
+
+
+def popup_window_select_config(controller: Dcs5Controller):
+    current_config_path = None
+    if user_settings := sg.user_settings():
+        current_config_path = user_settings['configs_path']
+
+    current_config = Path(current_config_path).stem if current_config_path is not None else None
+
+    window = config_window(default_config=current_config)
 
     while True:
         event, value = window.read()
-        selected_config = default_config
+
         if event in ['Cancel', sg.WIN_CLOSED]:
             break
 
         if value is not None:
             if value['-CONFIG-'] is not None:
-                if event == 'Select':
-                    selected_config = value['-CONFIG-'][0]
-                    break
+                if len(value['-CONFIG-']) != 0:
+                    if event == 'Load':
+                        selected_config_path = str(Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0]))
 
-                if event == 'Delete':
-                    if default_config == value['-CONFIG-'][0]:
-                        sg.popup_ok('Cannot delete the configuration currently in use.', title='Deletion error')
-                    elif sg.popup_yes_no(f"Are you sure you want to delete `{value['-CONFIG-'][0]}`") == 'Yes':
-                        shutil.rmtree(str(Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0])))
-                    break
+                        sg.user_settings()['previous_config_path'] = sg.user_settings()['configs_path']
+                        sg.user_settings()['configs_path'] = selected_config_path
 
-                if event == 'Edit':
-                    config_path = Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0])
-                    match value['-EDIT-'][0]:
-                        case 'Controller Configuration':
-                            click.edit(filename=str(config_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)))
-                        case 'Devices Specification':
-                            click.edit(filename=str(config_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME)))
+                        if controller is None:
+                            controller = init_dcs5_controller(sg.user_settings()['configs_path'])
+                        else:
+                            reload_controller_config(controller)
+
+                    if event == 'Delete':
+                        if current_config == value['-CONFIG-'][0]:
+                            sg.popup_ok('Cannot delete the configuration currently in use.', title='Deletion error')
+                        elif sg.popup_yes_no(f"Are you sure you want to delete `{value['-CONFIG-'][0]}`") == 'Yes':
+                            shutil.rmtree(str(Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0])))
+
+                    if event == 'Edit':
+                        config_path = Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0])
+                        changes = None
+                        match value['-EDIT-'][0]:
+                            case 'Controller Configuration':
+                                changes = click.edit(filename=str(config_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)))
+                            case 'Devices Specification':
+                                changes = click.edit(filename=str(config_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME)))
+
+                        if value['-CONFIG-'][0] == current_config:
+                            if changes is not None:
+                                if sg.popup_yes_no('The current configuration has been modified.\n'
+                                                   'Do you want to reload the configuration ?') == 'Yes':
+                                    reload_controller_config(controller)
+
+                    if event == 'New':
+                        create_new_configs()
+
+                # -------- refresh ---------------
+                window['-CONFIG-'].update(values=list_configs())
+
+                if (configs_path := sg.user_settings()['configs_path']) is not None:
+                    window['-CONFIGURATION-'].update(Path(configs_path).stem)
+                else:
+                    window['-CONFIGURATION-'].update('No Config Selected')
 
     window.close()
 
-    return str(Path(CONFIG_FILES_PATH).joinpath(selected_config))
+
+def list_configs():
+    return [x.stem for x in Path(CONFIG_FILES_PATH).glob('**/*') if x.is_dir()]
 
 
 def create_new_configs():
@@ -587,14 +605,6 @@ def create_new_configs():
         sg.popup_ok('Not name provided. Aborted')
 
 
-def update_controller_config_paths(controller: Dcs5Controller):
-    configs_path = sg.user_settings()['configs_path']
-    controller.config_path = Path(configs_path).joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)
-    controller.devices_specifications_path = Path(configs_path).joinpath(DEVICES_SPECIFICATION_FILE_NAME)
-    controller.control_box_parameters_path = Path(configs_path).joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)
-    logging.debug('Config files path updated.')
-
-
 def reload_controller_config(controller: Dcs5Controller):
     update_controller_config_paths(controller)
     try:
@@ -605,11 +615,18 @@ def reload_controller_config(controller: Dcs5Controller):
                 controller.init_controller_and_board()
 
     except ConfigError:
-        logging.debug('ConfigError while reloading config files.')
-        sg.popup_ok('Could not reload the configuration files.\n'
+        logging.debug('ConfigError while loading config files.')
+        sg.popup_ok('Could not load the configuration files.\n'
                     ' Error in the configurations files. ')
         sg.user_settings().update({'configs_path': sg.user_settings()['previous_config_path']})
-        sg.user_settings_save()
+
+
+def update_controller_config_paths(controller: Dcs5Controller):
+    configs_path = sg.user_settings()['configs_path']
+    controller.config_path = Path(configs_path).joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)
+    controller.devices_specifications_path = Path(configs_path).joinpath(DEVICES_SPECIFICATION_FILE_NAME)
+    controller.control_box_parameters_path = Path(configs_path).joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)
+    logging.debug('Config files path updated.')
 
 
 def dotted(value, length=50):
@@ -629,7 +646,7 @@ def ibutton(label, size, key):
                      border_width=1,
                      disabled_button_color=DISABLED_BUTTON_COLOR,
                      key=key,
-                     use_ttk_buttons=True)
+                     )
 
 
 def button(label, button_color, size, key=None):
@@ -641,7 +658,7 @@ def button(label, button_color, size, key=None):
                      border_width=1,
                      disabled_button_color=DISABLED_BUTTON_COLOR,
                      key=key,
-                     use_ttk_buttons=True)
+                     )
 
 
 def col(cols_layout):

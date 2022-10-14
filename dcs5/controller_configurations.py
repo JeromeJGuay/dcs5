@@ -31,6 +31,7 @@ Valid keyboard inputs :
     'up', 'volumedown', 'volumemute', 'volumeup', 'win', 'winleft', 'winright', 'yen',
     'command', 'option', 'optionleft', 'optionright']
 """
+from json.decoder import JSONDecodeError
 from dataclasses import dataclass
 from typing import *
 
@@ -185,7 +186,7 @@ class ControllerConfiguration:
 def load_config(path: str):
     try:
         return ControllerConfiguration(**json2dict(path))
-    except TypeError:  # Catch Missing keys error.
+    except (JSONDecodeError, TypeError):  # Catch JsonError Missing keys error.
         return None
 
 

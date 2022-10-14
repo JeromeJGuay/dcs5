@@ -3,6 +3,8 @@ from typing import Dict, List
 
 from dcs5.utils import json2dict
 
+from json.decoder import JSONDecodeError
+
 
 @dataclass
 class Board:
@@ -36,6 +38,6 @@ def load_devices_specification(path: str):
     specification = json2dict(path)
     try:
         return DevicesSpecification(**specification)
-    except TypeError:  # Catch Missing keys error.
+    except (JSONDecodeError, TypeError):  # Catch JsonError Missing keys error.
         return None
 
