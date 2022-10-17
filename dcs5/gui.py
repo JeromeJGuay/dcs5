@@ -247,6 +247,7 @@ def make_window():
         grab_anywhere=True,
         resizable=True,
         keep_on_top=False,
+        element_justification='center'
     )
     window.set_min_size(window.size)
     return window
@@ -281,7 +282,6 @@ def run():
 
     loop_run(window, controller)
 
-    print(sg.user_settings())
     sg.user_settings_save()
 
 
@@ -468,9 +468,7 @@ def config_window():
         [
             button('New', size=(6, 1), button_color=('black', "orange")),
             ibutton('Load', size=(6, 1), button_color=('white', "dark green"), disabled=True),
-            ibutton('Delete', size=(6, 1), button_color=('white', "red3"), disabled=True),
-            button('Cancel', size=(6, 1), button_color=ENABLED_BUTTON_COLOR),
-
+            ibutton('Delete', size=(6, 1), button_color=('white', "red3"), disabled=True)
         ]
     ]
 
@@ -493,9 +491,10 @@ def config_window():
     ]
 
     layout = [[sg.Column(select_layout, vertical_alignment='top'), sg.VSeperator(pad=(10, 20)),
-               sg.Column(edit_layout, vertical_alignment='top')]]
+               sg.Column(edit_layout, vertical_alignment='top')],
+              [button('Close', size=(6, 1), button_color=ENABLED_BUTTON_COLOR)]]
 
-    window = sg.Window('Configurations', layout, finalize=True)
+    window = sg.Window('Configurations', layout, finalize=True, element_justification='center')
 
     return window
 
@@ -512,9 +511,7 @@ def popup_window_select_config(controller: Dcs5Controller):
     while True:
         event, value = window.read()
 
-        print(event, value)
-
-        if event in ['Cancel', sg.WIN_CLOSED]:
+        if event in ['Close', sg.WIN_CLOSED]:
             break
 
         if event == 'New':
@@ -617,6 +614,7 @@ def create_new_configs():
     else:
         sg.popup_ok('Not name provided. Aborted')
         return None
+
 
 def reload_controller_config(controller: Dcs5Controller):
     update_controller_config_paths(controller)
