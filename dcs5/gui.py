@@ -10,6 +10,10 @@ sg.user_settings_filename(filename='DaysUntil.json') # NOT NEEDED
 theme = sg.user_settings_get_entry('-theme-', 'Dark Gray 13')
 sg.user_settings_set_entry('-theme-', my_new_theme)
 
+TODO:
+- Layout to display Last Input/Command.
+- Menu, Help to show docs
+- Test on Windows
 """
 import os
 from pathlib import Path
