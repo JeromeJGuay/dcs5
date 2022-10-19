@@ -831,6 +831,8 @@ class SocketListener:
         self.swipe_triggered = False
         self.with_ctrl = False
         self.buffer = ""
+        self.last_input = None
+        self.last_command = None
 
     def pop(self, i=None):
         """Return and clear the client buffer."""
@@ -872,9 +874,9 @@ class SocketListener:
             msg_type, msg_value = self._decode_board_message(message)
             logging.debug(f"Message Type: {msg_type}, Message Value: {msg_value}")
             if msg_type == "controller_box_key":
-                out_value = self.controller.config.key_maps.control_box[
-                    self.controller.devices_spec.control_box.keys_layout[msg_value]
-                ]
+                control_box_key = self.controller.devices_spec.control_box.keys_layout[msg_value]
+                self.last_input = control_box_key
+                out_value = self.controller.config.key_maps.control_box[control_box_key]
 
             elif msg_type == 'swipe':
                 self.swipe_value = msg_value
@@ -890,6 +892,7 @@ class SocketListener:
                 self.controller.command_handler.received_queue.put(msg_value)
 
             if out_value is not None:
+                self.last_command = out_value
                 self._process_output(out_value)
 
     @staticmethod
@@ -921,6 +924,7 @@ class SocketListener:
             out_value = value - self.controller.stylus_offset
             if self.controller.length_units == 'cm':
                 out_value /= 10
+            self.last_input = out_value
             return out_value
         else:
             index = int(
@@ -928,12 +932,13 @@ class SocketListener:
                 / self.controller.devices_spec.board.key_to_mm_ratio
             )
             if index < self.controller.devices_spec.board.number_of_keys:
-                return self.controller.config.key_maps.board[
-                    self.controller.devices_spec.board.keys_layout[self.controller.output_mode][index]
-                ]
+                board_key = self.controller.devices_spec.board.keys_layout[self.controller.output_mode][index]
+                self.last_input = board_key
+                return self.controller.config.key_maps.board[board_key]
 
     def _check_for_stylus_swipe(self, value: str):
         self.swipe_triggered = False
+        self.last_input = "swipe"
         segments_limits = self.controller.config.output_modes.segments_limits
         if value <= segments_limits[-1]:
             for l_max, l_min, mode in zip(segments_limits[1:],
