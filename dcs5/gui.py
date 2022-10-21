@@ -246,6 +246,7 @@ def make_window():
             '&Configuration',
             '---',
             '&Exit']],
+        ['&Help']
     ]
 
     menu_layout = [sg.Menu(_menu_layout, k='-MENU-', p=0, font=REG_FONT, disabled_text_color='grey'), ]
@@ -355,6 +356,8 @@ def loop_run(window, controller):
                 else:
                     controller.mute_board()
                     window['-MUTE-'].update(text='Unmute')
+            case 'Help':
+                webbrowser.open_new()
 
         refresh_layout(window, controller)
 
