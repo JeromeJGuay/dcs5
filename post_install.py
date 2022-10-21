@@ -1,6 +1,5 @@
 import shutil
 from pathlib import Path
-import click
 
 from dcs5 import \
     SERVER_CONFIGURATION_FILE, \
