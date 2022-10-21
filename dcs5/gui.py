@@ -15,19 +15,15 @@ TODO:
 - Menu, Help to show docs
 - Test on Windows
 """
-import os
-from pathlib import Path
-import shutil
 import logging
-import click
+import os
+import shutil
 import webbrowser
+from pathlib import Path
 
 import PySimpleGUI as sg
+import click
 import pyautogui as pag
-
-from dcs5.logger import init_logging, get_multiline_handler
-
-from dcs5.controller_configurations import ConfigError
 
 from dcs5 import VERSION, \
     SERVER_CONFIGURATION_FILE_NAME, \
@@ -38,9 +34,11 @@ from dcs5 import VERSION, \
     DEFAULT_CONTROLLER_CONFIGURATION_FILE, \
     DEFAULT_DEVICES_SPECIFICATION_FILE, \
     DEFAULT_CONTROL_BOX_PARAMETERS, \
-    CONFIG_FILES_PATH
-
+    CONFIG_FILES_PATH, \
+    USER_GUIDE_FILE
 from dcs5.controller import Dcs5Controller
+from dcs5.controller_configurations import ConfigError
+from dcs5.logger import init_logging, get_multiline_handler
 
 if os.environ.get('EDITOR') == 'EMACS':
     print('Text editor changed.')
@@ -136,7 +134,9 @@ def save_user_settings():
     sg.user_settings().pop('previous_config_path')
     sg.user_settings_save()
 
+
 DEVICE_LAYOUT_PADDING = 20
+
 
 def make_window():
     device_layout = [[
@@ -155,18 +155,18 @@ def make_window():
     ###
     connection_layout = [
         [sg.Text(' Connected', font=REG_FONT), led(key='-CONNECTED_LED-')],
-        [ibutton('Connect', size=(12, 1), key='-CONNECT-')]]
+        [ibutton('Connect', size=(11, 1), key='-CONNECT-')]]
     activate_layout = [
         [sg.Text(' Activated', font=REG_FONT), led(key='-ACTIVATED_LED-')],
-        [ibutton('Activate', size=(12, 1), key='-ACTIVATE-')]]
+        [ibutton('Activate', size=(11, 1), key='-ACTIVATE-')]]
     mute_layout = [
         [sg.Text('  Muted', font=REG_FONT), led(key='-MUTED_LED-')],
-        [ibutton('Mute', size=(12, 1), key='-MUTE-')]]
+        [ibutton('Mute', size=(11, 1), key='-MUTE-')]]
 
     restart_layout = [sg.Push(),
-                      sg.Button('Restart', size=(12, 1),
+                      sg.Button('Restart', size=(11, 1),
                                 font=REG_FONT,
-                                pad=(0, 1),
+                                pad=(1, 1),
                                 button_color=('white', 'red3'),
                                 border_width=1,
                                 disabled_button_color=DISABLED_BUTTON_COLOR,
@@ -186,25 +186,25 @@ def make_window():
          ibutton('Set Cal. Pts.', size=(15, 1), key='-CALPTS-')]]  # TODO
     calibration_layout = [[sg.Frame('Calibration', _calibration_layout, font=TAB_FONT)]]
     ###
-    _reading_profile_layout = [[sg.Text(dotted('Settling delay', 25), font=REG_FONT),
+    _reading_profile_layout = [[sg.Text(dotted('Settling delay', 19), font=REG_FONT),
                                 sg.Text("---", font=REG_FONT + " bold", background_color='white',
-                                        size=(3, 1), p=(0, 0),
+                                        size=(3, 1), p=(1, 0),
                                         key='-SETTLING-DELAY-')],
-                               [sg.Text(dotted('Number of reading', 25), font=REG_FONT),
+                               [sg.Text(dotted('Number of reading', 19), font=REG_FONT),
                                 sg.Text("---", font=REG_FONT + " bold", background_color='white',
-                                        size=(3, 1), p=(0, 0),
+                                        size=(3, 1), p=(1, 0),
                                         key='-NUMBER-READING-')],
-                               [sg.Text(dotted('Max deviation', 25), font=REG_FONT),
+                               [sg.Text(dotted('Max deviation', 19), font=REG_FONT),
                                 sg.Text("---", font=REG_FONT + " bold", background_color='white',
-                                        size=(3, 1), p=(0, 0),
+                                        size=(3, 1), p=(1, 0),
                                         key='-MAX-DEVIATION-')]]
     reading_profile_layout = [[sg.Frame('Reading Profile', _reading_profile_layout, font=TAB_FONT)]]
 
     ###
-    _last_command_layout = [[sg.Text('Key'), sg.Text("", font=REG_FONT + " bold", size=(15, 1), p=(0, 1), relief='solid',
+    _last_command_layout = [[sg.Text('Key'), sg.Text("", font=REG_FONT + " bold", size=(12, 1), p=(1, 1), relief='solid',
                                                      border_width=2, justification='c', background_color='white',
                                                      key="-LAST_KEY-"),
-                            sg.Text('Command'), sg.Text("", font=REG_FONT + " bold", size=(15, 1), p=(0, 1), relief='solid',
+                            sg.Text('Command'), sg.Text("", font=REG_FONT + " bold", size=(12, 1), p=(1, 1), relief='solid',
                                                         border_width=2, justification='c', background_color='white',
                                                         key="-LAST_COMMAND-")]]
     last_command_layout = [[sg.Frame('Last Inputs', _last_command_layout, font=TAB_FONT)]]
@@ -231,9 +231,10 @@ def make_window():
     controller_tab_layout = [
         col([device_layout]),
         col([status_layout]),
-        col([sync_layout]),
+        #col([sync_layout]),
+        col([reading_profile_layout, sync_layout]),
         col([calibration_layout]),
-        col([reading_profile_layout]),
+        #col([reading_profile_layout]),
         col([units_layout, mode_layout]),
         col([last_command_layout]),
         col([backlight_layout]),
@@ -246,7 +247,7 @@ def make_window():
             '&Configuration',
             '---',
             '&Exit']],
-        ['&Help']
+        ['Help', ['Guide']]
     ]
 
     menu_layout = [sg.Menu(_menu_layout, k='-MENU-', p=0, font=REG_FONT, disabled_text_color='grey'), ]
@@ -356,8 +357,8 @@ def loop_run(window, controller):
                 else:
                     controller.mute_board()
                     window['-MUTE-'].update(text='Unmute')
-            case 'Help':
-                webbrowser.open_new()
+            case 'Guide':
+                webbrowser.open_new(USER_GUIDE_FILE)
 
         refresh_layout(window, controller)
 
