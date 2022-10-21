@@ -68,8 +68,9 @@
             "down": "down",
             "left": "left",
             "right": "right",
-            "mode": "CHANGE_STYLUS"
+            "mode": "MODE"
         },
+        "control_box_mode": {},
         "board": {
             "a": "a",
             "b": "b",
@@ -154,6 +155,7 @@
             "right_space_6": "space",
             "del_last_1": "backspace",
             "del_last_2": "backspace"
-        }
+        },
+        "board_mode": {}
     }
 }

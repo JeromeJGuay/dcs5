@@ -68,7 +68,7 @@ The controller_configuration.json is used to configure the controller behavior.
   - mode_reading_profiles: The corresponding reading_profiles for each output modes.
 + keys_maps: Mapping of the key to either command or keyboard input.
   - Notes: The name of the keys are set in [dcs5/default_configs/devices_specification.json](dcs5/default_configs/devices_specification.json).
-  - Notes: Valid commands `["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm"]`
+  - Notes: Valid commands `["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm", "MODE", "MODE_TOP", "MODE_BOTTOM"]`
   - Notes: See the [dcs5/controller_configurations.py](dcs5/controller_configurations.py) module for the valid keyboard input.
   - Notes: List of command are accepted.
 
