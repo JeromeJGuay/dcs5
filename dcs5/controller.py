@@ -360,9 +360,20 @@ class Dcs5Controller:
             self.shouter = ServerInput()
 
     def _load_configs(self):
-        self.control_box_parameters = load_control_box_parameters(self.control_box_parameters_path)
-        self.devices_spec = load_devices_specification(self.devices_specifications_path)
-        self.config = check_config(load_config(self.config_path), self.control_box_parameters)
+        control_box_parameters = load_control_box_parameters(self.control_box_parameters_path)
+        devices_spec = load_devices_specification(self.devices_specifications_path)
+        config = load_config(self.config_path)
+
+        if control_box_parameters is None:
+            raise ConfigError(f'Error in {self.control_box_parameters_path}. File could not be loaded.')
+        if devices_spec is None:
+            raise ConfigError(f'Error in {self.devices_specifications_path}. File could not be loaded.')
+        if config is None:
+            raise ConfigError(f'Error in {self.config_path}. File could not be loaded.')
+
+        self.control_box_parameters = control_box_parameters
+        self.devices_spec = devices_spec
+        self.config = validate_config(config, self.control_box_parameters)
 
     def reload_configs(self):
         self.is_sync = False
@@ -1003,7 +1014,7 @@ class SocketListener:
                     break
 
 
-def check_config(config: ControllerConfiguration, control_box: ControlBoxParameters):
+def validate_config(config: ControllerConfiguration, control_box: ControlBoxParameters):
     if not 0 <= config.launch_settings.backlighting_level <= control_box.max_backlighting_level:
         raise ConfigError(f'launch_settings/Backlight_level outside range {(0, control_box.max_backlighting_level)}')
 
