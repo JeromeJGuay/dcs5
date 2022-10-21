@@ -20,6 +20,7 @@ from pathlib import Path
 import shutil
 import logging
 import click
+import webbrowser
 
 import PySimpleGUI as sg
 import pyautogui as pag
@@ -89,7 +90,7 @@ def init_dcs5_controller(configs_path: str):
             controller_config_path=controller_config_path,
             devices_specifications_path=devices_specifications_path,
             control_box_parameters_path=control_box_parameters_path
-            )
+        )
 
     try:
         controller = Dcs5Controller(controller_config_path, devices_specifications_path, control_box_parameters_path)
@@ -135,42 +136,37 @@ def save_user_settings():
     sg.user_settings().pop('previous_config_path')
     sg.user_settings_save()
 
+DEVICE_LAYOUT_PADDING = 20
 
 def make_window():
     device_layout = [[
         sg.Frame(
             'Device', [
-                [sg.Text(dotted("Name", 20), pad=(5, 1), font=REG_FONT),
-                 sg.Text("N\A", font=REG_FONT, justification='c', background_color='white', size=(20, 1), p=(0, 0),
-                         key='-NAME-')
-                 ],
-                [sg.Text(dotted("MAC address", 20), pad=(5, 1), font=REG_FONT),
-                 sg.Text("N\A", font=REG_FONT, justification='c', background_color='white', size=(20, 1), p=(0, 0),
-                         key='-MAC-')
-                 ],
-                [sg.Text(dotted("Port (Bt Channel)", 20), pad=(5, 1), font=REG_FONT),
-                 sg.Text("N\A", font=REG_FONT, justification='c', background_color='white', size=(20, 1), p=(0, 0),
-                         key='-PORT-')
-                 ]
+                [sg.Text(dotted(" Name", 18), pad=(0, 0), font=REG_FONT),
+                 sg.Text(dotted("N\A ", DEVICE_LAYOUT_PADDING, 'right'), font=REG_FONT, p=(0, 0), key='-NAME-')],
+                [sg.Text(dotted(" MAC address", 18), pad=(0, 0), font=REG_FONT),
+                 sg.Text(dotted("N\A", DEVICE_LAYOUT_PADDING, 'right'), font=REG_FONT, p=(0, 0), key='-MAC-')],
+                [sg.Text(dotted(" Port (Bt Channel)", 18), pad=(0, 0), font=REG_FONT),
+                 sg.Text(dotted("N\A ", DEVICE_LAYOUT_PADDING, 'right'), font=REG_FONT, p=(0, 0), key='-PORT-')]
             ],
             font=TAB_FONT
         )
     ]]
-
+    ###
     connection_layout = [
-        [sg.Text('Connected', font=REG_FONT), led(key='-CONNECTED_LED-')],
-        [ibutton('Connect', size=(10, 0), key='-CONNECT-')]]
+        [sg.Text(' Connected', font=REG_FONT), led(key='-CONNECTED_LED-')],
+        [ibutton('Connect', size=(12, 1), key='-CONNECT-')]]
     activate_layout = [
-        [sg.Text('Activated', font=REG_FONT), led(key='-ACTIVATED_LED-')],
-        [ibutton('Activate', size=(10, 1), key='-ACTIVATE-')]]
+        [sg.Text(' Activated', font=REG_FONT), led(key='-ACTIVATED_LED-')],
+        [ibutton('Activate', size=(12, 1), key='-ACTIVATE-')]]
     mute_layout = [
-        [sg.Text('Muted', font=REG_FONT), led(key='-MUTED_LED-')],
-        [ibutton('Mute', size=(10, 1), key='-MUTE-')]]
+        [sg.Text('  Muted', font=REG_FONT), led(key='-MUTED_LED-')],
+        [ibutton('Mute', size=(12, 1), key='-MUTE-')]]
 
     restart_layout = [sg.Push(),
-                      sg.Button('Restart', size=(10, 1),
+                      sg.Button('Restart', size=(12, 1),
                                 font=REG_FONT,
-                                pad=(1, 1),
+                                pad=(0, 1),
                                 button_color=('white', 'red3'),
                                 border_width=1,
                                 disabled_button_color=DISABLED_BUTTON_COLOR,
@@ -181,7 +177,7 @@ def make_window():
     ###
     _sync_layout = [
         [sg.Text('Synchronized', font=REG_FONT), led(key='-SYNC_LED-')],
-        [ibutton('Synchronize', size=(15, 1), key='-SYNC-'),]]
+        [ibutton('Synchronize', size=(15, 1), key='-SYNC-'), ]]
     sync_layout = [[sg.Frame('Synchronize', _sync_layout, font=TAB_FONT)]]
     ###
     _calibration_layout = [
@@ -191,15 +187,27 @@ def make_window():
     calibration_layout = [[sg.Frame('Calibration', _calibration_layout, font=TAB_FONT)]]
     ###
     _reading_profile_layout = [[sg.Text(dotted('Settling delay', 25), font=REG_FONT),
-                                sg.Text("N\A", font=REG_FONT, background_color='white', size=(3, 1), p=(0, 0),
+                                sg.Text("---", font=REG_FONT + " bold", background_color='white',
+                                        size=(3, 1), p=(0, 0),
                                         key='-SETTLING-DELAY-')],
                                [sg.Text(dotted('Number of reading', 25), font=REG_FONT),
-                                sg.Text("N\A", font=REG_FONT, background_color='white', size=(3, 1), p=(0, 0),
+                                sg.Text("---", font=REG_FONT + " bold", background_color='white',
+                                        size=(3, 1), p=(0, 0),
                                         key='-NUMBER-READING-')],
                                [sg.Text(dotted('Max deviation', 25), font=REG_FONT),
-                                sg.Text("N\A", font=REG_FONT, background_color='white', size=(3, 1), p=(0, 0),
+                                sg.Text("---", font=REG_FONT + " bold", background_color='white',
+                                        size=(3, 1), p=(0, 0),
                                         key='-MAX-DEVIATION-')]]
     reading_profile_layout = [[sg.Frame('Reading Profile', _reading_profile_layout, font=TAB_FONT)]]
+
+    ###
+    _last_command_layout = [[sg.Text('Key'), sg.Text("", font=REG_FONT + " bold", size=(15, 1), p=(0, 1), relief='solid',
+                                                     border_width=2, justification='c', background_color='white',
+                                                     key="-LAST_KEY-"),
+                            sg.Text('Command'), sg.Text("", font=REG_FONT + " bold", size=(15, 1), p=(0, 1), relief='solid',
+                                                        border_width=2, justification='c', background_color='white',
+                                                        key="-LAST_COMMAND-")]]
+    last_command_layout = [[sg.Frame('Last Inputs', _last_command_layout, font=TAB_FONT)]]
 
     ###
     _backlight_layout = [sg.Slider(orientation='h', key='-BACKLIGHT-', font=SMALL_FONT)]
@@ -215,7 +223,6 @@ def make_window():
     mode_layout = [[sg.Frame('Mode', _mode_layout, font=TAB_FONT)]]
 
     #### --- TABS ---#####
-
     logging_tab_layout = [
         [sg.Text("Logging")],
         [sg.Multiline(size=(30, 15), horizontal_scroll=True, pad=(1, 1), font=SMALL_FONT, expand_x=True, expand_y=True,
@@ -228,6 +235,7 @@ def make_window():
         col([calibration_layout]),
         col([reading_profile_layout]),
         col([units_layout, mode_layout]),
+        col([last_command_layout]),
         col([backlight_layout]),
     ]
 
@@ -249,11 +257,11 @@ def make_window():
         sg.Tab('Controller', controller_tab_layout),
         sg.Tab('Logging', logging_tab_layout)
     ]],
-                                   expand_x=True, expand_y=True,
-                                   key='-TAB GROUP-', font=REG_FONT)]]
+        expand_x=True, expand_y=True,
+        key='-TAB GROUP-', font=REG_FONT)]]
 
     global_layout += [[sg.Text(f'version: v{VERSION}', font=SMALL_FONT), sg.Push(), sg.Text('Config:', font=SMALL_FONT),
-                       sg.Text('No Configuration Selected', font=SMALL_FONT+' bold', key='-CONFIGS-')]]
+                       sg.Text('No Configuration Selected', font=SMALL_FONT + ' bold', key='-CONFIGS-')]]
 
     window = sg.Window(
         f'Dcs5 Controller',
@@ -375,8 +383,8 @@ def refresh_layout(window, controller):
 
 
 def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
-    window['-NAME-'].update(controller.config.client.device_name)
-    window['-MAC-'].update(controller.config.client.mac_address)
+    window['-NAME-'].update(dotted(controller.config.client.device_name + " ", DEVICE_LAYOUT_PADDING, 'right'))
+    window['-MAC-'].update(dotted(controller.config.client.mac_address + " ", DEVICE_LAYOUT_PADDING, 'right'))
 
     window['-SETTLING-DELAY-'].update(controller.internal_board_state.stylus_settling_delay)
     window['-NUMBER-READING-'].update(controller.internal_board_state.number_of_reading)
@@ -397,12 +405,11 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
     )
 
     if controller.client.isconnected:
-        # TODO make a function to activate buttons on connect
         window["-CONNECTED_LED-"].update(text_color='Green')
         window["-CONNECT-"].update(disabled=True)
         window["-RESTART-"].update(disabled=False)
 
-        window['-PORT-'].update(dotted("Port (Bt Channel)", controller.client.port or "N/A", 50))
+        window['-PORT-'].update(dotted(controller.client.port + " " or "N/A ", DEVICE_LAYOUT_PADDING, 'right'))
         window['-SYNC-'].update(disabled=False)
         window['-CALIBRATE-'].update(disabled=False)
         window['-CALPTS-'].update(disabled=False)
@@ -413,6 +420,8 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
 
             window['-BACKLIGHT-'].update(disabled=False,
                                          value=controller.internal_board_state.backlighting_level or None)
+            window['-LAST_KEY-'].update('< '+controller.socket_listener.last_key+' >')
+            window['-LAST_COMMAND-'].update('< '+controller.socket_listener.last_command+' >')
         else:
             window["-ACTIVATED_LED-"].update(text_color='Red')
             window["-ACTIVATE-"].update(disabled=False)
@@ -441,6 +450,9 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
 
         window['-ACTIVATE-'].update(disabled=True)
 
+        window['-LAST_KEY-'].update('-')
+        window['-LAST_COMMAND-'].update('-')
+
         if window.metadata['is_connecting']:
             window["-CONNECTED_LED-"].update(text_color='orange')
             window["-CONNECT-"].update(disabled=True)
@@ -458,7 +470,7 @@ def config_window():
 
     select_layout = [
         [sg.Text('Current:', font=REG_FONT, justification='left', pad=(0, 0)),
-         sg.Text(current_config, font=REG_FONT+' bold', key='-CONFIGURATION-', background_color='white', pad=(0,0))],
+         sg.Text(current_config, font=REG_FONT + ' bold', key='-CONFIGURATION-', background_color='white', pad=(0, 0))],
         [],
         [sg.Listbox(
             values=list_configs(),
@@ -566,7 +578,7 @@ def popup_window_select_config(controller: Dcs5Controller):
                                 click.edit(filename=str(config_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME)))
 
                         if value['-CONFIG-'][0] == current_config:
-                            sg.user_settings()['previous_config_path'] = current_config+'*'
+                            sg.user_settings()['previous_config_path'] = current_config + '*'
                             if sg.popup_yes_no('Do you want to reload the configuration ?') == 'Yes':
                                 reload_controller_config(controller)
 
@@ -646,13 +658,15 @@ def update_controller_config_paths(controller: Dcs5Controller):
     logging.debug('Config files path updated.')
 
 
-
 ### gui element functions ###
 
 
-def dotted(value, length=50):
+def dotted(value, length=50, justification='left'):
     ndots = length - len(value)
-    return value + ' ' + '.' * ndots
+    if justification =='left':
+        return value + ' ' + '.' * ndots
+    elif justification =='right':
+        return '.' * ndots + ' ' + value
 
 
 def led(key=None):
