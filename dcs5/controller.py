@@ -346,7 +346,9 @@ class Dcs5Controller:
             "BACKLIGHT_DOWN": self.backlight_down,
             "CHANGE_STYLUS": self.cycle_stylus,
             "UNITS_mm": self.change_length_units_mm,
-            "UNITS_cm": self.change_length_units_cm
+            "UNITS_cm": self.change_length_units_cm,
+            "MODE_TOP": self.change_board_output_mode('top'),
+            "MODE_BOTTOM": self.change_board_output_mode('bottom')
         }
 
         if shouter not in ['keyboard', 'server']:
@@ -870,8 +872,8 @@ class SocketListener:
         self.controller = controller
         self.message_queue = Queue()
         self.swipe_triggered = False
-        self.with_ctrl = False
         self.buffer = ""
+        self.with_mode = False # Note MODE
 
     def pop(self, i=None):
         """Return and clear the client buffer."""
@@ -913,9 +915,7 @@ class SocketListener:
             msg_type, msg_value = self._decode_board_message(message)
             logging.debug(f"Message Type: {msg_type}, Message Value: {msg_value}")
             if msg_type == "controller_box_key":
-                out_value = self.controller.config.key_maps.control_box[
-                    self.controller.devices_spec.control_box.keys_layout[msg_value]
-                ]
+                out_value = self._map_control_box_output(msg_value)
 
             elif msg_type == 'swipe':
                 self.swipe_value = msg_value
@@ -954,8 +954,18 @@ class SocketListener:
         else:
             if value in self.controller.mappable_commands:
                 self.controller.mappable_commands[value]()
+            elif value == "MODE":
+                self.with_mode = not self.with_mode
             else:
                 self.controller.shout(value)
+
+    def _map_control_box_output(self, value):
+        key = self.controller.devices_spec.control_box.keys_layout[value]
+        if self.with_mode:
+            self.with_mode = False
+            return self.controller.config.key_maps.control_box_mode[key]
+        else:
+            return self.controller.config.key_maps.control_box[key]
 
     def _map_board_length_measurement(self, value: int):
         if self.controller.output_mode == 'length':
@@ -969,9 +979,12 @@ class SocketListener:
                 / self.controller.devices_spec.board.key_to_mm_ratio
             )
             if index < self.controller.devices_spec.board.number_of_keys:
-                return self.controller.config.key_maps.board[
-                    self.controller.devices_spec.board.keys_layout[self.controller.output_mode][index]
-                ]
+                key = self.controller.devices_spec.board.keys_layout[self.controller.output_mode][index]
+                if self.with_mode:
+                    self.with_mode = False
+                    return self.controller.config.key_maps.board_mode[key]
+                else:
+                    return self.controller.config.key_maps.board[key]
 
     def _check_for_stylus_swipe(self, value: str):
         self.swipe_triggered = False
