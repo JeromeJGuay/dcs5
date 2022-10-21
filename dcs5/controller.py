@@ -77,9 +77,9 @@ class Shouter:
     valid_meta_keys = ['ctrl', 'alt', 'shift']
 
     def __init__(self):
-        self._with_control = False
-        self._with_shift = False
-        self._with_alt = False
+        #self._with_control = False
+        #self._with_shift = False
+        #self._with_alt = False
         self.input: str = None
 
         self.meta_key_combo = []
