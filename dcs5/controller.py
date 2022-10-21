@@ -846,7 +846,7 @@ class CommandHandler:
                     logging.info('Board is calibrated.')
                     self.controller.internal_board_state.calibrated = True
             else:
-                logging.error(f'Calibration state {self.controller.client.buffer}')
+                logging.error(f'Calibration state {received}')
 
         elif 'Cal Pt' in received:
             logging.debug(received.strip("\r") + " mm")
