@@ -3,6 +3,7 @@ Module that contains the scripts to load the board configurations.
 
 Valid commands :
     ["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm", "MODE", "MODE_TOP", "MODE_BOTTOM"]
+ - The "MODE" command is not a command per say but a MetaKey for the board.
 Valid keyboard inputs :
     ['\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'",
     '(', ')', '*', '+', ',', '-', '.', '/', '{', '|', '}', '~',
@@ -150,9 +151,9 @@ class OutputModes:
 @dataclass
 class KeyMaps:
     control_box: Dict[str, str]
-    control_box_mode: dict[str, str]
+    control_box_mode: Dict[str, str]
     board: Dict[str, str]
-    board_mode: dict[str, str]
+    board_mode: Dict[str, str]
 
     def __post_init__(self):
         check_key_map(self.control_box)
