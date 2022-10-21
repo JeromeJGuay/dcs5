@@ -11,8 +11,7 @@ theme = sg.user_settings_get_entry('-theme-', 'Dark Gray 13')
 sg.user_settings_set_entry('-theme-', my_new_theme)
 
 TODO:
-- Layout to display Last Input/Command.
-- Menu, Help to show docs
+- FIXE ERROR ON CONFIG LOADING. When the original config was modified
 - Test on Windows
 """
 import logging
@@ -64,6 +63,9 @@ LED_SIZE = f'Courier {scale_font(12)}'
 
 ENABLED_BUTTON_COLOR = ('black', "light blue")
 DISABLED_BUTTON_COLOR = ('gray', "light grey")
+
+META_OFF = {'text_color': 'gray', 'background_color': 'light grey'}
+META_ON = {'text_color': 'black', 'background_color': 'gold'}
 
 LOGO = '../static/bigfin_logo.png'
 LOADING = '../static/circle-loading-gif.gif'
@@ -201,12 +203,13 @@ def make_window():
     reading_profile_layout = [[sg.Frame('Reading Profile', _reading_profile_layout, font=TAB_FONT)]]
 
     ###
-    _last_command_layout = [[sg.Text('Key'), sg.Text("", font=REG_FONT + " bold", size=(12, 1), p=(1, 1), relief='solid',
-                                                     border_width=2, justification='c', background_color='white',
-                                                     key="-LAST_KEY-"),
-                            sg.Text('Command'), sg.Text("", font=REG_FONT + " bold", size=(12, 1), p=(1, 1), relief='solid',
-                                                        border_width=2, justification='c', background_color='white',
-                                                        key="-LAST_COMMAND-")]]
+    _last_command_layout = [
+        [sg.Text('Key'), sg.Text("", font=REG_FONT + " bold", size=(12, 1), p=(1, 1), relief='solid',
+                                 border_width=2, justification='c', background_color='white',
+                                 key="-LAST_KEY-"),
+         sg.Text('Command'), sg.Text("", font=REG_FONT + " bold", size=(12, 1), p=(1, 1), relief='solid',
+                                     border_width=2, justification='c', background_color='white',
+                                     key="-LAST_COMMAND-")]]
     last_command_layout = [[sg.Frame('Last Inputs', _last_command_layout, font=TAB_FONT)]]
 
     ###
@@ -221,7 +224,16 @@ def make_window():
          ibutton('Length', size=(8, 1), key='-MODE-LENGTH-'),
          ibutton('Bottom', size=(8, 1), key='-MODE-BOTTOM-')]]
     mode_layout = [[sg.Frame('Mode', _mode_layout, font=TAB_FONT)]]
-
+    ###
+    _meta_layout = [[sg.Text('Mode', font=REG_FONT + ' bold', border_width=2, relief='solid', **META_OFF, size=(6, 1),
+                             justification='center', pad=(1, 1), key='-META-'),
+                     sg.Text('Shift', font=REG_FONT + ' bold', border_width=2, relief='solid', **META_OFF, size=(6, 1),
+                             justification='center', pad=(1, 1), key='-SHIFT-'),
+                     sg.Text('Ctrl', font=REG_FONT + ' bold', border_width=2, relief='solid', **META_OFF, size=(6, 1),
+                             justification='center', pad=(1, 1), key='-CTRL-'),
+                     sg.Text('Alt', font=REG_FONT + ' bold', border_width=2, relief='solid', **META_OFF, size=(6, 1),
+                             justification='center', pad=(1, 1), key='-ALT-')]]
+    meta_layout = [[sg.Frame('Meta Key', _meta_layout, font=TAB_FONT)]]
     #### --- TABS ---#####
     logging_tab_layout = [
         [sg.Text("Logging")],
@@ -231,11 +243,12 @@ def make_window():
     controller_tab_layout = [
         col([device_layout]),
         col([status_layout]),
-        #col([sync_layout]),
+        # col([sync_layout]),
         col([reading_profile_layout, sync_layout]),
         col([calibration_layout]),
-        #col([reading_profile_layout]),
+        # col([reading_profile_layout]),
         col([units_layout, mode_layout]),
+        col([meta_layout]),
         col([last_command_layout]),
         col([backlight_layout]),
     ]
@@ -424,8 +437,8 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
 
             window['-BACKLIGHT-'].update(disabled=False,
                                          value=controller.internal_board_state.backlighting_level or None)
-            window['-LAST_KEY-'].update('< '+controller.socket_listener.last_key+' >')
-            window['-LAST_COMMAND-'].update('< '+controller.socket_listener.last_command+' >')
+            window['-LAST_KEY-'].update('< ' + controller.socket_listener.last_key + ' >')
+            window['-LAST_COMMAND-'].update('< ' + controller.socket_listener.last_command + ' >')
         else:
             window["-ACTIVATED_LED-"].update(text_color='Red')
             window["-ACTIVATE-"].update(disabled=False)
@@ -441,6 +454,23 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
             window["-CAL_LED-"].update(text_color='Green')
         else:
             window["-CAL_LED-"].update(text_color='Red')
+
+        if 'shift' in controller.shouter.meta_key_combo:
+            window["-SHIFT-"].update(**META_ON)
+        else:
+            window["-SHIFT-"].update(**META_OFF)
+        if 'ctrl' in controller.shouter.meta_key_combo:
+            window["-CTRL-"].update(**META_ON)
+        else:
+            window["-CTRL-"].update(**META_OFF)
+        if 'alt' in controller.shouter.meta_key_combo:
+            window["-ALT-"].update(**META_ON)
+        else:
+            window["-ALT-"].update(**META_OFF)
+        if controller.socket_listener.with_mode is True:
+            window["-META-"].update(**META_ON)
+        else:
+            window["-META-"].update(**META_OFF)
 
     else:
         window['-BACKLIGHT-'].update(disabled=True, value=None)
@@ -667,9 +697,9 @@ def update_controller_config_paths(controller: Dcs5Controller):
 
 def dotted(value, length=50, justification='left'):
     ndots = length - len(value)
-    if justification =='left':
+    if justification == 'left':
         return value + ' ' + '.' * ndots
-    elif justification =='right':
+    elif justification == 'right':
         return '.' * ndots + ' ' + value
 
 
