@@ -1,20 +1,3 @@
-"""
-
-- VerticalSeparator(pad=None)
-
-- Use Popup for printing error. (bt device not found etc)
-
-
-sg.UserSettings('my_config.ini', use_config_file=True, convert_bools_and_none=True)
-sg.user_settings_filename(filename='DaysUntil.json') # NOT NEEDED
-theme = sg.user_settings_get_entry('-theme-', 'Dark Gray 13')
-sg.user_settings_set_entry('-theme-', my_new_theme)
-
-TODO:
-- Layout to display Last Input/Command.
-- Menu, Help to show docs
-- Test on Windows
-"""
 import logging
 import os
 import shutil
@@ -26,6 +9,7 @@ import click
 import pyautogui as pag
 
 from dcs5 import VERSION, \
+    LOCAL_FILE_PATH, \
     SERVER_CONFIGURATION_FILE_NAME, \
     CONTROLLER_CONFIGURATION_FILE_NAME, \
     DEVICES_SPECIFICATION_FILE_NAME, \
@@ -66,10 +50,11 @@ ENABLED_BUTTON_COLOR = ('black', "light blue")
 DISABLED_BUTTON_COLOR = ('gray', "light grey")
 
 LOGO = '../static/bigfin_logo.png'
-LOADING = '../static/circle-loading-gif.gif'
+USER_SETTING_FILE = 'user_settings.json'
 
 
 def main():
+    sg.user_settings_filename(USER_SETTING_FILE, LOCAL_FILE_PATH)
     init_logging()
     run()
 
@@ -339,7 +324,7 @@ def loop_run(window, controller):
             case "-CALIBRATE-":
                 logging.debug('Calibrate not mapped')
             case 'Configuration':
-                popup_window_select_config(controller=controller)
+                controller = popup_window_select_config(controller=controller)
             case '-UNITS-MM-':
                 controller.change_length_units_mm()
             case '-UNITS-CM-':
@@ -370,7 +355,6 @@ def refresh_layout(window, controller):
         window['-CONFIGS-'].update(Path(configs_path).stem)
     else:
         window['-CONFIGS-'].update('No Config Selected')
-
     if controller is not None:
         _controller_refresh_layout(window, controller)
     else:
@@ -519,7 +503,7 @@ def config_window():
     return window
 
 
-def popup_window_select_config(controller: Dcs5Controller):
+def popup_window_select_config(controller: Dcs5Controller) -> Dcs5Controller:
     current_config = get_current_config()
 
     window = config_window()
@@ -592,6 +576,8 @@ def popup_window_select_config(controller: Dcs5Controller):
                     window['-CONFIGURATION-'].update('No Config Selected')
 
     window.close()
+
+    return controller
 
 
 def get_current_config():
