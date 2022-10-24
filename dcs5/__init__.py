@@ -8,14 +8,18 @@ from dcs5.utils import resolve_relative_path
 
 VERSION = "2.0.0"
 
-### PATHS ###
+### LOCAL FILE PATH ###
 if platform.system() == 'Windows':
     LOCAL_FILE_PATH = os.getenv('LOCALAPPDATA') + '/dcs5'
 else:
     LOCAL_FILE_PATH = os.getenv('HOME') + '/.dcs5'
 
 
+### LOGGING ###
+MAX_COUNT_LOG_FILES = 20
 LOG_FILES_PATH = Path(LOCAL_FILE_PATH).joinpath("logs/")
+
+### CONFIG PATH ###
 CONFIG_FILES_PATH = Path(LOCAL_FILE_PATH).joinpath("configs/")
 
 Path(LOCAL_FILE_PATH).mkdir(parents=True, exist_ok=True)
