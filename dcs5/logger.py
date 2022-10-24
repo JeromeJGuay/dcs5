@@ -6,8 +6,9 @@ import logging
 import sys
 import time
 import re
+from pathlib import Path
 
-from dcs5 import LOG_FILES_PATH
+from dcs5 import LOG_FILES_PATH, MAX_COUNT_LOG_FILES
 
 LOG_FILE_PREFIX = "dcs5_log"
 
@@ -61,6 +62,11 @@ def get_multiline_handler(window, key, level='DEBUG"'):
     return window_handler
 
 
+def clean_old_log_files(max_count):
+    for files in sorted([x for x in Path(LOG_FILES_PATH).glob('*.log') if x.is_file()])[:-max_count]:
+        files.unlink()
+
+
 def init_logging(
         stdout_level="INFO",
         file_level="DEBUG",
@@ -81,6 +87,7 @@ def init_logging(
     -------
 
     """
+    clean_old_log_files(max_count=MAX_COUNT_LOG_FILES)
 
     formatter = BasicLoggerFormatter()
     handlers = []
