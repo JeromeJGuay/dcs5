@@ -382,7 +382,7 @@ def loop_run(window, controller):
 
 def refresh_layout(window, controller):
     if (configs_path := sg.user_settings()['configs_path']) is not None:
-        window['-CONFIGS-'].update(Path(configs_path).stem)
+        window['-CONFIGS-'].update(Path(configs_path).name)
     else:
         window['-CONFIGS-'].update('No Config Selected')
     if controller is not None:
@@ -586,6 +586,7 @@ def popup_window_select_config(controller: Dcs5Controller) -> Dcs5Controller:
                         sg.user_settings()['configs_path'] = selected_config_path
 
                         if controller is None:
+
                             controller = init_dcs5_controller(sg.user_settings()['configs_path'])
                         else:
                             reload_controller_config(controller)
@@ -618,7 +619,7 @@ def popup_window_select_config(controller: Dcs5Controller) -> Dcs5Controller:
                                 reload_controller_config(controller)
 
                 if (current_config := get_current_config()) is not None:
-                    window['-CONFIGURATION-'].update()
+                    window['-CONFIGURATION-'].update(current_config)
                 else:
                     window['-CONFIGURATION-'].update('No Config Selected')
 
@@ -628,16 +629,16 @@ def popup_window_select_config(controller: Dcs5Controller) -> Dcs5Controller:
 
 
 def get_current_config():
-    return Path(sg.user_settings()['configs_path']).stem if sg.user_settings()['configs_path'] is not None else None
+    return Path(sg.user_settings()['configs_path']).name if sg.user_settings()['configs_path'] is not None else None
 
 
 def list_configs():
-    return [x.stem for x in Path(CONFIG_FILES_PATH).glob('**/*') if x.is_dir()]
+    return [x.name for x in Path(CONFIG_FILES_PATH).iterdir() if x.is_dir()]
 
 
 def create_new_configs():
-    folder_name = sg.popup_get_text('Enter a configuration name:', default_text='', font=REG_FONT, keep_on_top=True)
-    if folder_name is not None:
+    folder_name = sg.popup_get_text('Enter a configuration name:', default_text=None, font=REG_FONT, keep_on_top=True)
+    if folder_name: #not None or empty string
         new_configs_path = CONFIG_FILES_PATH.joinpath(folder_name)
         new_configs_path.mkdir(parents=True, exist_ok=True)
 
