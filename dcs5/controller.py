@@ -358,9 +358,9 @@ class Dcs5Controller:
         if self.client.isconnected:
             self.stop_listening()
             self.client.close()
-            logging.info('Client Closed.')
+            logging.debug('Client Closed.')
         else:
-            logging.info('Client Already Closed')
+            logging.debug('Client Already Closed')
 
     def restart_client(self):
         self.close_client()
@@ -391,7 +391,7 @@ class Dcs5Controller:
                 self.monitoring_thread = threading.Thread(target=self.monitor_connection, name='listen', daemon=True)
                 self.monitoring_thread.start()
 
-        logging.info('Board is Active.')
+        #logging.debug('Board is Active.')
 
     def stop_listening(self):
         if self.is_listening:
@@ -399,7 +399,7 @@ class Dcs5Controller:
             time.sleep(self.client.socket.gettimeout())
             logging.debug("Listening stopped.")
             logging.debug("Queues and Socket Buffer Cleared.")
-        logging.info('Board is Inactive.')
+        logging.debug('Board is Inactive.')
 
     def restart_listening(self):
         self.stop_listening()
@@ -500,7 +500,7 @@ class Dcs5Controller:
         0 for failed calibration
         """
 
-        logging.info("Calibration Mode Enable.")
+        logging.debug("Calibration Mode Enable.")
 
         was_listening = self.is_listening
 
@@ -514,15 +514,15 @@ class Dcs5Controller:
         try:
             if f'&Xr#: X={pt}\r' in msg:
                 pt_value = self.internal_board_state.__dict__[f"cal_pt_{pt}"]
-                logging.info(f"Calibration for point {pt}. Set stylus down at {pt_value} mm ...")
+                logging.debug(f"Calibration for point {pt}. Set stylus down at {pt_value} mm ...")
                 while f'&{pt}c' not in msg:
                     msg += self.client.receive()
-                logging.info(f'Point {pt} calibrated.')
+                logging.debug(f'Point {pt} calibrated.')
                 return 1
             else:
                 return 0
         except KeyError:
-            logging.info('Calibration Failed.')
+            logging.debug('Calibration Failed.')
             return 0
         finally:
             self.client.socket.settimeout(self.client.default_timeout)
@@ -531,13 +531,13 @@ class Dcs5Controller:
 
     def change_length_units_mm(self):
         self.length_units = "mm"
-        logging.info(f"Length Units Change to mm")
+        logging.debug(f"Length Units Change to mm")
         if self.client.isconnected:
             self.flash_lights(2, interval=.25)
 
     def change_length_units_cm(self):
         self.length_units = "cm"
-        logging.info(f"Length Units Change to cm")
+        logging.debug(f"Length Units Change to cm")
         if self.client.isconnected:
             self.flash_lights(2, interval=.25)
 
@@ -545,7 +545,7 @@ class Dcs5Controller:
         """Stylus must be one of [pen, finger]"""
         self.stylus = value
         self.stylus_offset = self.devices_spec.stylus_offset[self.stylus]
-        logging.info(f'Stylus set to {self.stylus}. Stylus offset {self.stylus_offset}')
+        logging.debug(f'Stylus set to {self.stylus}. Stylus offset {self.stylus_offset}')
         if self.client.isconnected:
             self.flash_lights(2, interval=.25)
 
@@ -581,7 +581,7 @@ class Dcs5Controller:
                 self.internal_board_state.backlighting_level = self.control_box_parameters.max_backlighting_level
             self.c_set_backlighting_level(self.internal_board_state.backlighting_level)
         else:
-            logging.info("Backlighting is already at maximum.")
+            logging.debug("Backlighting is already at maximum.")
 
     def backlight_down(self):
         if self.internal_board_state.backlighting_level > 0:
@@ -590,7 +590,7 @@ class Dcs5Controller:
                 self.internal_board_state.backlighting_level = 0
             self.c_set_backlighting_level(self.internal_board_state.backlighting_level)
         else:
-            logging.info("Backlighting is already at minimum.")
+            logging.debug("Backlighting is already at minimum.")
 
     def flash_lights(self, period: int, interval: int):
         current_backlight_level = self.internal_board_state.backlighting_level
@@ -603,6 +603,9 @@ class Dcs5Controller:
     def shout(self, value: Union[int, float, str]):
         if not self.is_muted:
             logging.debug(f"Shouted value {value}")
+            if isinstance(value, str):
+                if value.startswith('print '):
+                    value = value[6:].strip(' ')
             self.shouter.shout(value)
 
     # command removed for safety reason.
@@ -636,10 +639,10 @@ class Dcs5Controller:
         self.command_handler.queue_command(f"&fm,{value}#", None)
         if value == 0:
             self.internal_board_state.board_interface = "DCSLinkstream"
-            logging.info(f'Interface set to {self.internal_board_state.board_interface}')
+            logging.debug(f'Interface set to {self.internal_board_state.board_interface}')
         elif value == 1:
             self.internal_board_state.board_interface = "FEED"
-            logging.info(f'Interface set to {self.internal_board_state.board_interface}')
+            logging.debug(f'Interface set to {self.internal_board_state.board_interface}')
 
     def c_set_backlighting_level(self, value: int):
         if 0 <= value <= self.control_box_parameters.max_backlighting_level:
@@ -759,49 +762,49 @@ class CommandHandler:
             if len(match) > 0:
                 if match[0] == "1":
                     self.controller.internal_board_state.stylus_status_msg = "enable"
-                    logging.info('Stylus Status Message Enable')
+                    logging.debug('Stylus Status Message Enable')
                 else:
                     self.controller.internal_board_state.stylus_status_msg = "disable"
-                    logging.info('Stylus Status Message Disable')
+                    logging.debug('Stylus Status Message Disable')
 
         elif "di" in received:
             match = re.findall(f"%di:(\d+)#\r", received)
             if len(match) > 0:
                 self.controller.internal_board_state.stylus_settling_delay = int(match[0])
-                logging.info(f"Stylus settling delay set to {match[0]}")
+                logging.debug(f"Stylus settling delay set to {match[0]}")
 
         elif "dm" in received:
             match = re.findall(f"%dm:(\d+)#\r", received)
             if len(match) > 0:
                 self.controller.internal_board_state.stylus_max_deviation = int(match[0])
-                logging.info(f"Stylus max deviation set to {int(match[0])}")
+                logging.debug(f"Stylus max deviation set to {int(match[0])}")
 
         elif "dn" in received:
             match = re.findall(f"%dn:(\d+)#\r", received)
             if len(match) > 0:
                 self.controller.internal_board_state.number_of_reading = int(match[0])
-                logging.info(f"Stylus number set to {int(match[0])}")
+                logging.debug(f"Stylus number set to {int(match[0])}")
 
         elif "%b" in received:
             match = re.findall("%b:(.*)#", received)
             if len(match) > 0:
-                logging.info(f'Board State: {match[0]}')
+                logging.debug(f'Board State: {match[0]}')
                 self.controller.internal_board_state.board_stats = match[0]
 
         elif "%q" in received:
             match = re.findall("%q:(-*\d*,\d*)#", received)
             if len(match) > 0:
-                logging.info(f'Battery level: {match[0]}')
+                logging.debug(f'Battery level: {match[0]}')
                 self.controller.internal_board_state.battery_level = match[0]
 
         elif "%u:" in received:
             match = re.findall("%u:(\d)#", received)
             if len(match) > 0:
                 if match[0] == '0':
-                    logging.info('Board is not calibrated.')
+                    logging.debug('Board is not calibrated.')
                     self.controller.internal_board_state.calibrated = False
                 elif match[0] == '1':
-                    logging.info('Board is calibrated.')
+                    logging.debug('Board is calibrated.')
                     self.controller.internal_board_state.calibrated = True
             else:
                 logging.error(f'Calibration state {received}')
@@ -831,7 +834,7 @@ class SocketListener:
         self.swipe_triggered = False
         self.with_ctrl = False
         self.buffer = ""
-        self.last_input = None
+        self.last_key = None
         self.last_command = None
 
     def pop(self, i=None):
@@ -875,7 +878,7 @@ class SocketListener:
             logging.debug(f"Message Type: {msg_type}, Message Value: {msg_value}")
             if msg_type == "controller_box_key":
                 control_box_key = self.controller.devices_spec.control_box.keys_layout[msg_value]
-                self.last_input = control_box_key
+                self.last_key = control_box_key
                 out_value = self.controller.config.key_maps.control_box[control_box_key]
 
             elif msg_type == 'swipe':
@@ -891,6 +894,7 @@ class SocketListener:
             elif msg_type == "solicited":
                 self.controller.command_handler.received_queue.put(msg_value)
 
+            self.last_command = ""
             if out_value is not None:
                 self.last_command = out_value
                 self._process_output(out_value)
@@ -922,9 +926,9 @@ class SocketListener:
     def _map_board_length_measurement(self, value: int):
         if self.controller.output_mode == 'length':
             out_value = value - self.controller.stylus_offset
+            self.last_key = out_value
             if self.controller.length_units == 'cm':
                 out_value /= 10
-            self.last_input = out_value
             return out_value
         else:
             index = int(
@@ -933,12 +937,12 @@ class SocketListener:
             )
             if index < self.controller.devices_spec.board.number_of_keys:
                 board_key = self.controller.devices_spec.board.keys_layout[self.controller.output_mode][index]
-                self.last_input = board_key
+                self.last_key = board_key
                 return self.controller.config.key_maps.board[board_key]
 
     def _check_for_stylus_swipe(self, value: str):
         self.swipe_triggered = False
-        self.last_input = "swipe"
+        self.last_key = "swipe"
         segments_limits = self.controller.config.output_modes.segments_limits
         if value <= segments_limits[-1]:
             for l_max, l_min, mode in zip(segments_limits[1:],

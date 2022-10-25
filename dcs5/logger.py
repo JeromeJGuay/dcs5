@@ -93,14 +93,14 @@ def init_logging(
     handlers = []
 
     # console
-    stdout_handler = logging.StreamHandler(sys.stdout)
+    #stdout_handler = logging.StreamHandler(sys.stdout)
 
-    stdout_handler.setLevel(stdout_level.upper())
-    stdout_handler.setFormatter(formatter)
-    handlers.append(stdout_handler)
+    #stdout_handler.setLevel(stdout_level.upper())
+    #stdout_handler.setFormatter(formatter)
+    #handlers.append(stdout_handler)
 
     # file
-    filename = LOG_FILES_PATH.joinpath(time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())).with_suffix('.log')
+    filename = LOG_FILES_PATH.joinpath(time.strftime("%Y-%m-%dT%H_%M_%S", time.localtime())).with_suffix('.log')
     file_handler = logging.FileHandler(filename, delay=not write) # delay=True will write a log only on crash.
     file_handler.setLevel(file_level.upper())
     file_handler.setFormatter(formatter)
