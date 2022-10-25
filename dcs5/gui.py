@@ -1,19 +1,3 @@
-"""
-
-- VerticalSeparator(pad=None)
-
-- Use Popup for printing error. (bt device not found etc)
-
-
-sg.UserSettings('my_config.ini', use_config_file=True, convert_bools_and_none=True)
-sg.user_settings_filename(filename='DaysUntil.json') # NOT NEEDED
-theme = sg.user_settings_get_entry('-theme-', 'Dark Gray 13')
-sg.user_settings_set_entry('-theme-', my_new_theme)
-
-TODO:
-- FIXE ERROR ON CONFIG LOADING. When the original config was modified
-- Test on Windows
-"""
 import logging
 import os
 import shutil
@@ -76,6 +60,7 @@ def main():
     sg.user_settings_filename(USER_SETTING_FILE, LOCAL_FILE_PATH)
     init_logging()
     run()
+    exit()
 
 
 def init_dcs5_controller(configs_path: str):
@@ -192,30 +177,29 @@ def make_window():
     ###
     _reading_profile_layout = [[sg.Text(dotted('Settling delay', 19), font=REG_FONT),
                                 sg.Text("---", font=REG_FONT + " bold", background_color='white',
-                                        size=(3, 1), p=(1, 0),
+                                        size=(3, 1), p=(1, 0), justification='c',
                                         key='-SETTLING-DELAY-')],
                                [sg.Text(dotted('Number of reading', 19), font=REG_FONT),
                                 sg.Text("---", font=REG_FONT + " bold", background_color='white',
-                                        size=(3, 1), p=(1, 0),
+                                        size=(3, 1), p=(1, 0), justification='c',
                                         key='-NUMBER-READING-')],
                                [sg.Text(dotted('Max deviation', 19), font=REG_FONT),
                                 sg.Text("---", font=REG_FONT + " bold", background_color='white',
-                                        size=(3, 1), p=(1, 0),
+                                        size=(3, 1), p=(1, 0), justification='c',
                                         key='-MAX-DEVIATION-')]]
     reading_profile_layout = [[sg.Frame('Reading Profile', _reading_profile_layout, font=TAB_FONT)]]
 
     ###
-    _last_command_layout = [
-        [sg.Text('Key'), sg.Text("", font=REG_FONT + " bold", size=(12, 1), p=(1, 1), relief='solid',
-                                 border_width=2, justification='c', background_color='white',
-                                 key="-LAST_KEY-"),
-         sg.Text('Command'), sg.Text("", font=REG_FONT + " bold", size=(12, 1), p=(1, 1), relief='solid',
-                                     border_width=2, justification='c', background_color='white',
-                                     key="-LAST_COMMAND-")]]
+    _last_command_layout = [[sg.Text('Key'), sg.Text("", font=REG_FONT + " bold", size=(10, 1), p=(1, 1), relief='solid',
+                                                     border_width=2, justification='c', background_color='white',
+                                                     key="-LAST_KEY-"),
+                            sg.Text('Command'), sg.Text("", font=REG_FONT + " bold", size=(20, 1), p=(1, 1), relief='solid',
+                                                        border_width=2, justification='c', background_color='white',
+                                                        key="-LAST_COMMAND-")]]
     last_command_layout = [[sg.Frame('Last Inputs', _last_command_layout, font=TAB_FONT)]]
 
     ###
-    _backlight_layout = [sg.Slider(orientation='h', key='-BACKLIGHT-', font=SMALL_FONT)]
+    _backlight_layout = [sg.Slider(orientation='h', key='-BACKLIGHT-', font=SMALL_FONT, enable_events=True)]
     backlight_layout = [[sg.Frame('Backlight level', [_backlight_layout], font=REG_FONT)]]
     ###
     _units_layout = [[ibutton('mm', size=(5, 1), key='-UNITS-MM-'), ibutton('cm', size=(5, 1), key='-UNITS-CM-')]]
@@ -237,10 +221,10 @@ def make_window():
                              justification='center', pad=(1, 1), key='-ALT-')]]
     meta_layout = [[sg.Frame('Meta Key', _meta_layout, font=TAB_FONT)]]
     #### --- TABS ---#####
-    logging_tab_layout = [
-        [sg.Text("Logging")],
-        [sg.Multiline(size=(30, 15), horizontal_scroll=True, pad=(1, 1), font=SMALL_FONT, expand_x=True, expand_y=True,
-                      write_only=True, auto_size_text=True, autoscroll=True, key='-STDOUT-')]]
+    #logging_tab_layout = [
+    #    [sg.Text("Logging")],
+    #    [sg.Multiline(size=(30, 15), horizontal_scroll=True, pad=(1, 1), font=SMALL_FONT, expand_x=True, expand_y=True,
+    #                  write_only=True, auto_size_text=True, autoscroll=True, key='-STDOUT-')]]
 
     controller_tab_layout = [
         col([device_layout]),
@@ -270,12 +254,13 @@ def make_window():
     # --- GLOBAL ---#
     global_layout = [menu_layout]
 
-    global_layout += [[sg.TabGroup([[
-        sg.Tab('Controller', controller_tab_layout),
-        sg.Tab('Logging', logging_tab_layout)
-    ]],
-        expand_x=True, expand_y=True,
-        key='-TAB GROUP-', font=REG_FONT)]]
+#    global_layout += [[sg.TabGroup([[
+#        sg.Tab('Controller', controller_tab_layout),
+#        sg.Tab('Logging', logging_tab_layout)
+#    ]],
+#        expand_x=True, expand_y=True,
+#        key='-TAB GROUP-', font=REG_FONT)]]
+    global_layout += [[controller_tab_layout]]
 
     global_layout += [[sg.Text(f'version: v{VERSION}', font=SMALL_FONT), sg.Push(), sg.Text('Config:', font=SMALL_FONT),
                        sg.Text('No Configuration Selected', font=SMALL_FONT + ' bold', key='-CONFIGS-')]]
@@ -305,9 +290,9 @@ def run():
 
     window = make_window()
 
-    logger = logging.getLogger()
-    logger.addHandler(get_multiline_handler(window=window, key="-STDOUT-", level='DEBUG'))
-    logger.propagate = True
+    #logger = logging.getLogger()
+    #logger.addHandler(get_multiline_handler(window=window, key="-STDOUT-", level='DEBUG'))
+    #logger.propagate = True
 
     window.metadata = {
         'is_connecting': False,
@@ -332,10 +317,11 @@ def loop_run(window, controller):
         event, values = window.read(timeout=.01)
 
         if event != "__TIMEOUT__" and event is not None:
-            logging.info(f'{event}, {values}')
+            logging.debug(f'{event}, {values}')
 
         match event:
             case sg.WIN_CLOSED | 'Exit':
+                controller.close_client()
                 break
             case "-CONNECT-":
                 window.metadata['is_connecting'] = True
@@ -343,11 +329,14 @@ def loop_run(window, controller):
             case "-END_CONNECT-":
                 window.metadata['is_connecting'] = False
             case "-ACTIVATE-":
+                window['-ACTIVATED_LED-'].update(text_color='yellow')
                 controller.start_listening()
+                controller.init_controller_and_board()
             case "-RESTART-":
                 window.metadata['is_connecting'] = True
                 window.perform_long_operation(controller.start_client, end_key='-END_CONNECT-')
             case '-SYNC-':
+                controller.init_controller_and_board()
                 logging.debug('sync not mapped')
             case "-CALPTS-":
                 logging.debug('Calpts not mapped')
@@ -355,6 +344,8 @@ def loop_run(window, controller):
                 logging.debug('Calibrate not mapped')
             case 'Configuration':
                 controller = popup_window_select_config(controller=controller)
+            case '-BACKLIGHT-':
+                controller.c_set_backlighting_level(int(values['-BACKLIGHT-']))
             case '-UNITS-MM-':
                 controller.change_length_units_mm()
             case '-UNITS-CM-':
@@ -427,7 +418,7 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
         window["-CONNECT-"].update(disabled=True)
         window["-RESTART-"].update(disabled=False)
 
-        window['-PORT-'].update(dotted(controller.client.port + " " or "N/A ", DEVICE_LAYOUT_PADDING, 'right'))
+        window['-PORT-'].update(dotted(str(controller.client.port) + " " or "N/A ", DEVICE_LAYOUT_PADDING, 'right'))
         window['-SYNC-'].update(disabled=False)
         window['-CALIBRATE-'].update(disabled=False)
         window['-CALPTS-'].update(disabled=False)
@@ -438,8 +429,12 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
 
             window['-BACKLIGHT-'].update(disabled=False,
                                          value=controller.internal_board_state.backlighting_level or None)
-            window['-LAST_KEY-'].update('< ' + controller.socket_listener.last_key + ' >')
-            window['-LAST_COMMAND-'].update('< ' + controller.socket_listener.last_command + ' >')
+            if controller.socket_listener.last_key is not None:
+                window['-LAST_KEY-'].update('< ' + str(controller.socket_listener.last_key) + ' >')
+                window['-LAST_COMMAND-'].update('< ' + str(controller.socket_listener.last_command) + ' >')
+            else:
+                window['-LAST_KEY-'].update('-')
+                window['-LAST_COMMAND-'].update('-')
         else:
             window["-ACTIVATED_LED-"].update(text_color='Red')
             window["-ACTIVATE-"].update(disabled=False)
@@ -591,6 +586,7 @@ def popup_window_select_config(controller: Dcs5Controller) -> Dcs5Controller:
                         else:
                             reload_controller_config(controller)
 
+                        save_user_settings()
                         current_config = get_current_config()
 
                     if event == 'Delete':

@@ -5,6 +5,10 @@ Valid commands :
     ["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm", "MODE", "MODE_TOP", "MODE_BOTTOM"]
  - The "MODE" command is not a command per say but a MetaKey for the board.
 Valid keyboard inputs :
+     'print <string to print>'
+
+     and
+
     ['\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'",
     '(', ')', '*', '+', ',', '-', '.', '/', '{', '|', '}', '~',
     ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`',
@@ -80,9 +84,12 @@ def validate_command(key, value):
     if isinstance(value, list):
         for _value in value:
             validate_command(key, _value)
-    else:
-        if value is not None and value not in VALID_KEYBOARD_KEYS + VALID_COMMANDS:
-            raise ConfigError(f"Invalid Command or KeyBoard key: {key} -> {value}.")
+    elif value is not None:
+        if value.startswith('print '):
+            pass
+        else:
+            if value not in VALID_KEYBOARD_KEYS + VALID_COMMANDS:
+                raise ConfigError(f"Invalid Command or KeyBoard key: {key} -> {value}.")
 
 
 class ConfigError(Exception):
