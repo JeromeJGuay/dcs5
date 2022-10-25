@@ -346,8 +346,9 @@ class Dcs5Controller:
             "CHANGE_STYLUS": self.cycle_stylus,
             "UNITS_mm": self.change_length_units_mm,
             "UNITS_cm": self.change_length_units_cm,
-            "MODE_TOP": self.change_board_output_mode('top'),
-            "MODE_BOTTOM": self.change_board_output_mode('bottom')
+            "MODE_TOP": self._mode_top,
+            "MODE_LENGTH": self._mode_length,
+            "MODE_BOTTOM": self._mode_bottom
         }
 
         if shouter not in ['keyboard', 'server']:
@@ -604,6 +605,15 @@ class Dcs5Controller:
 
     def cycle_stylus(self):
         self.change_stylus(next(self.stylus_cyclical_list))
+
+    def _mode_top(self):
+        self.change_board_output_mode('top')
+
+    def _mode_length(self):
+        self.change_board_output_mode('length')
+
+    def _mode_bottom(self):
+        self.change_board_output_mode('bottom')
 
     def change_board_output_mode(self, value: str):
         """
@@ -904,7 +914,9 @@ class SocketListener:
         logging.debug('Listener Queue cleared & Client Buffer Clear.')
         logging.debug('Listening started')
         while self.controller.is_listening:
-            self.buffer += self.controller.client.receive()
+            #TODO FIXME
+            if (buffer := self.controller.client.receive())  is not None:
+                self.buffer += buffer
             if len(self.buffer) > 0:
                 logging.debug(f'Raw Buffer: {[self.buffer]}')
                 self._split_board_message()
@@ -999,8 +1011,9 @@ class SocketListener:
                 key = self.controller.devices_spec.board.keys_layout[self.controller.output_mode][index]
                 self.last_key = key
                 if self.with_mode:
-                    self.with_mode = False
-                    return self.controller.config.key_maps.board_mode[key]
+                    if out_value := self.controller.config.key_maps.board_mode[key] != "MODE":
+                        self.with_mode = False
+                    return out_value
                 else:
                     return self.controller.config.key_maps.board[key]
 

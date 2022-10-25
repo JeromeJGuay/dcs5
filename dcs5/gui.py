@@ -1,3 +1,12 @@
+"""
+
+TODO FIXME ISSUES:
+
+- Still some bug on loading after bad config edit. Maybe it is fixed after a save_user_setting was removed.
+- Remake Config template (MODE)
+- MODE DOES NOT DISENGAGE.
+
+"""
 import logging
 import os
 import shutil
@@ -586,7 +595,6 @@ def popup_window_select_config(controller: Dcs5Controller) -> Dcs5Controller:
                         else:
                             reload_controller_config(controller)
 
-                        save_user_settings()
                         current_config = get_current_config()
 
                     if event == 'Delete':
@@ -595,7 +603,7 @@ def popup_window_select_config(controller: Dcs5Controller) -> Dcs5Controller:
                         elif sg.popup_yes_no(f"Are you sure you want to delete `{value['-CONFIG-'][0]}`") == 'Yes':
                             shutil.rmtree(str(Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0])))
 
-                            window['-CONFIG-'].update(list_configs(), set_to_index=[])
+                            window['-CONFIG-'].update(list_configs(), se_to_index=[])
                             window['Load'].update(disabled=True)
                             window['Delete'].update(disabled=True)
                             window['-EDIT-'].update(disabled=True)
