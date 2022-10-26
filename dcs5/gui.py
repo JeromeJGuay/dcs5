@@ -1,4 +1,13 @@
 """
+TODO GUI:
+- Auto Disengage Meta key ?
+- Yellow light for activated and Synchronized
+- Calibration pop-up
+- Mode mm, cm Top Length BOttom Take a long time.
+
+TODO DESIGN:
+- Red-Green color not suffisant
+- Use On-Off slider ?
 
 TODO FIXME ISSUES:
 
@@ -46,6 +55,7 @@ def scale_font(font_size: int) -> int:
 SMALL_FONT = f'Courier {scale_font(8)}'
 
 REG_FONT = f'Courier {scale_font(10)}'
+REG_FONT_BOLD = REG_FONT + ' bold'
 
 TAB_FONT = f'Courier {scale_font(12)}'
 
@@ -57,6 +67,7 @@ LED_SIZE = f'Courier {scale_font(12)}'
 
 ENABLED_BUTTON_COLOR = ('black', "light blue")
 DISABLED_BUTTON_COLOR = ('gray', "light grey")
+SELECTED_BUTTON_COLOR = ('OrangeRed', "light grey")
 
 META_OFF = {'text_color': 'gray', 'background_color': 'light grey'}
 META_ON = {'text_color': 'black', 'background_color': 'gold'}
@@ -150,7 +161,8 @@ def make_window():
             font=TAB_FONT
         )
     ]]
-    ###
+
+    ### STATUS
     connection_layout = [
         [sg.Text(' Connected', font=REG_FONT), led(key='-CONNECTED_LED-')],
         [ibutton('Connect', size=(11, 1), key='-CONNECT-')]]
@@ -172,61 +184,63 @@ def make_window():
                                 )]
     _status_layout = col([connection_layout, activate_layout, mute_layout])
     status_layout = [[sg.Frame('Status', [_status_layout, restart_layout], font=TAB_FONT, expand_x=True)]]
-    ###
+
+    ### SYNC
     _sync_layout = [
         [sg.Text('Synchronized', font=REG_FONT), led(key='-SYNC_LED-')],
         [ibutton('Synchronize', size=(15, 1), key='-SYNC-'), ]]
     sync_layout = [[sg.Frame('Synchronize', _sync_layout, font=TAB_FONT)]]
-    ###
+
+    ### CALIBRATION
     _calibration_layout = [
         [sg.Text('Calibrated', font=REG_FONT), led(key='-CAL_LED-')],
         [ibutton('Calibrate', size=(15, 1), key='-CALIBRATE-'),
          ibutton('Set Cal. Pts.', size=(15, 1), key='-CALPTS-')]]  # TODO
     calibration_layout = [[sg.Frame('Calibration', _calibration_layout, font=TAB_FONT)]]
-    ###
+
+    ### READING PROFILE
     _reading_profile_layout = [[sg.Text(dotted('Settling delay', 19), font=REG_FONT),
-                                sg.Text("---", font=REG_FONT + " bold", background_color='white',
-                                        size=(3, 1), p=(1, 0), justification='c',
-                                        key='-SETTLING-DELAY-')],
+                                sg.Text("---", font=REG_FONT_BOLD, background_color='white',
+                                        size=(3, 1), p=(1, 0), justification='c', key='-SETTLING-DELAY-')],
                                [sg.Text(dotted('Number of reading', 19), font=REG_FONT),
-                                sg.Text("---", font=REG_FONT + " bold", background_color='white',
-                                        size=(3, 1), p=(1, 0), justification='c',
-                                        key='-NUMBER-READING-')],
+                                sg.Text("---", font=REG_FONT_BOLD, background_color='white',
+                                        size=(3, 1), p=(1, 0), justification='c', key='-NUMBER-READING-')],
                                [sg.Text(dotted('Max deviation', 19), font=REG_FONT),
-                                sg.Text("---", font=REG_FONT + " bold", background_color='white',
-                                        size=(3, 1), p=(1, 0), justification='c',
-                                        key='-MAX-DEVIATION-')]]
+                                sg.Text("---", font=REG_FONT_BOLD, background_color='white',
+                                        size=(3, 1), p=(1, 0), justification='c', key='-MAX-DEVIATION-')]]
     reading_profile_layout = [[sg.Frame('Reading Profile', _reading_profile_layout, font=TAB_FONT)]]
 
-    ###
-    _last_command_layout = [[sg.Text('Key'), sg.Text("", font=REG_FONT + " bold", size=(10, 1), p=(1, 1), relief='solid',
+    ### LAST COMMAND
+    _last_command_layout = [[sg.Text('Key'), sg.Text("", font=REG_FONT_BOLD, size=(10, 1), p=(1, 1), relief='solid',
                                                      border_width=2, justification='c', background_color='white',
                                                      key="-LAST_KEY-"),
-                            sg.Text('Command'), sg.Text("", font=REG_FONT + " bold", size=(20, 1), p=(1, 1), relief='solid',
+                            sg.Text('Command'), sg.Text("", font=REG_FONT_BOLD, size=(20, 1), p=(1, 1), relief='solid',
                                                         border_width=2, justification='c', background_color='white',
                                                         key="-LAST_COMMAND-")]]
     last_command_layout = [[sg.Frame('Last Inputs', _last_command_layout, font=TAB_FONT)]]
 
-    ###
+    ### BACKLIGHT
     _backlight_layout = [sg.Slider(orientation='h', key='-BACKLIGHT-', font=SMALL_FONT, enable_events=True)]
     backlight_layout = [[sg.Frame('Backlight level', [_backlight_layout], font=REG_FONT)]]
-    ###
-    _units_layout = [[ibutton('mm', size=(5, 1), key='-UNITS-MM-'), ibutton('cm', size=(5, 1), key='-UNITS-CM-')]]
+
+    ### UNITS
+    _units_layout = [[ibutton('mm', size=(5, 1), key='-UNITS-MM-', disabled_button_color=SELECTED_BUTTON_COLOR),
+                      ibutton('cm', size=(5, 1), key='-UNITS-CM-', disabled_button_color=SELECTED_BUTTON_COLOR)]]
     units_layout = [[sg.Frame('Units', _units_layout, font=TAB_FONT)]]
-    ###
-    _mode_layout = [
-        [ibutton('Top', size=(8, 1), key='-MODE-TOP-'),
-         ibutton('Length', size=(8, 1), key='-MODE-LENGTH-'),
-         ibutton('Bottom', size=(8, 1), key='-MODE-BOTTOM-')]]
+
+    ### MODE
+    _mode_layout = [[ibutton('Top', size=(8, 1), key='-MODE-TOP-', disabled_button_color=SELECTED_BUTTON_COLOR),
+                     ibutton('Length', size=(8, 1), key='-MODE-LENGTH-', disabled_button_color=SELECTED_BUTTON_COLOR),
+                     ibutton('Bottom', size=(8, 1), key='-MODE-BOTTOM-', disabled_button_color=SELECTED_BUTTON_COLOR)]]
     mode_layout = [[sg.Frame('Mode', _mode_layout, font=TAB_FONT)]]
     ###
-    _meta_layout = [[sg.Text('Mode', font=REG_FONT + ' bold', border_width=2, relief='solid', **META_OFF, size=(6, 1),
+    _meta_layout = [[sg.Text('Mode', font=REG_FONT_BOLD, border_width=2, relief='solid', **META_OFF, size=(6, 1),
                              justification='center', pad=(1, 1), key='-META-'),
-                     sg.Text('Shift', font=REG_FONT + ' bold', border_width=2, relief='solid', **META_OFF, size=(6, 1),
+                     sg.Text('Shift', font=REG_FONT_BOLD, border_width=2, relief='solid', **META_OFF, size=(6, 1),
                              justification='center', pad=(1, 1), key='-SHIFT-'),
-                     sg.Text('Ctrl', font=REG_FONT + ' bold', border_width=2, relief='solid', **META_OFF, size=(6, 1),
+                     sg.Text('Ctrl', font=REG_FONT_BOLD, border_width=2, relief='solid', **META_OFF, size=(6, 1),
                              justification='center', pad=(1, 1), key='-CTRL-'),
-                     sg.Text('Alt', font=REG_FONT + ' bold', border_width=2, relief='solid', **META_OFF, size=(6, 1),
+                     sg.Text('Alt', font=REG_FONT_BOLD, border_width=2, relief='solid', **META_OFF, size=(6, 1),
                              justification='center', pad=(1, 1), key='-ALT-')]]
     meta_layout = [[sg.Frame('Meta Key', _meta_layout, font=TAB_FONT)]]
     #### --- TABS ---#####
@@ -314,16 +328,21 @@ def run():
     if sg.user_settings()['configs_path'] is not None:
         controller = init_dcs5_controller(sg.user_settings()['configs_path'])
 
-    refresh_layout(window, controller)
+    init_layout(window, controller)
 
     loop_run(window, controller)
 
     save_user_settings()
 
 
-def loop_run(window, controller):
+def init_layout(window: sg.Window, controller: Dcs5Controller):
+    window['-BACKLIGHT-'].update(range=(0, controller.control_box_parameters.max_backlighting_level))
+    refresh_layout(window, controller)
+
+
+def loop_run(window: sg.Window, controller: Dcs5Controller):
     while True:
-        event, values = window.read(timeout=.01)
+        event, values = window.read(timeout=.05)
 
         if event != "__TIMEOUT__" and event is not None:
             logging.debug(f'{event}, {values}')
@@ -341,12 +360,18 @@ def loop_run(window, controller):
                 window['-ACTIVATED_LED-'].update(text_color='yellow')
                 controller.start_listening()
                 controller.init_controller_and_board()
+            case "-END_ACTIVATE-":
+                #TODO
+                pass
             case "-RESTART-":
                 window.metadata['is_connecting'] = True
-                window.perform_long_operation(controller.start_client, end_key='-END_CONNECT-')
+                window.perform_long_operation(controller.restart_client, end_key='-END_CONNECT-')
             case '-SYNC-':
                 controller.init_controller_and_board()
                 logging.debug('sync not mapped')
+            case "-END_SYNC-":
+                #TODO
+                pass
             case "-CALPTS-":
                 logging.debug('Calpts not mapped')
             case "-CALIBRATE-":
@@ -380,7 +405,7 @@ def loop_run(window, controller):
     window.close()
 
 
-def refresh_layout(window, controller):
+def refresh_layout(window: sg.Window, controller: Dcs5Controller):
     if (configs_path := sg.user_settings()['configs_path']) is not None:
         window['-CONFIGS-'].update(Path(configs_path).name)
     else:
@@ -431,9 +456,8 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
         if controller.is_listening:
             window["-ACTIVATED_LED-"].update(text_color='Green')
             window["-ACTIVATE-"].update(disabled=True)
-
             window['-BACKLIGHT-'].update(disabled=False,
-                                         value=controller.internal_board_state.backlighting_level or None)
+                                         value=controller.internal_board_state.backlighting_level) #  or None ? Removed
             if controller.socket_listener.last_key is not None:
                 window['-LAST_KEY-'].update('< ' + str(controller.socket_listener.last_key) + ' >')
                 window['-LAST_COMMAND-'].update('< ' + str(controller.socket_listener.last_command) + ' >')
@@ -494,7 +518,7 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
             window["-RESTART-"].update(disabled=True)
 
         else:
-            window["-CONNECTED_LED-"].update(text_color='red')
+            window["-CONNECTED_LED-"].update(text_color='Red')
             window["-CONNECT-"].update(disabled=False)
             window["-RESTART-"].update(disabled=False)
 
@@ -505,7 +529,7 @@ def config_window():
 
     select_layout = [
         [sg.Text('Current:', font=REG_FONT, justification='left', pad=(0, 0)),
-         sg.Text(current_config, font=REG_FONT + ' bold', key='-CONFIGURATION-', background_color='white', pad=(0, 0))],
+         sg.Text(current_config, font=REG_FONT_BOLD, key='-CONFIGURATION-', background_color='white', pad=(0, 0))],
         [],
         [sg.Listbox(
             values=list_configs(),
@@ -708,18 +732,21 @@ def dotted(value, length=50, justification='left'):
 
 
 def led(key=None):
-    return sg.Text(CIRCLE, key=key, text_color='red3', font=LED_SIZE)
+    return sg.Text(CIRCLE, key=key, text_color='red', font=LED_SIZE)
 
 
-def ibutton(label, size, key=None, button_color=ENABLED_BUTTON_COLOR, disabled=False):
+def ibutton(label, size, key=None,
+            button_color=ENABLED_BUTTON_COLOR,
+            disabled_button_color=DISABLED_BUTTON_COLOR,
+            disabled=False):
     return sg.Button(label, size=size,
                      font=REG_FONT,
                      pad=(1, 1),
                      button_color=button_color,
                      border_width=1,
-                     disabled_button_color=DISABLED_BUTTON_COLOR,
+                     disabled_button_color=disabled_button_color,
                      key=key or label,
-                     disabled=disabled
+                     disabled=disabled,
                      )
 
 
