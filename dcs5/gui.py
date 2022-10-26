@@ -1,6 +1,7 @@
 """
 TODO GUI:
 - Calibration pop-up
+- Stylus Change ? Offset ?
 
 
 TODO FIXME ISSUES:

@@ -1010,6 +1010,7 @@ class SocketListener:
     def _map_board_length_measurement(self, value: int):
         if self.controller.output_mode == 'length':
             out_value = value - self.controller.stylus_offset
+            self.last_key = out_value
             if self.controller.length_units == 'cm':
                 out_value /= 10
             return out_value
