@@ -11,9 +11,9 @@ def main():
 
     #button_example()
     #led_example()
-    slide_example()
+    #slide_example()
     #run_example()
-    #run_example_2()
+    run_example_2()
     #slider_test()
 
 

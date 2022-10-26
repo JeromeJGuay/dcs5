@@ -228,6 +228,10 @@ def make_window():
                       ibutton('cm', size=(5, 1), key='-UNITS-CM-', disabled_button_color=SELECTED_BUTTON_COLOR)]]
     units_layout = [[sg.Frame('Units', _units_layout, font=TAB_FONT)]]
 
+    ### STYLUS #FIXME TODO
+    _stylus_layout = [[sg.OptionMenu(values=(), k='-STYLUS-')]]
+    stylus_layout = [[sg.Frame('Units', _stylus_layout, font=TAB_FONT)]]
+
     ### MODE
     _mode_layout = [[ibutton('Top', size=(8, 1), key='-MODE-TOP-', disabled_button_color=SELECTED_BUTTON_COLOR),
                      ibutton('Length', size=(8, 1), key='-MODE-LENGTH-', disabled_button_color=SELECTED_BUTTON_COLOR),
@@ -375,9 +379,9 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 controller.init_controller_and_board()
                 logging.debug('sync not mapped')
             case "-CALPTS-":
-                logging.debug('Calpts not mapped')
+                popup_window_set_calibration_pt(controller)
             case "-CALIBRATE-":
-                logging.debug('Calibrate not mapped')
+                popup_window_calibrate(controller)
             case 'Configuration':
                 controller = popup_window_select_config(controller=controller)
             case '-BACKLIGHT-':
@@ -455,10 +459,16 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
 
         window['-PORT-'].update(dotted(str(controller.client.port) + " " or "N/A ", DEVICE_LAYOUT_PADDING, 'right'))
         window['-SYNC-'].update(disabled=False)
-        window['-CALIBRATE-'].update(disabled=False)
-        window['-CALPTS-'].update(disabled=False)
+
+        if controller.internal_board_state.cal_pt_1 is not None \
+                and controller.internal_board_state.cal_pt_2 is not None:
+            window['-CALIBRATE-'].update(disabled=False)
+        else:
+            window['-CALIBRATE-'].update(disabled=True)
 
         if controller.is_listening:
+            window['-CALPTS-'].update(disabled=False)
+
             window["-ACTIVATED_LED-"].update(**LED_ON)
             window["-ACTIVATE-"].update(disabled=True)
             window['-BACKLIGHT-'].update(disabled=False,
@@ -575,9 +585,67 @@ def config_window():
                sg.Column(edit_layout, vertical_alignment='top')],
               [button('Close', size=(6, 1), button_color=ENABLED_BUTTON_COLOR)]]
 
-    window = sg.Window('Configurations', layout, finalize=True, element_justification='center', auto_close=True)
+    window = sg.Window('Configurations', layout, element_justification='center', keep_on_top=True)
 
     return window
+
+
+def popup_window_set_calibration_pt(controller: Dcs5Controller):
+    layout = [
+        [sg.Text('Enter calibration point values in mm')],
+        [sg.Text('Point 1: ', size=(7, 1), font=TAB_FONT),
+         sg.InputText(default_text=controller.internal_board_state.cal_pt_1, key='cal_pt_1', size=(4, 1), justification='c', font=TAB_FONT),
+         sg.Text('mm', size=(3, 1), font=TAB_FONT)],
+        [sg.Text('Point 2: ', size=(7, 1), font=TAB_FONT),
+         sg.InputText(default_text=controller.internal_board_state.cal_pt_2, key='cal_pt_2', size=(4, 1), justification='c', font=TAB_FONT),
+         sg.Text('mm', size=(3, 1), font=TAB_FONT)],
+        [sg.Submit(), sg.Cancel()]
+    ]
+
+    window = sg.Window('Calibration points', layout, element_justification='center', keep_on_top=True)
+    while True:
+        event, values = window.read()
+        if event == "Cancel":
+            window.close()
+            break
+        if event == "Submit":
+            if values['cal_pt_1'].isnumeric() and values['cal_pt_2'].isnumeric():
+                controller.c_set_calibration_points_mm(1, int(values['cal_pt_1']))
+                controller.c_set_calibration_points_mm(2, int(values['cal_pt_2']))
+                break
+            else:
+                sg.popup_ok('Invalid values.', title='error', keep_on_top=True)
+
+    window.close()
+
+
+def popup_window_calibrate(controller: Dcs5Controller):
+    """Test closing on perform_long_operation"""
+    cal_pt_values = {1: controller.internal_board_state.cal_pt_1, 2: {controller.internal_board_state.cal_pt_2}}
+    for i in [1, 2]:
+        layout = [
+            [sg.Text(f'Set Stylus down for calibration point {i}: {cal_pt_values[i]} mm', pad=(5,5), font=TAB_FONT)],
+        ]
+        window = sg.Window(f'Calibrate point {i}', layout, finalize=True, element_justification='center', keep_on_top=True)
+        window.perform_long_operation(lambda: controller.calibrate(i), end_key=f'-cal_pt_{i}-')
+
+        while True:
+            event, values = window.read(timeout=0.1)
+            if event == '__TIMEOUT__':
+                pass
+
+            elif event == "Cancel":
+                window.close()
+                break
+
+            elif event == f"-cal_pt_{i}-":
+                break
+        window.close()
+
+        if values[0] == 1:
+            sg.popup_ok('Calibration successful.', keep_on_top=True)
+        else:
+            sg.popup_ok('Calibration failed.', keep_on_top=True)
 
 
 def popup_window_select_config(controller: Dcs5Controller) -> Dcs5Controller:
