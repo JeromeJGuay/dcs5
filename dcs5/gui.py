@@ -229,8 +229,12 @@ def make_window():
     units_layout = [[sg.Frame('Units', _units_layout, font=TAB_FONT)]]
 
     ### STYLUS #FIXME TODO
-    _stylus_layout = [[sg.OptionMenu(values=(), k='-STYLUS-')]]
-    stylus_layout = [[sg.Frame('Units', _stylus_layout, font=TAB_FONT)]]
+    _stylus_layout = [[sg.Combo(values=[''], key='-STYLUS-', enable_events=True, size=(10,1),pad=(1,1), font=REG_FONT),
+                       sg.Text('Offset:', font=REG_FONT),
+                       sg.Text("-", font=REG_FONT_BOLD, background_color='white',
+                               size=(3, 1), p=(1, 0), justification='c', key='-STYLUS_OFFSET-')
+                      ]]
+    stylus_layout = [[sg.Frame('Stylus', _stylus_layout, font=TAB_FONT)]]
 
     ### MODE
     _mode_layout = [[ibutton('Top', size=(8, 1), key='-MODE-TOP-', disabled_button_color=SELECTED_BUTTON_COLOR),
@@ -263,7 +267,7 @@ def make_window():
         col([units_layout, mode_layout]),
         col([meta_layout]),
         col([last_command_layout]),
-        col([backlight_layout]),
+        col([stylus_layout, backlight_layout]),
     ]
 
     # --- MENU ---#
@@ -341,6 +345,7 @@ def run():
 
 def init_layout(window: sg.Window, controller: Dcs5Controller):
     window['-BACKLIGHT-'].update(range=(0, controller.control_box_parameters.max_backlighting_level))
+    window['-STYLUS-'].update(value=controller.stylus, values=list(controller.devices_spec.stylus_offset.keys()))
     refresh_layout(window, controller)
 
 
@@ -384,18 +389,20 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 popup_window_calibrate(controller)
             case 'Configuration':
                 controller = popup_window_select_config(controller=controller)
+            case '-STYLUS-':
+                controller.change_stylus(values['-STYLUS-'], flash=False)
             case '-BACKLIGHT-':
                 controller.c_set_backlighting_level(int(values['-BACKLIGHT-']))
             case '-UNITS-MM-':
-                controller.change_length_units_mm()
+                controller.change_length_units_mm(flash=False)
             case '-UNITS-CM-':
-                controller.change_length_units_cm()
+                controller.change_length_units_cm(flash=False)
             case '-MODE-TOP-':
-                controller.change_board_output_mode('top')
+                controller.change_board_output_mode('top', flash=False)
             case '-MODE-LENGTH-':
-                controller.change_board_output_mode('length')
+                controller.change_board_output_mode('length', flash=False)
             case '-MODE-BOTTOM-':
-                controller.change_board_output_mode('bottom')
+                controller.change_board_output_mode('bottom', flash=False)
             case '-MUTE-':
                 if controller.is_muted:
                     controller.unmute_board()
@@ -445,6 +452,10 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
 
     window['-UNITS-MM-'].update(disabled=controller.length_units == 'mm')
     window['-UNITS-CM-'].update(disabled=controller.length_units == 'cm')
+
+    #window['-STYLUS-'].update(value=controller.stylus, values=list(controller.devices_spec.stylus_offset.keys()))
+    window['-STYLUS-'].update(value=controller.stylus)
+    window['-STYLUS_OFFSET-'].update(value=controller.stylus_offset)
 
     if controller.is_muted:
         window['-MUTED_LED-'].update(**LED_ON)
@@ -713,7 +724,7 @@ def popup_window_select_config(controller: Dcs5Controller) -> Dcs5Controller:
 
                         if value['-CONFIG-'][0] == current_config:
                             sg.user_settings()['previous_config_path'] = current_config + '*'
-                            if sg.popup_yes_no('Do you want to reload the configuration ?') == 'Yes':
+                            if sg.popup_yes_no('Do you want to reload the configuration ?', keep_on_top=True) == 'Yes':
                                 reload_controller_config(controller)
 
                 if (current_config := get_current_config()) is not None:
@@ -775,7 +786,7 @@ def reload_controller_config(controller: Dcs5Controller):
         controller.reload_configs()
         logging.debug('Controller reloaded.')
         if controller.client.is_connected:
-            if sg.popup_yes_no('Do you want to synchronize board ?'):
+            if sg.popup_yes_no('Do you want to synchronize board ?', keep_on_top=True):
                 controller.init_controller_and_board()
         sg.user_settings()['configs_path'] = sg.user_settings()['configs_path'].strip('*')
 
