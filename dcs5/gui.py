@@ -79,7 +79,7 @@ USER_SETTING_FILE = 'user_settings.json'
 
 def main():
     sg.user_settings_filename(USER_SETTING_FILE, LOCAL_FILE_PATH)
-    init_logging()
+    init_logging(stdout_level='DEBUG')
     run()
     exit()
 
@@ -357,6 +357,8 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 window.perform_long_operation(controller.start_client, end_key='-END_CONNECT-')
             case "-END_CONNECT-":
                 window.metadata['is_connecting'] = False
+                if not controller.client.is_connected:
+                    sg.popup_ok(f'{controller.client.error_msg}', title='Connection failed.')
             case "-ACTIVATE-":
                 window['-ACTIVATED_LED-'].update(text_color='yellow')
                 controller.start_listening()

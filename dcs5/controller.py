@@ -9,6 +9,8 @@ References
 ----------
     https://bigfinllc.com/wp-content/uploads/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf?fbclid=IwAR0tJMwvN7jkqxgEhRQABS0W3HLLntpOflg12bMEwM5YrDOwcHStznJJNQM
 
+TODO
+- Try to connect with 2 apps on windows for error code.
 """
 
 import logging
@@ -158,6 +160,9 @@ class BluetoothClient:
         self.socket: socket.socket = None
         self.default_timeout = 0.1
         self.is_connected = False
+        self.error_msg = ""
+        self.errors = {0: 'Socket timeout', 1: 'No available ports', 2: 'Device not found', 3: 'Bluetooth not on',
+                       4: 'Connection broken', 5: 'Unknown Error', 6: 'Device Unavailable'}
 
     def connect(self, mac_address: str = None, timeout: int = None):
         self._mac_address = mac_address
@@ -177,15 +182,16 @@ class BluetoothClient:
                 break
             except PermissionError:
                 logging.debug('Client.connect: PermissionError')
+                self.error_msg = 'Permission error'
                 pass
             except OSError as err:
-                match self._process_os_error_code(err):
-                    case 1:
-                        if port == self.max_port:
-                            logging.error('No available ports were found.')
-                        continue
-                    case _:
-                        break
+                if (err_code := self._process_os_error_code(err)) == 1:
+                    if port == self.max_port:
+                        logging.error('No available ports were found.')
+                        self.error_msg = self.errors[err_code]
+                else:
+                    self.error_msg = self.errors[err_code]
+                    break
 
         self.socket.settimeout(self.default_timeout)
 
@@ -207,11 +213,9 @@ class BluetoothClient:
         try:
             return self.socket.recv(BUFFER_SIZE).decode(BOARD_MSG_ENCODING)
         except OSError as err:
-            match self._process_os_error_code(err):
-                case 0:
-                    pass
-                case _:
-                    self.close()
+            if err_code := self._process_os_error_code(err) != 0:
+                self.error_msg = self.errors[err_code]
+                self.close()
 
     def reconnect(self):
         while not self.is_connected:
@@ -240,20 +244,21 @@ class BluetoothClient:
         3: Bluetooth turned off
         4: Connection broken
         5: Unknown Error
+        6: Device Unavailable
 
         """
         match err.errno:
             case None:
                 return 0
             case 16:
-                logging.error(f'Port {self.port} unavailable. (err{err.errno})')
+                logging.error(f'Port unavailable. (err{err.errno})')
                 return 1
             case 22:
-                logging.error(f'Port {self.port} does not exist. (err{err.errno})')
+                logging.error(f'Port does not exist. (err{err.errno})')
                 return 1
             case 111:
-                logging.error(f'Port {self.port} unavailable. (Maybe) (err{err.errno})')
-                return 1
+                logging.error(f'Device unavailable. (err{err.errno})')
+                return 6
             case 112:
                 logging.error(f'Device not found. (err{err.errno})')
                 return 2
@@ -273,10 +278,10 @@ class BluetoothClient:
                 logging.error(f'Bluetooth turned off. (err{err.errno})')
                 return 3
             case 10048:
-                logging.error(f'Port {self.port} unavailable. (Maybe) (err{err.errno})')
-                return 1
+                logging.error(f'Device unavailable. (Maybe) (err{err.errno})')
+                return 6
             case 10049:
-                logging.error(f'Port {self.port} does not exist. (err{err.errno})')
+                logging.error(f'Port does not exist. (err{err.errno})')
                 return 1
             case 10050:
                 logging.error(f'Bluetooth turned off. (err{err.errno})')
