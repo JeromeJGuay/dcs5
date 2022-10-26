@@ -242,7 +242,6 @@ class BluetoothClient:
         5: Unknown Error
 
         """
-        # ERROR 112 NEW LINUX no devices
         match err.errno:
             case None:
                 return 0
@@ -264,6 +263,9 @@ class BluetoothClient:
             case 110:
                 logging.error(f'Connection broken. (err{err.errno})')
                 return 4
+            case 112:
+                logging.error(f'Device not found. (err{err.errno})')
+                return 2
             case 113:
                 logging.error(f'Bluetooth turned off. (err{err.errno})')
                 return 3
