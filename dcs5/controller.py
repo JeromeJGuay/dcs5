@@ -216,6 +216,7 @@ class BluetoothClient:
             if err_code := self._process_os_error_code(err) != 0:
                 self.error_msg = self.errors[err_code]
                 self.close()
+            return ""
 
     def reconnect(self):
         while not self.is_connected:
@@ -590,24 +591,24 @@ class Dcs5Controller:
             if was_listening:
                 self.start_listening()
 
-    def change_length_units_mm(self):
+    def change_length_units_mm(self, flash=True):
         self.length_units = "mm"
         logging.debug(f"Length Units Change to mm")
-        if self.is_listening:
+        if self.is_listening and flash is True:
             self.flash_lights(1, interval=.25)
 
-    def change_length_units_cm(self):
+    def change_length_units_cm(self, flash=True):
         self.length_units = "cm"
         logging.debug(f"Length Units Change to cm")
-        if self.is_listening:
+        if self.is_listening and flash is True:
             self.flash_lights(1, interval=.25)
 
-    def change_stylus(self, value: str):
+    def change_stylus(self, value: str, flash=True):
         """Stylus must be one of [pen, finger]"""
         self.stylus = value
         self.stylus_offset = self.devices_spec.stylus_offset[self.stylus]
         logging.debug(f'Stylus set to {self.stylus}. Stylus offset {self.stylus_offset}')
-        if self.client.is_connected:
+        if self.client.is_connected and flash is True:
             self.flash_lights(1, interval=.25)
 
     def cycle_stylus(self):
@@ -622,13 +623,13 @@ class Dcs5Controller:
     def _mode_bottom(self):
         self.change_board_output_mode('bottom')
 
-    def change_board_output_mode(self, value: str):
+    def change_board_output_mode(self, value: str, flash=True):
         """
         value must be one of  [length, bottom, top]
         """
         self.output_mode = value
         if self.client.is_connected:
-            if self.is_listening:
+            if self.is_listening and flash is True:
                 if self.output_mode == 'bottom':
                     self.flash_lights(1, interval=.25)
                 elif self.output_mode == 'top':
@@ -924,9 +925,7 @@ class SocketListener:
         logging.debug('Listener Queue cleared & Client Buffer Clear.')
         logging.debug('Listening started')
         while self.controller.is_listening:
-            #TODO FIXME
-            if (buffer := self.controller.client.receive())  is not None:
-                self.buffer += buffer
+            self.buffer += self.controller.client.receive()
             if len(self.buffer) > 0:
                 logging.debug(f'Raw Buffer: {[self.buffer]}')
                 self._split_board_message()
