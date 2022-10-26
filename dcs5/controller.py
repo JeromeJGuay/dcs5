@@ -587,13 +587,13 @@ class Dcs5Controller:
         self.length_units = "mm"
         logging.debug(f"Length Units Change to mm")
         if self.is_listening:
-            self.flash_lights(2, interval=.25)
+            self.flash_lights(1, interval=.25)
 
     def change_length_units_cm(self):
         self.length_units = "cm"
         logging.debug(f"Length Units Change to cm")
         if self.is_listening:
-            self.flash_lights(2, interval=.25)
+            self.flash_lights(1, interval=.25)
 
     def change_stylus(self, value: str):
         """Stylus must be one of [pen, finger]"""
@@ -601,7 +601,7 @@ class Dcs5Controller:
         self.stylus_offset = self.devices_spec.stylus_offset[self.stylus]
         logging.debug(f'Stylus set to {self.stylus}. Stylus offset {self.stylus_offset}')
         if self.client.is_connected:
-            self.flash_lights(2, interval=.25)
+            self.flash_lights(1, interval=.25)
 
     def cycle_stylus(self):
         self.change_stylus(next(self.stylus_cyclical_list))
@@ -623,11 +623,11 @@ class Dcs5Controller:
         if self.client.is_connected:
             if self.is_listening:
                 if self.output_mode == 'bottom':
-                    self.flash_lights(2, interval=.25)
+                    self.flash_lights(1, interval=.25)
                 elif self.output_mode == 'top':
-                    self.flash_lights(2, interval=.25)
+                    self.flash_lights(1, interval=.25)
                 else:
-                    self.flash_lights(2, interval=.25)
+                    self.flash_lights(1, interval=.25)
 
             if self.dynamic_stylus_settings is True:
                 reading_profile = self.config.reading_profiles[
@@ -709,7 +709,8 @@ class Dcs5Controller:
             logging.debug(f'Interface set to {self.internal_board_state.board_interface}')
 
     def c_set_backlighting_level(self, value: int):
-        value = value or self.control_box_parameters.max_backlighting_level
+        if value is None:
+            value = self.control_box_parameters.max_backlighting_level
         if 0 <= value <= self.control_box_parameters.max_backlighting_level:
             self.command_handler.queue_command(f'&o,{value}#', None)
             self.internal_board_state.backlighting_level = value
