@@ -1,20 +1,11 @@
 """
 TODO GUI:
-- Auto Disengage Meta key ?
-- Yellow light for activated and Synchronized
 - Calibration pop-up
-- Mode mm, cm Top Length BOttom Take a long time.
-- Could not connect popup. Show error ?
 
-TODO DESIGN:
-- Red-Green color not suffisant
-- Use On-Off slider ?
 
 TODO FIXME ISSUES:
-
 - Still some bug on loading after bad config edit. Maybe it is fixed after a save_user_setting was removed.
-- Remake Config template (MODE)
-- MODE DOES NOT DISENGAGE.
+- Remake the configuration file template for (MODE). All keys needs to be there.
 
 """
 import logging
@@ -62,9 +53,16 @@ TAB_FONT = f'Courier {scale_font(12)}'
 
 HEADER_FONT = f'Courier {scale_font(20)}'
 
-CIRCLE = '\u2B24'
+EMPTY_CIRCLE = '\u25CB'
 
-LED_SIZE = f'Courier {scale_font(12)}'
+LED_FONT = f'Courier {scale_font(16)}'
+
+LED_ON = {'value': '\u2B24', 'text_color': 'Green', 'font': TAB_FONT}
+LED_WAIT = {'value': '\u25B2', 'text_color': 'Orange', 'font': LED_FONT}
+LED_OFF = {'value': '\u25CB', 'text_color': 'Red', 'font': LED_FONT + ' bold'}
+
+
+
 
 ENABLED_BUTTON_COLOR = ('black', "light blue")
 DISABLED_BUTTON_COLOR = ('gray', "light grey")
@@ -360,16 +358,17 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 if not controller.client.is_connected:
                     sg.popup_ok(controller.client.error_msg,  title='Failed.', keep_on_top=True, font=REG_FONT)
             case "-ACTIVATE-":
-                window['-ACTIVATED_LED-'].update(text_color='orange')
+                window['-ACTIVATED_LED-'].update(**LED_WAIT)
                 window['-ACTIVATE-'].update(disabled=True)
                 window.refresh()
+                if not controller.is_sync:
+                    controller.init_controller_and_board()
                 controller.start_listening()
-                controller.init_controller_and_board()
             case "-RESTART-":
                 window.metadata['is_connecting'] = True
                 window.perform_long_operation(controller.restart_client, end_key='-END_CONNECT-')
             case '-SYNC-':
-                window['-SYNC_LED-'].update(text_color='orange')
+                window['-SYNC_LED-'].update(**LED_WAIT)
                 window['-SYNC-'].update(disabled=True)
                 window.refresh()
                 controller.init_controller_and_board()
@@ -424,7 +423,7 @@ def refresh_layout(window: sg.Window, controller: Dcs5Controller):
                     '-MODE-LENGTH-']:
             window[key].update(disabled=True)
         for key in ['-CONNECTED_LED-', '-ACTIVATED_LED-', '-SYNC_LED-', '-MUTED_LED-', '-CAL_LED-']:
-            window[key].update(text_color='Red')
+            window[key].update(**LED_OFF)
 
 
 def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
@@ -442,11 +441,14 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
     window['-UNITS-MM-'].update(disabled=controller.length_units == 'mm')
     window['-UNITS-CM-'].update(disabled=controller.length_units == 'cm')
 
-    window['-MUTED_LED-'].update(text_color='Green' if controller.is_muted else 'Red')
+    if controller.is_muted:
+        window['-MUTED_LED-'].update(**LED_ON)
+    else:
+        window['-MUTED_LED-'].update(**LED_OFF)
     window['-MUTE-'].update(disabled=False)
 
     if controller.client.is_connected:
-        window["-CONNECTED_LED-"].update(text_color='Green')
+        window["-CONNECTED_LED-"].update(**LED_ON)
         window["-CONNECT-"].update(disabled=True)
         window["-RESTART-"].update(disabled=False)
 
@@ -456,7 +458,7 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
         window['-CALPTS-'].update(disabled=False)
 
         if controller.is_listening:
-            window["-ACTIVATED_LED-"].update(text_color='Green')
+            window["-ACTIVATED_LED-"].update(**LED_ON)
             window["-ACTIVATE-"].update(disabled=True)
             window['-BACKLIGHT-'].update(disabled=False,
                                          value=controller.internal_board_state.backlighting_level) #  or None ? Removed
@@ -467,20 +469,20 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
                 window['-LAST_KEY-'].update('-')
                 window['-LAST_COMMAND-'].update('-')
         else:
-            window["-ACTIVATED_LED-"].update(text_color='Red')
+            window["-ACTIVATED_LED-"].update(**LED_OFF)
             window["-ACTIVATE-"].update(disabled=False)
 
             window['-BACKLIGHT-'].update(disabled=True, value=None)
 
         if controller.is_sync:
-            window["-SYNC_LED-"].update(text_color='Green')
+            window["-SYNC_LED-"].update(**LED_ON)
         else:
-            window["-SYNC_LED-"].update(text_color='Red')
+            window["-SYNC_LED-"].update(**LED_OFF)
 
         if controller.internal_board_state.calibrated is True:
-            window["-CAL_LED-"].update(text_color='Green')
+            window["-CAL_LED-"].update(**LED_ON)
         else:
-            window["-CAL_LED-"].update(text_color='Red')
+            window["-CAL_LED-"].update(**LED_OFF)
 
         if 'shift' in controller.shouter.meta_key_combo:
             window["-SHIFT-"].update(**META_ON)
@@ -502,26 +504,26 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
     else:
         window['-BACKLIGHT-'].update(disabled=True, value=None)
 
-        window["-SYNC_LED-"].update(text_color='Red')
+        window["-SYNC_LED-"].update(**LED_OFF)
         window['-SYNC-'].update(disabled=True)
 
-        window["-CAL_LED-"].update(text_color='Red')
+        window["-CAL_LED-"].update(**LED_OFF)
         window['-CALIBRATE-'].update(disabled=True)
         window['-CALPTS-'].update(disabled=True)
 
         window['-ACTIVATE-'].update(disabled=True)
-        window['-ACTIVATED_LED-'].update(text_color='Red')
+        window['-ACTIVATED_LED-'].update(**LED_OFF)
 
         window['-LAST_KEY-'].update('-')
         window['-LAST_COMMAND-'].update('-')
 
         if window.metadata['is_connecting']:
-            window["-CONNECTED_LED-"].update(text_color='orange')
+            window["-CONNECTED_LED-"].update(**LED_WAIT)
             window["-CONNECT-"].update(disabled=True)
             window["-RESTART-"].update(disabled=True)
 
         else:
-            window["-CONNECTED_LED-"].update(text_color='Red')
+            window["-CONNECTED_LED-"].update(**LED_OFF)
             window["-CONNECT-"].update(disabled=False)
             window["-RESTART-"].update(disabled=False)
 
@@ -735,7 +737,7 @@ def dotted(value, length=50, justification='left'):
 
 
 def led(key=None):
-    return sg.Text(CIRCLE, key=key, text_color='red', font=LED_SIZE)
+    return sg.Text(EMPTY_CIRCLE, key=key, text_color='red', font=LED_FONT)
 
 
 def ibutton(label, size, key=None,
