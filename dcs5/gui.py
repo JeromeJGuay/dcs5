@@ -358,23 +358,22 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
             case "-END_CONNECT-":
                 window.metadata['is_connecting'] = False
                 if not controller.client.is_connected:
-                    sg.popup_ok(f'{controller.client.error_msg}', title='Connection failed.')
+                    sg.popup_ok(controller.client.error_msg,  title='Failed.', keep_on_top=True, font=REG_FONT)
             case "-ACTIVATE-":
-                window['-ACTIVATED_LED-'].update(text_color='yellow')
+                window['-ACTIVATED_LED-'].update(text_color='orange')
+                window['-ACTIVATE-'].update(disabled=True)
+                window.refresh()
                 controller.start_listening()
                 controller.init_controller_and_board()
-            case "-END_ACTIVATE-":
-                #TODO
-                pass
             case "-RESTART-":
                 window.metadata['is_connecting'] = True
                 window.perform_long_operation(controller.restart_client, end_key='-END_CONNECT-')
             case '-SYNC-':
+                window['-SYNC_LED-'].update(text_color='orange')
+                window['-SYNC-'].update(disabled=True)
+                window.refresh()
                 controller.init_controller_and_board()
                 logging.debug('sync not mapped')
-            case "-END_SYNC-":
-                #TODO
-                pass
             case "-CALPTS-":
                 logging.debug('Calpts not mapped')
             case "-CALIBRATE-":
@@ -511,6 +510,7 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
         window['-CALPTS-'].update(disabled=True)
 
         window['-ACTIVATE-'].update(disabled=True)
+        window['-ACTIVATED_LED-'].update(text_color='Red')
 
         window['-LAST_KEY-'].update('-')
         window['-LAST_COMMAND-'].update('-')
