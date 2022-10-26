@@ -709,6 +709,7 @@ class Dcs5Controller:
             logging.debug(f'Interface set to {self.internal_board_state.board_interface}')
 
     def c_set_backlighting_level(self, value: int):
+        value = value or self.control_box_parameters.max_backlighting_level
         if 0 <= value <= self.control_box_parameters.max_backlighting_level:
             self.command_handler.queue_command(f'&o,{value}#', None)
             self.internal_board_state.backlighting_level = value
