@@ -157,7 +157,7 @@ class BluetoothClient:
         self._port: int = None
         self.socket: socket.socket = None
         self.default_timeout = 0.1
-        self.isconnected = False
+        self.is_connected = False
 
     def connect(self, mac_address: str = None, timeout: int = None):
         self._mac_address = mac_address
@@ -171,7 +171,7 @@ class BluetoothClient:
                 logging.debug(f'port: {port}')
                 self.socket.connect((self._mac_address, port))
                 self._port = port
-                self.isconnected = True
+                self.is_connected = True
                 logging.debug(f'Connected to port {self._port}')
                 logging.debug(f'Socket name: {self.socket.getsockname()}')
                 break
@@ -214,7 +214,7 @@ class BluetoothClient:
                     self.close()
 
     def reconnect(self):
-        while not self.isconnected:
+        while not self.is_connected:
             logging.error('Attempting to reconnect.')
             self.connect(self.mac_address, timeout=30)
             time.sleep(5)
@@ -224,7 +224,7 @@ class BluetoothClient:
 
     def close(self):
         self.socket.close()
-        self.isconnected = False
+        self.is_connected = False
 
     def _process_os_error_code(self, err) -> int:
         """
@@ -392,7 +392,7 @@ class Dcs5Controller:
 
     def start_client(self, mac_address: str = None):
         """Create a socket and tries to connect with the board."""
-        if self.client.isconnected:
+        if self.client.is_connected:
             logging.debug("Client Already Connected.")
             self.monitor_thread = threading.Thread(target=self.monitor_connection,name="monitor", daemon=True)
             self.monitor_thread.start()
@@ -401,7 +401,7 @@ class Dcs5Controller:
             self.client.connect(mac_address, timeout=30)
 
     def close_client(self):
-        if self.client.isconnected:
+        if self.client.is_connected:
             self.stop_listening()
             self.client.close()
             logging.debug('Client Closed.')
@@ -459,7 +459,7 @@ class Dcs5Controller:
 
     def monitor_connection(self):
         while True:
-            while self.client.isconnected:
+            while self.client.is_connected:
                 time.sleep(1)
             self.client.reconnect()
             logging.error('Board Reconnected')
@@ -586,13 +586,13 @@ class Dcs5Controller:
     def change_length_units_mm(self):
         self.length_units = "mm"
         logging.debug(f"Length Units Change to mm")
-        if self.client.isconnected:
+        if self.is_listening:
             self.flash_lights(2, interval=.25)
 
     def change_length_units_cm(self):
         self.length_units = "cm"
         logging.debug(f"Length Units Change to cm")
-        if self.client.isconnected:
+        if self.is_listening:
             self.flash_lights(2, interval=.25)
 
     def change_stylus(self, value: str):
@@ -600,7 +600,7 @@ class Dcs5Controller:
         self.stylus = value
         self.stylus_offset = self.devices_spec.stylus_offset[self.stylus]
         logging.debug(f'Stylus set to {self.stylus}. Stylus offset {self.stylus_offset}')
-        if self.client.isconnected:
+        if self.client.is_connected:
             self.flash_lights(2, interval=.25)
 
     def cycle_stylus(self):
@@ -620,13 +620,14 @@ class Dcs5Controller:
         value must be one of  [length, bottom, top]
         """
         self.output_mode = value
-        if self.client.isconnected:
-            if self.output_mode == 'bottom':
-                self.flash_lights(2, interval=.25)
-            elif self.output_mode == 'top':
-                self.flash_lights(2, interval=.25)
-            else:
-                self.flash_lights(2, interval=.25)
+        if self.client.is_connected:
+            if self.is_listening:
+                if self.output_mode == 'bottom':
+                    self.flash_lights(2, interval=.25)
+                elif self.output_mode == 'top':
+                    self.flash_lights(2, interval=.25)
+                else:
+                    self.flash_lights(2, interval=.25)
 
             if self.dynamic_stylus_settings is True:
                 reading_profile = self.config.reading_profiles[

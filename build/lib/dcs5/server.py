@@ -37,7 +37,7 @@ def start_dcs5_controller(
 
     controller = Dcs5Controller(config_path, devices_specifications_path, control_box_parameters_path)
     controller.start_client()
-    if controller.client.isconnected:
+    if controller.client.is_connected:
         controller.init_controller_and_board()
         controller.start_listening()
 
@@ -90,7 +90,7 @@ class Server:
                     command_response = self.process_command(json_data['command'])
                     if self.controller is not None:
                         state.update({
-                            "connected": self.controller.client.isconnected,
+                            "connected": self.controller.client.is_connected,
                             "mode": self.controller.output_mode,
                             "units": self.controller.length_units,
                             "stylus": self.controller.stylus

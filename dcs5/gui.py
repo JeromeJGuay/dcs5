@@ -418,11 +418,7 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
     window['-MUTED_LED-'].update(text_color='Green' if controller.is_muted else 'Red')
     window['-MUTE-'].update(disabled=False)
 
-    window['-BACKLIGHT-'].update(
-        range=(0, controller.control_box_parameters.max_backlighting_level)
-    )
-
-    if controller.client.isconnected:
+    if controller.client.is_connected:
         window["-CONNECTED_LED-"].update(text_color='Green')
         window["-CONNECT-"].update(disabled=True)
         window["-RESTART-"].update(disabled=False)
@@ -680,7 +676,7 @@ def reload_controller_config(controller: Dcs5Controller):
     try:
         controller.reload_configs()
         logging.debug('Controller reloaded.')
-        if controller.client.isconnected:
+        if controller.client.is_connected:
             if sg.popup_yes_no('Do you want to synchronize board ?'):
                 controller.init_controller_and_board()
         sg.user_settings()['configs_path'] = sg.user_settings()['configs_path'].strip('*')
