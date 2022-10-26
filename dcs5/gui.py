@@ -4,6 +4,7 @@ TODO GUI:
 - Yellow light for activated and Synchronized
 - Calibration pop-up
 - Mode mm, cm Top Length BOttom Take a long time.
+- Could not connect popup. Show error ?
 
 TODO DESIGN:
 - Red-Green color not suffisant

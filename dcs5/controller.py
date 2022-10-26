@@ -985,18 +985,19 @@ class SocketListener:
             for _value in value:
                 self._process_output(_value)
         else:
-            if value in self.controller.mappable_commands:
-                self.controller.mappable_commands[value]()
-            elif value == "MODE":
+            if value == "MODE":
                 self.with_mode = not self.with_mode
             else:
-                self.controller.shout(value)
+                self.with_mode = False
+                if value in self.controller.mappable_commands:
+                    self.controller.mappable_commands[value]()
+                else:
+                    self.controller.shout(value)
 
     def _map_control_box_output(self, value):
         key = self.controller.devices_spec.control_box.keys_layout[value]
         self.last_key = key
         if self.with_mode:
-            self.with_mode = False
             return self.controller.config.key_maps.control_box_mode[key]
         else:
             return self.controller.config.key_maps.control_box[key]
@@ -1016,9 +1017,7 @@ class SocketListener:
                 key = self.controller.devices_spec.board.keys_layout[self.controller.output_mode][index]
                 self.last_key = key
                 if self.with_mode:
-                    if out_value := self.controller.config.key_maps.board_mode[key] != "MODE":
-                        self.with_mode = False
-                    return out_value
+                    return self.controller.config.key_maps.board_mode[key]
                 else:
                     return self.controller.config.key_maps.board[key]
 
