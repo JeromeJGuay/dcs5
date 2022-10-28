@@ -24,7 +24,7 @@ from dcs5 import VERSION, \
     USER_GUIDE_FILE
 from dcs5.controller import Dcs5Controller
 from dcs5.controller_configurations import ConfigError
-from dcs5.logger import init_logging, get_multiline_handler
+from dcs5.logger import init_logging
 
 if os.environ.get('EDITOR') == 'EMACS':
     print('Text editor changed.')
