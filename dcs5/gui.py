@@ -5,6 +5,11 @@ TODO GUI:
 
 
 TODO FIXME ISSUES:
+    controller = popup_window_select_config(controller=controller)
+  File "/home/jeromejguay/ImlSpace/Projects/dcs5/dcs5/gui.py", line 711, in popup_window_select_config
+    window['-CONFIG-'].update(list_configs(), se_to_index=[])
+TypeError: Listbox.update() got an unexpected keyword argument 'se_to_index'
+
 - Still some bug on loading after bad config edit. Maybe it is fixed after a save_user_setting was removed.
 - Remake the configuration file template for (MODE). All keys needs to be there.
 
@@ -596,7 +601,7 @@ def config_window():
                sg.Column(edit_layout, vertical_alignment='top')],
               [button('Close', size=(6, 1), button_color=ENABLED_BUTTON_COLOR)]]
 
-    window = sg.Window('Configurations', layout, element_justification='center', keep_on_top=True)
+    window = sg.Window('Configurations', layout, element_justification='center')
 
     return window
 
@@ -708,7 +713,7 @@ def popup_window_select_config(controller: Dcs5Controller) -> Dcs5Controller:
                         elif sg.popup_yes_no(f"Are you sure you want to delete `{value['-CONFIG-'][0]}`") == 'Yes':
                             shutil.rmtree(str(Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0])))
 
-                            window['-CONFIG-'].update(list_configs(), se_to_index=[])
+                            window['-CONFIG-'].update(list_configs(), set_to_index=[])
                             window['Load'].update(disabled=True)
                             window['Delete'].update(disabled=True)
                             window['-EDIT-'].update(disabled=True)
