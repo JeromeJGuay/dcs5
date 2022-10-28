@@ -1,15 +1,4 @@
 """
-TODO GUI:
-- Calibration pop-up
-- Stylus Change ? Offset ?
-
-
-TODO FIXME ISSUES:
-    controller = popup_window_select_config(controller=controller)
-  File "/home/jeromejguay/ImlSpace/Projects/dcs5/dcs5/gui.py", line 711, in popup_window_select_config
-    window['-CONFIG-'].update(list_configs(), se_to_index=[])
-TypeError: Listbox.update() got an unexpected keyword argument 'se_to_index'
-
 - Still some bug on loading after bad config edit. Maybe it is fixed after a save_user_setting was removed.
 - Remake the configuration file template for (MODE). All keys needs to be there.
 
