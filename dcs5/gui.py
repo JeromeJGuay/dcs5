@@ -1,5 +1,6 @@
 """
 """
+import sys
 import logging
 import os
 import shutil
@@ -66,9 +67,12 @@ USER_SETTING_FILE = 'user_settings.json'
 
 
 def main():
-    init_logging(stdout_level='DEBUG')
-    run()
-    exit()
+    try:
+        init_logging(stdout_level='DEBUG')
+        run()
+    except Exception as e:
+        sg.popup_error(f'CRITICAL ERROR. SHUTTING DOWN', title='CRITICAL ERROR')
+        sys.exit()
 
 
 def init_dcs5_controller():
@@ -123,7 +127,6 @@ def load_user_settings():
             sg.user_settings().update({'configs_path': None})
     sg.user_settings().update({'previous_configs_path': None})
     save_user_settings()
-
 
 
 def save_user_settings():
