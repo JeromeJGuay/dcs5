@@ -11,8 +11,7 @@ References
 
 TODO
 - Try to connect with 2 apps on windows for error code.
-- New Error Err9. Catch it.
-- Make it not crash on unkown connection error. Or no completely.
+- Try re reproduce Err9. I don't Know where it cannot be catch.
 """
 
 import logging
@@ -81,9 +80,6 @@ class Shouter:
     valid_meta_keys = ['ctrl', 'alt', 'shift']
 
     def __init__(self):
-        #self._with_control = False
-        #self._with_shift = False
-        #self._with_alt = False
         self.input: str = None
 
         self.meta_key_combo = []
@@ -164,7 +160,7 @@ class BluetoothClient:
         self.is_connected = False
         self.error_msg = ""
         self.errors = {0: 'Socket timeout', 1: 'No available ports', 2: 'Device not found', 3: 'Bluetooth not on',
-                       4: 'Connection broken', 5: 'Unknown Error', 6: 'Device Unavailable'}
+                       4: 'Connection broken', 5: 'Device Unavailable',  6: 'Unknown Error'}
 
     def connect(self, mac_address: str = None, timeout: int = None):
         self._mac_address = mac_address
@@ -246,8 +242,8 @@ class BluetoothClient:
         2: Device not Found
         3: Bluetooth turned off
         4: Connection broken
-        5: Unknown Error
-        6: Device Unavailable
+        5: Device Unavailable
+        6: Unknown Error
 
         """
         match err.errno:
@@ -261,7 +257,7 @@ class BluetoothClient:
                 return 1
             case 111:
                 logging.error(f'Device unavailable. (err{err.errno})')
-                return 6
+                return 5
             case 112:
                 logging.error(f'Device not found. (err{err.errno})')
                 return 2
@@ -282,7 +278,7 @@ class BluetoothClient:
                 return 3
             case 10048:
                 logging.error(f'Device unavailable. (Maybe) (err{err.errno})')
-                return 6
+                return 5
             case 10049:
                 logging.error(f'Port does not exist. (err{err.errno})')
                 return 1
@@ -300,7 +296,7 @@ class BluetoothClient:
                 return 1
             case _:
                 logging.error(f'OSError (new): {err.errno}')
-                return 5
+                return 6
 
 
 class Dcs5Controller:
