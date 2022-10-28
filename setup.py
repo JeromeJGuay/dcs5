@@ -1,8 +1,6 @@
 
 from setuptools import find_packages, setup
 from dcs5 import VERSION
-from post_install import create_local_files
-
 
 setup(
     name="dcs5",
@@ -19,13 +17,4 @@ setup(
     python_requires="~=3.10",
     entry_points={"console_scripts": ["dcs5=dcs5.main:main", ]},
 )
-
-
-# create_local_files()
-
-
-
-
-
-
 
