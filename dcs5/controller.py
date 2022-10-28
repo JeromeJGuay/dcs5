@@ -11,6 +11,8 @@ References
 
 TODO
 - Try to connect with 2 apps on windows for error code.
+- New Error Err9. Catch it.
+- Make it not crash on unkown connection error. Or no completely.
 """
 
 import logging
