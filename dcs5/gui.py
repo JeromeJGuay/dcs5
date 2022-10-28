@@ -1,6 +1,4 @@
 """
-- Still some bug on loading after bad config edit. Maybe it is fixed after a save_user_setting was removed.
-
 """
 import logging
 import os
