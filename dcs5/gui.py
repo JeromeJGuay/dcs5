@@ -677,8 +677,10 @@ def popup_window_select_config(controller: Dcs5Controller = None) -> Dcs5Control
 
                     if event == 'Delete':
                         if value['-CONFIG-'][0] == current_config:
-                            sg.popup_ok('Cannot delete the configuration currently in use.', title='Deletion error')
-                        elif sg.popup_yes_no(f"Are you sure you want to delete `{value['-CONFIG-'][0]}`") == 'Yes':
+                            sg.popup_ok('Cannot delete the configuration currently in use.',
+                                        title='Deletion error', keep_on_top=True)
+                        elif sg.popup_yes_no(f"Are you sure you want to delete `{value['-CONFIG-'][0]}`"
+                                , keep_on_top=True) == 'Yes':
                             shutil.rmtree(str(Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0])))
 
                             window['-CONFIG-'].update(list_configs(), set_to_index=[])
@@ -766,7 +768,7 @@ def reload_controller_config(controller: Dcs5Controller):
     except ConfigError:
         logging.debug('ConfigError while loading config files.')
         sg.popup_ok('Could not load the configuration files.\n'
-                    ' Error in the configurations files. ')
+                    ' Error in the configurations files. ', keep_on_top=True)
         sg.user_settings().update({'configs_path': sg.user_settings()['previous_configs_path']})
 
 
