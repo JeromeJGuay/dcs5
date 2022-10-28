@@ -1,10 +1,8 @@
 """
 This module contains the code for the cli application.
 
-
-
-TODO: catch error if board dcs
-
+--ERROR--
+the cli app is usable (i think) but the files will be places in `./dcs5/configs/` not in a configs folder.
 
 
 """
