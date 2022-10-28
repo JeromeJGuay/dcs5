@@ -62,7 +62,7 @@ SELECTED_BUTTON_COLOR = ('OrangeRed', "light grey")
 META_OFF = {'text_color': 'gray', 'background_color': 'light grey'}
 META_ON = {'text_color': 'black', 'background_color': 'gold'}
 
-LOGO = '../static/bigfin_logo.png'
+LOGO = 'static/bigfin_logo.png'
 USER_SETTING_FILE = 'user_settings.json'
 
 
