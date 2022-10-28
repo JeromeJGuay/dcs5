@@ -14,6 +14,7 @@ def main():
     #slide_example()
     #run_example()
     run_example_2()
+    #slider_test()
 
 
 def clean_input_layout():
@@ -305,6 +306,45 @@ def run_example_2():
 
     window.close()
     exit(0)
+
+
+def slider_test():
+    #set the theme for the screen/window
+    sg.theme("LightBlue")
+    #define layout
+    layout=[[sg.Text("Enter start value",font='Lucida'),
+             sg.Input(key='stVal',size=(3, 1)),
+             sg.Text("Enter end value", font='Lucida'),
+             sg.Input(key='enVal',size=(3, 1))],
+            [sg.Slider(orientation ='horizontal', key='stSlider', range=(1,100)),
+             sg.Slider(orientation ='horizontal', key='endSlider',range=(1,100), enable_events=True)],
+                     [sg.ProgressBar(50, orientation='h', size=(20, 20), border_width=4, key='progbar',bar_color=['Red','Green'])],
+            [sg.Spin( values =['January','February','March     ','April     ','May      ','June     '], key='spnMnt')],
+            [sg.Submit(key='btnSubmit'), sg.Cancel()]]
+    #Define Window
+    window =sg.Window("Progress Bar and Slider Functioning",layout)
+    #Read  values entered by user
+    while True:
+        event, values=window.read(timeout=.1)
+        if event is not None and event != "__TIMEOUT__":
+            print(event, values)
+            if event == 'endSlider':
+                window['endSlider'].update(value=values['endSlider']-1)
+        # window['stVal'].update(int(values['stSlider']))
+        # window['enVal'].update(int(values['endSlider']))
+        # event,values=window.read()
+        # i=int(values['stVal'])
+        # k=int(values['enVal'])
+        # window['btnSubmit'].set_focus()
+        # val=0
+        #
+        # for i in range(k):
+        #     event, values = window.read(timeout=100)
+        #     # update prograss bar value
+        #     val = val + 100 / (k - i)
+        #     window['progbar'].update_bar(val)
+        #
+    window.close()
 
 
 if __name__ == "__main__":

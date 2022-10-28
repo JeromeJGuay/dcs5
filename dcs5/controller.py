@@ -9,6 +9,10 @@ References
 ----------
     https://bigfinllc.com/wp-content/uploads/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf?fbclid=IwAR0tJMwvN7jkqxgEhRQABS0W3HLLntpOflg12bMEwM5YrDOwcHStznJJNQM
 
+TODO
+- Try to connect with 2 apps on windows for error code.
+- New Error Err9. Catch it.
+- Make it not crash on unkown connection error. Or no completely.
 """
 
 import logging
@@ -77,9 +81,9 @@ class Shouter:
     valid_meta_keys = ['ctrl', 'alt', 'shift']
 
     def __init__(self):
-        self._with_control = False
-        self._with_shift = False
-        self._with_alt = False
+        #self._with_control = False
+        #self._with_shift = False
+        #self._with_alt = False
         self.input: str = None
 
         self.meta_key_combo = []
@@ -157,35 +161,41 @@ class BluetoothClient:
         self._port: int = None
         self.socket: socket.socket = None
         self.default_timeout = 0.1
-        self.isconnected = False
+        self.is_connected = False
+        self.error_msg = ""
+        self.errors = {0: 'Socket timeout', 1: 'No available ports', 2: 'Device not found', 3: 'Bluetooth not on',
+                       4: 'Connection broken', 5: 'Unknown Error', 6: 'Device Unavailable'}
 
     def connect(self, mac_address: str = None, timeout: int = None):
         self._mac_address = mac_address
         timeout = timeout or self.default_timeout
         logging.debug(f'Attempting to connect to board. Timeout: {timeout} seconds')
-        try:
-            for port in range(self.min_port, self.max_port):  # check for all available ports
-                self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
-                self.socket.settimeout(timeout)
-                try:
-                    logging.debug(f'port: {port}')
-                    self.socket.connect((self._mac_address, port))
-                    self._port = port
-                    self.isconnected = True
-                    logging.debug(f'Connected to port {self._port}')
-                    logging.debug(f'Socket name: {self.socket.getsockname()}')
-                    break
-                except PermissionError:
-                    logging.debug('Client.connect: PermissionError')
-                    pass
-                port += 1
-            if not self.isconnected:
-                logging.error('No available ports were found.')
 
-        except OSError as err:
-            self._process_os_error_code(err)
-        finally:
-            self.socket.settimeout(self.default_timeout)
+        for port in range(self.min_port, self.max_port + 1):  # check for all available ports
+            self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
+            self.socket.settimeout(timeout)
+            try:
+                logging.debug(f'port: {port}')
+                self.socket.connect((self._mac_address, port))
+                self._port = port
+                self.is_connected = True
+                logging.debug(f'Connected to port {self._port}')
+                logging.debug(f'Socket name: {self.socket.getsockname()}')
+                break
+            except PermissionError:
+                logging.debug('Client.connect: PermissionError')
+                self.error_msg = 'Permission error'
+                pass
+            except OSError as err:
+                if (err_code := self._process_os_error_code(err)) == 1:
+                    if port == self.max_port:
+                        logging.error('No available ports were found.')
+                        self.error_msg = self.errors[err_code]
+                else:
+                    self.error_msg = self.errors[err_code]
+                    break
+
+        self.socket.settimeout(self.default_timeout)
 
     @property
     def mac_address(self):
@@ -205,53 +215,92 @@ class BluetoothClient:
         try:
             return self.socket.recv(BUFFER_SIZE).decode(BOARD_MSG_ENCODING)
         except OSError as err:
-            if err.errno is None:
-                pass
-            else:
-                self._process_os_error_code(err)
-                self.reconnect()
+            if err_code := self._process_os_error_code(err) != 0:
+                self.error_msg = self.errors[err_code]
+                self.close()
             return ""
 
     def reconnect(self):
-        self.close()
-        while not self.isconnected:
+        while not self.is_connected:
             logging.error('Attempting to reconnect.')
             self.connect(self.mac_address, timeout=30)
             time.sleep(5)
-        if self.isconnected:
-            logging.error('Board Reconnected')
 
     def clear(self):
         self.receive()
 
     def close(self):
         self.socket.close()
-        self.isconnected = False
+        self.is_connected = False
 
-    def _process_os_error_code(self, err):
+    def _process_os_error_code(self, err) -> int:
+        """
+        Parameters
+        ----------
+        err : OS error code.
+
+        Returns
+        -------
+        0: Socket timeout
+        1: Port Unavailable
+        2: Device not Found
+        3: Bluetooth turned off
+        4: Connection broken
+        5: Unknown Error
+        6: Device Unavailable
+
+        """
         match err.errno:
             case None:
-                pass
+                return 0
+            case 16:
+                logging.error(f'Port unavailable. (err{err.errno})')
+                return 1
+            case 22:
+                logging.error(f'Port does not exist. (err{err.errno})')
+                return 1
+            case 111:
+                logging.error(f'Device unavailable. (err{err.errno})')
+                return 6
+            case 112:
+                logging.error(f'Device not found. (err{err.errno})')
+                return 2
             case 104:
-                logging.error('Connection to device lost. (err104)')
+                logging.error(f'Connection broken. (err{err.errno})')
+                return 4
             case 110:
-                logging.error('Connection to device lost. (err110)')
+                logging.error(f'Connection broken. (err{err.errno})')
+                return 4
+            case 112:
+                logging.error(f'Device not found. (err{err.errno})')
+                return 2
             case 113:
-                logging.error('Bluetooth turned off. Connection to device lost. (err113)')
+                logging.error(f'Bluetooth turned off. (err{err.errno})')
+                return 3
             case 10022:
-                logging.error('Bluetooth turned off.')
+                logging.error(f'Bluetooth turned off. (err{err.errno})')
+                return 3
             case 10048:
-                logging.error(f'Port {self.port} unavailable. (err10048)')
+                logging.error(f'Device unavailable. (Maybe) (err{err.errno})')
+                return 6
+            case 10049:
+                logging.error(f'Port does not exist. (err{err.errno})')
+                return 1
             case 10050:
-                logging.error('Connection to device lost. (err10050)')
+                logging.error(f'Bluetooth turned off. (err{err.errno})')
+                return 3
             case 10053:
-                logging.error('Connection to device lost. (err10053)')
+                logging.error(f'Connection broken. (err{err.errno})')
+                return 4
             case 10060:
-                logging.error('Connection to device lost. (err10060')
+                logging.error(f'Device not found. (err{err.errno})')
+                return 2
             case 10064:
-                logging.error(f'Port {self.port} unavailable. (err10064)')
+                logging.error(f'Port {self.port} unavailable. (err{err.errno})')
+                return 1
             case _:
                 logging.error(f'OSError (new): {err.errno}')
+                return 5
 
 
 class Dcs5Controller:
@@ -283,7 +332,8 @@ class Dcs5Controller:
 
         self.listen_thread: threading.Thread = None
         self.command_thread: threading.Thread = None
-        self.monitoring_thread: threading.Thread = None
+        self.spam_thread: threading.Thread = None
+        self.monitor_thread: threading.Thread = None
 
         self.socket_listener = SocketListener(self)
         self.command_handler = CommandHandler(self)
@@ -305,7 +355,10 @@ class Dcs5Controller:
             "BACKLIGHT_DOWN": self.backlight_down,
             "CHANGE_STYLUS": self.cycle_stylus,
             "UNITS_mm": self.change_length_units_mm,
-            "UNITS_cm": self.change_length_units_cm
+            "UNITS_cm": self.change_length_units_cm,
+            "MODE_TOP": self._mode_top,
+            "MODE_LENGTH": self._mode_length,
+            "MODE_BOTTOM": self._mode_bottom
         }
 
         if shouter not in ['keyboard', 'server']:
@@ -336,6 +389,7 @@ class Dcs5Controller:
     def reload_configs(self):
         self.is_sync = False
         self._load_configs()
+        self.set_board_settings()
 
     def set_board_settings(self):
         self.dynamic_stylus_settings = self.config.launch_settings.dynamic_stylus_mode
@@ -348,14 +402,16 @@ class Dcs5Controller:
 
     def start_client(self, mac_address: str = None):
         """Create a socket and tries to connect with the board."""
-        if self.client.isconnected:
+        if self.client.is_connected:
             logging.debug("Client Already Connected.")
+            self.monitor_thread = threading.Thread(target=self.monitor_connection,name="monitor", daemon=True)
+            self.monitor_thread.start()
         else:
             mac_address = mac_address or self.config.client.mac_address
             self.client.connect(mac_address, timeout=30)
 
     def close_client(self):
-        if self.client.isconnected:
+        if self.client.is_connected:
             self.stop_listening()
             self.client.close()
             logging.debug('Client Closed.')
@@ -388,10 +444,10 @@ class Dcs5Controller:
             self.listen_thread.start()
 
             if platform.system() == 'Windows':
-                self.monitoring_thread = threading.Thread(target=self.monitor_connection, name='listen', daemon=True)
-                self.monitoring_thread.start()
+                self.spam_thread = threading.Thread(target=self.spam_measuring_board, name='spam', daemon=True)
+                self.spam_thread.start()
 
-        #logging.debug('Board is Active.')
+        logging.debug('Board is Active.')
 
     def stop_listening(self):
         if self.is_listening:
@@ -405,11 +461,19 @@ class Dcs5Controller:
         self.stop_listening()
         self.start_listening()
 
-    def monitor_connection(self):
+    def spam_measuring_board(self):
         "This is to raise a connection OSError if the connection is lost."
         while self.is_listening:
             self.client.send(" ") # a space is not a recognized command. Thus nothing is return.
             time.sleep(MONITORING_DELAY)
+
+    def monitor_connection(self):
+        while True:
+            while self.client.is_connected:
+                time.sleep(1)
+            self.client.reconnect()
+            logging.error('Board Reconnected')
+            self.init_controller_and_board()
 
     def unmute_board(self):
         """Unmute board shout output"""
@@ -529,41 +593,51 @@ class Dcs5Controller:
             if was_listening:
                 self.start_listening()
 
-    def change_length_units_mm(self):
+    def change_length_units_mm(self, flash=True):
         self.length_units = "mm"
         logging.debug(f"Length Units Change to mm")
-        if self.client.isconnected:
-            self.flash_lights(2, interval=.25)
+        if self.is_listening and flash is True:
+            self.flash_lights(1, interval=.25)
 
-    def change_length_units_cm(self):
+    def change_length_units_cm(self, flash=True):
         self.length_units = "cm"
         logging.debug(f"Length Units Change to cm")
-        if self.client.isconnected:
-            self.flash_lights(2, interval=.25)
+        if self.is_listening and flash is True:
+            self.flash_lights(1, interval=.25)
 
-    def change_stylus(self, value: str):
+    def change_stylus(self, value: str, flash=True):
         """Stylus must be one of [pen, finger]"""
         self.stylus = value
         self.stylus_offset = self.devices_spec.stylus_offset[self.stylus]
         logging.debug(f'Stylus set to {self.stylus}. Stylus offset {self.stylus_offset}')
-        if self.client.isconnected:
-            self.flash_lights(2, interval=.25)
+        if self.client.is_connected and flash is True:
+            self.flash_lights(1, interval=.25)
 
     def cycle_stylus(self):
         self.change_stylus(next(self.stylus_cyclical_list))
 
-    def change_board_output_mode(self, value: str):
+    def _mode_top(self):
+        self.change_board_output_mode('top')
+
+    def _mode_length(self):
+        self.change_board_output_mode('length')
+
+    def _mode_bottom(self):
+        self.change_board_output_mode('bottom')
+
+    def change_board_output_mode(self, value: str, flash=True):
         """
         value must be one of  [length, bottom, top]
         """
         self.output_mode = value
-        if self.client.isconnected:
-            if self.output_mode == 'bottom':
-                self.flash_lights(2, interval=.25)
-            elif self.output_mode == 'top':
-                self.flash_lights(2, interval=.25)
-            else:
-                self.flash_lights(2, interval=.25)
+        if self.client.is_connected:
+            if self.is_listening and flash is True:
+                if self.output_mode == 'bottom':
+                    self.flash_lights(1, interval=.25)
+                elif self.output_mode == 'top':
+                    self.flash_lights(1, interval=.25)
+                else:
+                    self.flash_lights(1, interval=.25)
 
             if self.dynamic_stylus_settings is True:
                 reading_profile = self.config.reading_profiles[
@@ -645,6 +719,8 @@ class Dcs5Controller:
             logging.debug(f'Interface set to {self.internal_board_state.board_interface}')
 
     def c_set_backlighting_level(self, value: int):
+        if value is None:
+            value = self.control_box_parameters.max_backlighting_level
         if 0 <= value <= self.control_box_parameters.max_backlighting_level:
             self.command_handler.queue_command(f'&o,{value}#', None)
             self.internal_board_state.backlighting_level = value
@@ -832,8 +908,8 @@ class SocketListener:
         self.controller = controller
         self.message_queue = Queue()
         self.swipe_triggered = False
-        self.with_ctrl = False
         self.buffer = ""
+        self.with_mode = False # Note MODE
         self.last_key = None
         self.last_command = None
 
@@ -877,9 +953,7 @@ class SocketListener:
             msg_type, msg_value = self._decode_board_message(message)
             logging.debug(f"Message Type: {msg_type}, Message Value: {msg_value}")
             if msg_type == "controller_box_key":
-                control_box_key = self.controller.devices_spec.control_box.keys_layout[msg_value]
-                self.last_key = control_box_key
-                out_value = self.controller.config.key_maps.control_box[control_box_key]
+                out_value = self._map_control_box_output(msg_value)
 
             elif msg_type == 'swipe':
                 self.swipe_value = msg_value
@@ -894,7 +968,6 @@ class SocketListener:
             elif msg_type == "solicited":
                 self.controller.command_handler.received_queue.put(msg_value)
 
-            self.last_command = ""
             if out_value is not None:
                 self.last_command = out_value
                 self._process_output(out_value)
@@ -918,10 +991,22 @@ class SocketListener:
             for _value in value:
                 self._process_output(_value)
         else:
-            if value in self.controller.mappable_commands:
-                self.controller.mappable_commands[value]()
+            if value == "MODE":
+                self.with_mode = not self.with_mode
             else:
-                self.controller.shout(value)
+                self.with_mode = False
+                if value in self.controller.mappable_commands:
+                    self.controller.mappable_commands[value]()
+                else:
+                    self.controller.shout(value)
+
+    def _map_control_box_output(self, value):
+        key = self.controller.devices_spec.control_box.keys_layout[value]
+        self.last_key = key
+        if self.with_mode:
+            return self.controller.config.key_maps.control_box_mode[key]
+        else:
+            return self.controller.config.key_maps.control_box[key]
 
     def _map_board_length_measurement(self, value: int):
         if self.controller.output_mode == 'length':
@@ -936,13 +1021,16 @@ class SocketListener:
                 / self.controller.devices_spec.board.key_to_mm_ratio
             )
             if index < self.controller.devices_spec.board.number_of_keys:
-                board_key = self.controller.devices_spec.board.keys_layout[self.controller.output_mode][index]
-                self.last_key = board_key
-                return self.controller.config.key_maps.board[board_key]
+                key = self.controller.devices_spec.board.keys_layout[self.controller.output_mode][index]
+                self.last_key = key
+                if self.with_mode:
+                    return self.controller.config.key_maps.board_mode[key]
+                else:
+                    return self.controller.config.key_maps.board[key]
 
     def _check_for_stylus_swipe(self, value: str):
         self.swipe_triggered = False
-        self.last_key = "swipe"
+        self.last_input = "swipe"
         segments_limits = self.controller.config.output_modes.segments_limits
         if value <= segments_limits[-1]:
             for l_max, l_min, mode in zip(segments_limits[1:],

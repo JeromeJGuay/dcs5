@@ -5,7 +5,6 @@ This module contains the code for the cli application.
 
 TODO: catch error if board dcs
 
-OSError: [Errno 107] Transport endpoint is not connected
 
 
 """
@@ -45,7 +44,7 @@ class StatePrompt:
             if self._debug_mode is True:
                 msg += click.style(f"Debug Mode", fg='red')
             else:
-                if self._controller.client.isconnected:
+                if self._controller.client.is_connected:
                     msg += click.style(f"Connected: ", fg='green')
                     msg += click.style(f"true", bold=True)
                 else:
@@ -103,7 +102,7 @@ def init_dcs5_controller():
 def start_new_client(controller: Dcs5Controller):
     click.secho('\nStarting Controller ...', **{'fg': 'yellow', 'blink': True}, nl=False)
     controller.restart_client()
-    if controller.client.isconnected:
+    if controller.client.is_connected:
         click.secho('\rStarting Controller ... Done', **{'fg': 'green'})
     else:
         click.secho('\rStarting Controller ... Failed', **{'fg': 'red'})
@@ -123,7 +122,7 @@ def _reload_config(controller: Dcs5Controller):
     try:
         controller.reload_configs()
         click.secho('\rReloading Config ... Done', **{'fg': 'green'})
-        if controller.client.isconnected:
+        if controller.client.is_connected:
             if click.confirm(click.style(f"\nSync Board", fg='blue'), default=True):
                 init_measuring_board(controller)
     except ConfigError as err:
@@ -185,7 +184,7 @@ def cli_app(ctx: click.Context, connect):
     if connect is True:
         while True:
             _connect(ctx.obj)
-            if not ctx.obj.client.isconnected:
+            if not ctx.obj.client.is_connected:
                 break
             if ctx.obj.is_sync:
                 break
@@ -198,7 +197,7 @@ def cli_app(ctx: click.Context, connect):
 @cli_app.command('activate', help='Use this command if the controller is not active but is connected.')
 @click.pass_obj
 def activate(obj):
-    if obj.client.isconnected:
+    if obj.client.is_connected:
         obj.start_listening()
     else:
         click.secho('Device not connected', **{'fg': 'red'})
@@ -224,7 +223,7 @@ def cm(obj: Dcs5Controller):
 @cli_app.command('connect', help='To start the controller and connect the board.')
 @click.pass_obj
 def connect(obj: Dcs5Controller):
-    if not obj.client.isconnected:
+    if not obj.client.is_connected:
         _connect(obj)
 
 
@@ -238,7 +237,7 @@ def restart(obj: Dcs5Controller):
 def _connect(controller: Dcs5Controller, attempts=3):
     _attempts = attempts
     start_new_client(controller)
-    if controller.client.isconnected:
+    if controller.client.is_connected:
         while _attempts > 0:
             init_measuring_board(controller)
             if controller.is_sync:
@@ -265,7 +264,7 @@ def unmute(obj: Dcs5Controller):
 @cli_app.command('sync', help='To sync the controller and the board internal state.')
 @click.pass_obj
 def sync(obj: Dcs5Controller):
-    if obj.client.isconnected:
+    if obj.client.is_connected:
         init_measuring_board(obj)
     else:
         click.secho('Syncing impossible, device not Connected.', **{'fg': 'red'})
@@ -276,7 +275,7 @@ def sync(obj: Dcs5Controller):
 def calibrate(obj: Dcs5Controller):
     cal_pt_1 = False
     cal_pt_2 = False
-    if obj.client.isconnected:
+    if obj.client.is_connected:
         if obj.internal_board_state.cal_pt_1 is not None and obj.internal_board_state.cal_pt_2 is not None:
             click.secho(f'\nSet stylus down for point 1: {obj.internal_board_state.cal_pt_1} mm ...', nl=False, **{'fg': 'yellow'})
             if obj.calibrate(1) == 1:
