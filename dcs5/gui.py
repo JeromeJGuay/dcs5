@@ -1,6 +1,5 @@
 """
 - Still some bug on loading after bad config edit. Maybe it is fixed after a save_user_setting was removed.
-- Remake the configuration file template for (MODE). All keys needs to be there.
 
 """
 import logging
