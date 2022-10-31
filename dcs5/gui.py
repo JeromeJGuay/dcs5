@@ -71,7 +71,7 @@ def main():
         init_logging(stdout_level='DEBUG')
         run()
     except Exception as e:
-        sg.popup_error(f'CRITICAL ERROR. SHUTTING DOWN', title='CRITICAL ERROR')
+        sg.popup_error(f'CRITICAL ERROR. SHUTTING DOWN', title='CRITICAL ERROR', keep_on_top=True)
     finally:
         sys.exit()
 
