@@ -38,4 +38,4 @@ DEFAULT_CONTROLLER_CONFIGURATION_FILE = resolve_relative_path(DEFAULT_CONFIG_PAT
 DEFAULT_DEVICES_SPECIFICATION_FILE = resolve_relative_path(DEFAULT_CONFIG_PATH + DEVICES_SPECIFICATION_FILE_NAME, __file__)
 DEFAULT_CONTROL_BOX_PARAMETERS = resolve_relative_path(DEFAULT_CONFIG_PATH + CONTROL_BOX_PARAMETERS_FILE_NAME, __file__)
 
-USER_GUIDE_FILE = str(resolve_relative_path('../doc/UserGuide_fr.pdf', __file__))
+USER_GUIDE_FILE = str(resolve_relative_path('static/UserGuide_fr.pdf', __file__))
