@@ -2,6 +2,7 @@
 """
 import sys
 import logging
+import traceback
 import os
 import shutil
 import webbrowser
@@ -17,12 +18,11 @@ from dcs5 import VERSION, \
     CONTROLLER_CONFIGURATION_FILE_NAME, \
     DEVICES_SPECIFICATION_FILE_NAME, \
     CONTROL_BOX_PARAMETERS_FILE_NAME, \
-    DEFAULT_SERVER_CONFIGURATION_FILE, \
     DEFAULT_CONTROLLER_CONFIGURATION_FILE, \
     DEFAULT_DEVICES_SPECIFICATION_FILE, \
-    DEFAULT_CONTROL_BOX_PARAMETERS, \
+    DEFAULT_CONTROL_BOX_PARAMETERS_FILE, \
     CONFIG_FILES_PATH, \
-    USER_GUIDE_FILE
+    USER_GUIDE_FILE, LOGO_PATH
 from dcs5.controller import Dcs5Controller
 from dcs5.controller_configurations import ConfigError
 from dcs5.logger import init_logging
@@ -62,15 +62,16 @@ SELECTED_BUTTON_COLOR = ('OrangeRed', "light grey")
 META_OFF = {'text_color': 'gray', 'background_color': 'light grey'}
 META_ON = {'text_color': 'black', 'background_color': 'gold'}
 
-LOGO = 'static/bigfin_logo.png'
 USER_SETTING_FILE = 'user_settings.json'
 
 
 def main():
     try:
         init_logging(stdout_level='DEBUG')
+        logging.debug(f"Default Files Path: {DEFAULT_DEVICES_SPECIFICATION_FILE}")
         run()
     except Exception as e:
+        logging.error(traceback.format_exc(), exc_info=True)
         sg.popup_error(f'CRITICAL ERROR. SHUTTING DOWN', title='CRITICAL ERROR', keep_on_top=True)
     finally:
         sys.exit()
@@ -113,7 +114,7 @@ def check_config_integrity(controller_config_path, devices_specifications_path, 
                     title='Missing file', keep_on_top=True)
         shutil.copyfile(DEFAULT_DEVICES_SPECIFICATION_FILE, devices_specifications_path)
     if not control_box_parameters_path.exists():
-        shutil.copyfile(DEFAULT_CONTROL_BOX_PARAMETERS, control_box_parameters_path)
+        shutil.copyfile(DEFAULT_CONTROL_BOX_PARAMETERS_FILE, control_box_parameters_path)
         sg.popup_ok(
             f'`devices_specifications.json` was missing from the directory {control_box_parameters_path.parent}. One was created.',
             title='Missing file', keep_on_top=True)
@@ -296,7 +297,7 @@ def run():
     sg.theme('lightgrey')
     sg.theme_border_width(.2)
     sg.set_options(
-        icon=LOGO,
+        icon=LOGO_PATH,
         auto_size_buttons=True,
         use_ttk_buttons=True,
     )
@@ -743,7 +744,7 @@ def create_new_configs():
         ]
         default_files = [
             DEFAULT_SERVER_CONFIGURATION_FILE, DEFAULT_CONTROLLER_CONFIGURATION_FILE,
-            DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROL_BOX_PARAMETERS
+            DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROL_BOX_PARAMETERS_FILE
         ]
 
         for lf, df in zip(local_files, default_files):
