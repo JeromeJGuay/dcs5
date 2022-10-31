@@ -737,14 +737,14 @@ def create_new_configs():
         new_configs_path.mkdir(parents=True, exist_ok=True)
 
         local_files = [
-            new_configs_path.joinpath(SERVER_CONFIGURATION_FILE_NAME),
             new_configs_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME),
             new_configs_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME),
             new_configs_path.joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)
         ]
         default_files = [
-            DEFAULT_SERVER_CONFIGURATION_FILE, DEFAULT_CONTROLLER_CONFIGURATION_FILE,
-            DEFAULT_DEVICES_SPECIFICATION_FILE, DEFAULT_CONTROL_BOX_PARAMETERS_FILE
+            DEFAULT_CONTROLLER_CONFIGURATION_FILE,
+            DEFAULT_DEVICES_SPECIFICATION_FILE,
+            DEFAULT_CONTROL_BOX_PARAMETERS_FILE
         ]
 
         for lf, df in zip(local_files, default_files):
