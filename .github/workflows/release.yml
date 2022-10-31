@@ -42,7 +42,7 @@
           python -m pip install pyinstaller
       - name: Build
         run: |
-          python -m pyinstaller dcs5.spec
+          pyinstaller dcs5.spec
           cd ./dist/
           zip -r ./dcs5.zip
       - name: Upload release asset
@@ -74,7 +74,7 @@
           python -m pip install pyinstaller
       - name: Build
         run: |
-          python -m pyinstaller dcs5.spec
+          pyinstaller dcs5.spec
           cd .\dist\
           zip -r .\dcs5.zip
       - name: Upload release asset
