@@ -1,38 +1,17 @@
 # Dcs5 Controller app
 
-This python (python 3.8) application provides a command line interface and a server to interact with a BigFin Dcs5 XT measuring board via Bluetooth.
-At the moment, the app only works on Unix machines due to some unresolved problems with the Bluetooth packages.
-The application will turn stylus input on the measuring board into keyboard inputs basically turning the measuring board into a wireless keyboard.
-
-## Requirement
-
-1) Works on Linux and Windows.
-2) python 3.10
-3) A BigFin Dcs5 Board with XT Control Box (duh)
+This python (python 3.10) application provides graphical interface to interact with a BigFin Dcs5 XT measuring board via Bluetooth.
+The application will turn stylus input on the measuring board into keyboard inputs basically turning the dcs5 measuring board into a wireless keyboard.
 
 ## Installation
-Install the python package pipx.
-```shell
-~$ pip install pipx
-~$ pipx ensurepath
-```
-See [pipx](https://pypa.github.io/pipx/installation/) documentation for help.
 
-3) Install the application with pipx.
-```shell
-~$ pipx install --python <path/to/python3.10> <path/to/dcs5_folder/>
-~$ pipx runpip dcs5 install -r <path/to/dcs5_folder/requirements.txt>
-```
+See the release. TODO
 
+## Requirements to install the python package
 
-## Usage
+1) python 3.10
 
-To call the application ...
-```shell
-~$ dcs5 {cli_app, server}
-```
-
-## cli app
+## User Guide (Not up to date)
 See the [user_guide/UserGuide_fr.pdf](doc/UserGuide_fr.pdf). French only.
 
 
@@ -87,13 +66,6 @@ The controller_configuration.json is used to configure the controller behavior.
 
 ### [dcs5/default_configs/control_box_parameters.json](dcs5/default_configs/control_box_parameters.json)
 Values of the builtin parameters of the control box. From BigFin documentation [user_guide/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf).
-
-## server
-
-The application can be launch with a server to communicate with the board. This feature is working but still in development.
-The server port and address are set ins the [dcs5/default_configs/server_configuration.json](dcs5/default_configs/server_configuration.json) file. Contact me for more information,
-
-
 
 
 
