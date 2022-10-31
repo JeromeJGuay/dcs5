@@ -3,9 +3,12 @@
 This python (python 3.10) application provides graphical interface to interact with a BigFin Dcs5 XT measuring board via Bluetooth.
 The application will turn stylus input on the measuring board into keyboard inputs basically turning the dcs5 measuring board into a wireless keyboard.
 
-## Installation
+# Download from releases
+Downloading Othello from its releases is by far the easiest way to use it.
+1. Download `dcs5.zip` from the last version here: https://github.com/JeromeJGuay/dcs5/releases.
+2. Unzip `dcs5.zip`
+3. Run `dcs5.exe`
 
-See the release. TODO
 
 ## Requirements to install the python package
 
