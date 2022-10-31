@@ -29,7 +29,7 @@ from dcs5.logger import init_logging
 
 if os.environ.get('EDITOR') == 'EMACS':
     print('Text editor changed.')
-    os.environ.update({'EDITOR': 'pluma'})  # FIXME
+    os.environ.update({'EDITOR': 'pluma'})  # This is a fix for my computer. Should not influence anything.
 
 
 def scale_font(font_size: int) -> int:
