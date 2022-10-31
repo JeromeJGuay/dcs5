@@ -53,7 +53,7 @@
           with:
             upload_url: ${{ needs.make_release.outputs.upload_url }}
             asset_path: .\dcs5.zip
-            asset_name: dcs5.zip
+            asset_name: dcs5-windows.zip
             asset_content_type: application/octet-stream
 
 
@@ -83,7 +83,7 @@
         with:
           upload_url: ${{ needs.make_release.outputs.upload_url }}
           asset_path: ./dcs5.zip
-          asset_name: dcs5.zip
+          asset_name: dcs5-linux.zip
           asset_content_type: application/octet-stream
 
           
