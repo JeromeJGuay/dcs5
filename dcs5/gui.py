@@ -282,7 +282,7 @@ def make_window():
         margins=(0, 0),
         finalize=True,
         grab_anywhere=True,
-        resizable=True,
+        resizable=False,
         keep_on_top=False,
         element_justification='center',
     )
@@ -363,11 +363,11 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 controller.init_controller_and_board()
                 logging.debug('sync not mapped')
             case "-CALPTS-":
-                popup_window_set_calibration_pt(controller)
+                popup_window_set_calibration_pt(controller, location=window.current_location())
             case "-CALIBRATE-":
-                popup_window_calibrate(controller)
+                popup_window_calibrate(controller, location=window.current_location())
             case 'Configuration':
-                controller = popup_window_select_config(controller=controller)
+                controller = popup_window_select_config(controller=controller, location=window.current_location())
             case '-STYLUS-':
                 controller.change_stylus(values['-STYLUS-'], flash=False)
             case '-BACKLIGHT-':
@@ -529,7 +529,7 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
             window["-RESTART-"].update(disabled=False)
 
 
-def popup_window_set_calibration_pt(controller: Dcs5Controller):
+def popup_window_set_calibration_pt(controller: Dcs5Controller, location=None):
     layout = [
         [sg.Text('Enter calibration point values in mm')],
         [sg.Text('Point 1: ', size=(7, 1), font=TAB_FONT),
@@ -541,7 +541,7 @@ def popup_window_set_calibration_pt(controller: Dcs5Controller):
         [sg.Submit(), sg.Cancel()]
     ]
 
-    window = sg.Window('Calibration points', layout, element_justification='center', keep_on_top=True)
+    window = sg.Window('Calibration points', layout, element_justification='center', keep_on_top=True, location=location)
     while True:
         event, values = window.read()
         if event == "Cancel":
@@ -554,18 +554,20 @@ def popup_window_set_calibration_pt(controller: Dcs5Controller):
                 break
             else:
                 sg.popup_ok('Invalid values.', title='error', keep_on_top=True)
+        window.bring_to_front()
 
     window.close()
 
 
-def popup_window_calibrate(controller: Dcs5Controller):
+def popup_window_calibrate(controller: Dcs5Controller, location=None):
     """Test closing on perform_long_operation"""
     cal_pt_values = {1: controller.internal_board_state.cal_pt_1, 2: {controller.internal_board_state.cal_pt_2}}
     for i in [1, 2]:
         layout = [
             [sg.Text(f'Set Stylus down for calibration point {i}: {cal_pt_values[i]} mm', pad=(5,5), font=TAB_FONT)],
         ]
-        window = sg.Window(f'Calibrate point {i}', layout, finalize=True, element_justification='center', keep_on_top=True)
+        window = sg.Window(f'Calibrate point {i}', layout, finalize=True, element_justification='center',
+                           keep_on_top=True, location=location)
         window.perform_long_operation(lambda: controller.calibrate(i), end_key=f'-cal_pt_{i}-')
 
         while True:
@@ -587,7 +589,7 @@ def popup_window_calibrate(controller: Dcs5Controller):
             sg.popup_ok('Calibration failed.', keep_on_top=True)
 
 
-def config_window():
+def config_window(location=None):
     if (current_config := get_current_config()) is None:
         current_config = 'No configuration loaded.'
 
@@ -633,16 +635,15 @@ def config_window():
                sg.Column(edit_layout, vertical_alignment='top')],
               [button('Close', size=(6, 1), button_color=ENABLED_BUTTON_COLOR)]]
 
-    window = sg.Window('Configurations', layout, element_justification='center', keep_on_top=True)
+    window = sg.Window('Configurations', layout, element_justification='center', location=location)
 
     return window
 
 
-def popup_window_select_config(controller: Dcs5Controller = None) -> Dcs5Controller:
+def popup_window_select_config(controller: Dcs5Controller = None, location=None) -> Dcs5Controller:
     current_config = get_current_config()
 
-    window = config_window()
-
+    window = config_window(location=location)
     while True:
         event, value = window.read()
 
@@ -698,7 +699,9 @@ def popup_window_select_config(controller: Dcs5Controller = None) -> Dcs5Control
                         config_path = Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0])
                         match value['-EDIT-'][0]:
                             case 'Controller Configuration':
+                                window.keep_on_top_clear()
                                 click.edit(filename=str(config_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)))
+                                window.keep_on_top_set()
                             case 'Devices Specification':
                                 click.edit(filename=str(config_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME)))
 
@@ -711,7 +714,7 @@ def popup_window_select_config(controller: Dcs5Controller = None) -> Dcs5Control
                     window['-CONFIGURATION-'].update(current_config)
                 else:
                     window['-CONFIGURATION-'].update('No Config Selected')
-
+        window.bring_to_front()
     window.close()
 
     return controller
