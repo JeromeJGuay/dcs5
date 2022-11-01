@@ -321,7 +321,7 @@ def run():
     if sg.user_settings()['configs_path'] is not None:
         controller = init_dcs5_controller()
     else:
-        controller = popup_window_select_config()
+        controller = popup_window_select_config(location=window.current_location())
 
     init_layout(window, controller)
 
@@ -538,7 +538,7 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
             window["-RESTART-"].update(disabled=False)
 
 
-def popup_window_set_calibration_pt(controller: Dcs5Controller, location=None):
+def popup_window_set_calibration_pt(controller: Dcs5Controller, location=(None, None)):
     layout = [
         [sg.Text('Enter calibration point values in mm')],
         [sg.Text('Point 1: ', size=(7, 1), font=TAB_FONT),
@@ -568,7 +568,7 @@ def popup_window_set_calibration_pt(controller: Dcs5Controller, location=None):
     window.close()
 
 
-def popup_window_calibrate(controller: Dcs5Controller, location=None):
+def popup_window_calibrate(controller: Dcs5Controller, location=[None, None]):
     """Test closing on perform_long_operation"""
     cal_pt_values = {1: controller.internal_board_state.cal_pt_1, 2: {controller.internal_board_state.cal_pt_2}}
     for i in [1, 2]:
@@ -598,7 +598,7 @@ def popup_window_calibrate(controller: Dcs5Controller, location=None):
             sg.popup_ok('Calibration failed.', keep_on_top=True)
 
 
-def config_window(location=None):
+def config_window(location=(None,None)):
     if (current_config := get_current_config()) is None:
         current_config = 'No configuration loaded.'
 
@@ -649,7 +649,7 @@ def config_window(location=None):
     return window
 
 
-def popup_window_select_config(controller: Dcs5Controller = None, location=None) -> Dcs5Controller:
+def popup_window_select_config(controller: Dcs5Controller = None, location=(None,None)) -> Dcs5Controller:
     current_config = get_current_config()
 
     window = config_window(location=location)
