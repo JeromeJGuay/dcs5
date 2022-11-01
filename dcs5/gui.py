@@ -11,24 +11,32 @@ from pathlib import Path
 import PySimpleGUI as sg
 import click
 import pyautogui as pag
-
-from dcs5 import VERSION, \
-    LOCAL_FILE_PATH, \
-    CONTROLLER_CONFIGURATION_FILE_NAME, \
-    DEVICES_SPECIFICATION_FILE_NAME, \
-    CONTROL_BOX_PARAMETERS_FILE_NAME, \
-    DEFAULT_CONTROLLER_CONFIGURATION_FILE, \
-    DEFAULT_DEVICES_SPECIFICATION_FILE, \
-    DEFAULT_CONTROL_BOX_PARAMETERS_FILE, \
-    CONFIG_FILES_PATH, \
-    USER_GUIDE_FILE, LOGO_PATH
+from dcs5.utils import resolve_relative_path
+from dcs5 import VERSION, LOCAL_FILE_PATH, CONFIG_FILES_PATH
 from dcs5.controller import Dcs5Controller
 from dcs5.controller_configurations import ConfigError
 from dcs5.logger import init_logging
 
+
 if os.environ.get('EDITOR') == 'EMACS':
     print('Text editor changed.')
     os.environ.update({'EDITOR': 'pluma'})  # This is a fix for my computer. Should not influence anything.
+
+
+#PATH
+SERVER_CONFIGURATION_FILE_NAME = "server_configuration.json"
+CONTROLLER_CONFIGURATION_FILE_NAME = 'controller_configuration.json'
+DEVICES_SPECIFICATION_FILE_NAME = 'devices_specification.json'
+CONTROL_BOX_PARAMETERS_FILE_NAME = "control_box_parameters.json"
+
+DEFAULT_CONFIG_PATH = "default_configs/"
+DEFAULT_CONTROLLER_CONFIGURATION_FILE = str(resolve_relative_path(DEFAULT_CONFIG_PATH + CONTROLLER_CONFIGURATION_FILE_NAME, __file__))
+DEFAULT_DEVICES_SPECIFICATION_FILE = str(resolve_relative_path(DEFAULT_CONFIG_PATH + DEVICES_SPECIFICATION_FILE_NAME, __file__))
+DEFAULT_CONTROL_BOX_PARAMETERS_FILE = str(resolve_relative_path(DEFAULT_CONFIG_PATH + CONTROL_BOX_PARAMETERS_FILE_NAME, __file__))
+
+USER_GUIDE_FILE = str(resolve_relative_path('static/UserGuide_fr.pdf', __file__))
+
+LOGO_PATH = str(resolve_relative_path('static/bigfin_logo.png', __file__))
 
 
 def scale_font(font_size: int) -> int:
@@ -67,7 +75,6 @@ USER_SETTING_FILE = 'user_settings.json'
 def main():
     try:
         init_logging(stdout_level='DEBUG')
-        logging.debug(f"Default Files Path: {DEFAULT_DEVICES_SPECIFICATION_FILE}")
         run()
     except Exception as e:
         logging.error(traceback.format_exc(), exc_info=True)
