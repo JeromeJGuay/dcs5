@@ -24,7 +24,6 @@ if os.environ.get('EDITOR') == 'EMACS':
 
 
 #PATH
-SERVER_CONFIGURATION_FILE_NAME = "server_configuration.json"
 CONTROLLER_CONFIGURATION_FILE_NAME = 'controller_configuration.json'
 DEVICES_SPECIFICATION_FILE_NAME = 'devices_specification.json'
 CONTROL_BOX_PARAMETERS_FILE_NAME = "control_box_parameters.json"
@@ -36,7 +35,11 @@ DEFAULT_CONTROL_BOX_PARAMETERS_FILE = str(resolve_relative_path(DEFAULT_CONFIG_P
 
 USER_GUIDE_FILE = str(resolve_relative_path('static/UserGuide_fr.pdf', __file__))
 
-LOGO_PATH = str(resolve_relative_path('static/bigfin_logo.png', __file__))
+if sys.platform in ("linux","linux2"):
+    LOGO_PATH = str(resolve_relative_path('static/bigfin_logo.png', __file__))
+
+elif sys.platform == "win32":
+    LOGO_PATH = str(resolve_relative_path('static/bigfin_logo.ico', __file__))
 
 
 def scale_font(font_size: int) -> int:

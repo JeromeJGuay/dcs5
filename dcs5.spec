@@ -29,6 +29,7 @@ exe = EXE(
     exclude_binaries=True,
     name='dcs5',
     debug=False,
+    icon='./dcs5/static/bigfin_logo.ico',
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,

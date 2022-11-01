@@ -44,9 +44,6 @@
         - name: Build
           run: |
             pyinstaller dcs5.spec
-            mkdir .\dist\dcs5\dcs5
-            move .\dist\dcs5\static .\dist\dcs5\dcs5\
-            move .\dist\dcs5\default_configs .\dist\dcs5\dcs5\
             powershell Compress-Archive .\dist\dcs5\ -DestinationPath dcs5.zip
         - name: Upload release asset
           id: upload-release-asset
