@@ -2,7 +2,7 @@
 Module that contains the scripts to load the board configurations.
 
 Valid commands :
-    ["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm", "MODE", "MODE_TOP", "MODE_BOTTOM"]
+    ["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm", "MODE", "MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"]
  - The "MODE" command is not a command per say but a MetaKey for the board.
 Valid keyboard inputs :
      'print <string to print>'

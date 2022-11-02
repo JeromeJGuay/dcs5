@@ -4,27 +4,17 @@ This python (python 3.10) application provides graphical interface to interact w
 The application will turn stylus input on the measuring board into keyboard inputs basically turning the dcs5 measuring board into a wireless keyboard.
 
 # Download from releases
-Downloading Othello from its releases is by far the easiest way to use it.
+Downloading the Dcs5 Controller App from the latest release.
 1. Download `dcs5.zip` from the last version here: https://github.com/JeromeJGuay/dcs5/releases.
 2. Unzip `dcs5.zip`
 3. Run `dcs5.exe`
 
 
-## Requirements to install the python package
-
+## Requirements to install the python package. (not required to use the app as a standalone.)
 1) python 3.10
 
-## User Guide (Not up to date)
+## User Guide
 See the [user_guide/UserGuide_fr.pdf](doc/UserGuide_fr.pdf). French only.
-
-
-## Calibration
-With the cli app, use the `calpt1` and `calpt2` command to set calibration points. Then use the calibrate function and follow the instruction from the cli.
-Although the board sends measurements value in mm, a specific offset needs to be added to at least one of the 2 stylus.
-We suggest do the calibration with the finger stylus since the magnet of the pen is further away from its tips.
-Calibrating with the pen would result in negative measurements when placing the finger stylus at 0 mm.
-However, the measuring board cannot return values smaller than 0.
-The offsets value are in [dcs5/default_configs/devices_specification.json](dcs5/default_configs/devices_specification.json) files.
 
 ## Configurations
 
@@ -49,10 +39,11 @@ The controller_configuration.json is used to configure the controller behavior.
   - segments_mode: The corresponding output_mode for each swipe segment.
   - mode_reading_profiles: The corresponding reading_profiles for each output modes.
 + keys_maps: Mapping of the key to either command or keyboard input.
-  - Notes: The name of the keys are set in [dcs5/default_configs/devices_specification.json](dcs5/default_configs/devices_specification.json).
-  - Notes: Valid commands `["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm", "MODE", "MODE_TOP", "MODE_BOTTOM"]`
-  - Notes: See the [dcs5/controller_configurations.py](dcs5/controller_configurations.py) module for the valid keyboard input.
-  - Notes: List of command are accepted.
+  - Two commands for a key. One default and one for when MODE is activated.
+  - The name of the keys are set in [dcs5/default_configs/devices_specification.json](dcs5/default_configs/devices_specification.json).
+  - Valid commands `"BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm", "MODE", "MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM", print <string to print>]`
+  - See the [dcs5/controller_configurations.py](dcs5/controller_configurations.py) module for the valid keyboard input.
+  - List of commands are accepted and executed one at a time.
 
 ### [dcs5/default_configs/devices_specification.json](dcs5/default_configs/devices_specification.json)
 + board:
