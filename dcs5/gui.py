@@ -1,22 +1,23 @@
 """
 """
-import sys
+from typing import *
 import logging
-import traceback
 import os
 import shutil
+import sys
+import traceback
 import webbrowser
 from pathlib import Path
 
 import PySimpleGUI as sg
 import click
 import pyautogui as pag
-from dcs5.utils import resolve_relative_path
+
 from dcs5 import VERSION, LOCAL_FILE_PATH, CONFIG_FILES_PATH
 from dcs5.controller import Dcs5Controller
 from dcs5.controller_configurations import ConfigError
 from dcs5.logger import init_logging
-
+from dcs5.utils import resolve_relative_path
 
 if os.environ.get('EDITOR') == 'EMACS':
     print('Text editor changed.')
@@ -46,6 +47,8 @@ def scale_font(font_size: int) -> int:
     monitor_width, monitor_height = pag.size()
     return int(font_size * monitor_height / 1080)
 
+
+DEVICE_LAYOUT_PADDING = 20
 
 SMALL_FONT = f'Courier {scale_font(8)}'
 
@@ -144,9 +147,6 @@ def save_user_settings():
     previous_configs_path = sg.user_settings().pop('previous_configs_path')
     sg.user_settings_save()
     sg.user_settings().update({'previous_configs_path': previous_configs_path})
-
-
-DEVICE_LAYOUT_PADDING = 20
 
 
 def make_window():
@@ -312,6 +312,7 @@ def run():
     )
 
     window = make_window()
+    sg.SetOptions(window_location=get_new_location(window))
 
     window.metadata = {
         'is_connecting': False,
@@ -321,7 +322,7 @@ def run():
     if sg.user_settings()['configs_path'] is not None:
         controller = init_dcs5_controller()
     else:
-        controller = popup_window_select_config(location=window.current_location())
+        controller = popup_window_select_config()
 
     init_layout(window, controller)
 
@@ -343,11 +344,14 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
         if event != "__TIMEOUT__" and event is not None:
             logging.debug(f'{event}, {values}')
 
+        if event in (sg.WIN_CLOSED, 'Exit'):
+            if controller is not None:
+                controller.close_client()
+            break
+        else:
+            sg.SetOptions(window_location=get_new_location(window))
+
         match event:
-            case sg.WIN_CLOSED | 'Exit':
-                if controller is not None:
-                    controller.close_client()
-                break
             case "-CONNECT-":
                 window.metadata['is_connecting'] = True
                 window.perform_long_operation(controller.start_client, end_key='-END_CONNECT-')
@@ -372,11 +376,11 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 controller.init_controller_and_board()
                 logging.debug('sync not mapped')
             case "-CALPTS-":
-                popup_window_set_calibration_pt(controller, location=window.current_location())
+                popup_window_set_calibration_pt(controller)
             case "-CALIBRATE-":
-                popup_window_calibrate(controller, location=window.current_location())
+                popup_window_calibrate(controller)
             case 'Configuration':
-                controller = popup_window_select_config(controller=controller, location=window.current_location())
+                controller = popup_window_select_config(controller=controller)
             case '-STYLUS-':
                 controller.change_stylus(values['-STYLUS-'], flash=False)
             case '-BACKLIGHT-':
@@ -538,7 +542,7 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
             window["-RESTART-"].update(disabled=False)
 
 
-def popup_window_set_calibration_pt(controller: Dcs5Controller, location=(None, None)):
+def popup_window_set_calibration_pt(controller: Dcs5Controller):
     layout = [
         [sg.Text('Enter calibration point values in mm')],
         [sg.Text('Point 1: ', size=(7, 1), font=TAB_FONT),
@@ -550,12 +554,19 @@ def popup_window_set_calibration_pt(controller: Dcs5Controller, location=(None, 
         [sg.Submit(), sg.Cancel()]
     ]
 
-    window = sg.Window('Calibration points', layout, element_justification='center', keep_on_top=True, location=location)
+    window = sg.Window('Calibration points', layout, element_justification='center', keep_on_top=True)
     while True:
-        event, values = window.read()
+        event, values = window.read(timeout=0.1)
+
+        if event == '__TIMEOUT__':
+            pass
+
         if event == "Cancel":
             window.close()
             break
+        else:
+            sg.SetOptions(window_location=get_new_location(window))
+
         if event == "Submit":
             if values['cal_pt_1'].isnumeric() and values['cal_pt_2'].isnumeric():
                 controller.c_set_calibration_points_mm(1, int(values['cal_pt_1']))
@@ -568,28 +579,29 @@ def popup_window_set_calibration_pt(controller: Dcs5Controller, location=(None, 
     window.close()
 
 
-def popup_window_calibrate(controller: Dcs5Controller, location=[None, None]):
+def popup_window_calibrate(controller: Dcs5Controller):
     """Test closing on perform_long_operation"""
     cal_pt_values = {1: controller.internal_board_state.cal_pt_1, 2: {controller.internal_board_state.cal_pt_2}}
     for i in [1, 2]:
         layout = [
             [sg.Text(f'Set Stylus down for calibration point {i}: {cal_pt_values[i]} mm', pad=(5,5), font=TAB_FONT)],
         ]
-        window = sg.Window(f'Calibrate point {i}', layout, finalize=True, element_justification='center',
-                           keep_on_top=True, location=location)
+        window = sg.Window(f'Calibrate point {i}', layout, finalize=True, element_justification='center', keep_on_top=True)
         window.perform_long_operation(lambda: controller.calibrate(i), end_key=f'-cal_pt_{i}-')
 
         while True:
             event, values = window.read(timeout=0.1)
+
             if event == '__TIMEOUT__':
                 pass
 
-            elif event == "Cancel":
+            if event == "Cancel":
                 window.close()
                 break
-
             elif event == f"-cal_pt_{i}-":
                 break
+            else:
+                sg.SetOptions(window_location=get_new_location(window))
         window.close()
 
         if values[0] == 1:
@@ -598,7 +610,7 @@ def popup_window_calibrate(controller: Dcs5Controller, location=[None, None]):
             sg.popup_ok('Calibration failed.', keep_on_top=True)
 
 
-def config_window(location=(None,None)):
+def config_window():
     if (current_config := get_current_config()) is None:
         current_config = 'No configuration loaded.'
 
@@ -644,20 +656,26 @@ def config_window(location=(None,None)):
                sg.Column(edit_layout, vertical_alignment='top')],
               [button('Close', size=(6, 1), button_color=ENABLED_BUTTON_COLOR)]]
 
-    window = sg.Window('Configurations', layout, element_justification='center', location=location)
+    window = sg.Window('Configurations', layout, element_justification='center')
 
     return window
 
 
-def popup_window_select_config(controller: Dcs5Controller = None, location=(None,None)) -> Dcs5Controller:
+def popup_window_select_config(controller: Dcs5Controller = None) -> Dcs5Controller:
     current_config = get_current_config()
 
-    window = config_window(location=location)
+    window = config_window()
+
     while True:
-        event, value = window.read()
+        event, values = window.read(timeout=0.1)
+
+        if event == '__TIMEOUT__':
+            pass
 
         if event in ['Close', sg.WIN_CLOSED]:
             break
+        else:
+            sg.SetOptions(window_location=get_new_location(window))
 
         if event == 'New':
             _ = create_new_configs()
@@ -668,17 +686,17 @@ def popup_window_select_config(controller: Dcs5Controller = None, location=(None
             window['-EDIT-'].update(disabled=True)
             window['Edit'].update(disabled=True)
 
-        elif value is not None:
-            if value['-CONFIG-'] is not None:
-                if len(value['-CONFIG-']) != 0:
+        elif values is not None:
+            if values['-CONFIG-'] is not None:
+                if len(values['-CONFIG-']) != 0:
                     window['Load'].update(disabled=False)
                     window['Delete'].update(disabled=False)
                     window['-EDIT-'].update(disabled=False)
-                    if len(value['-EDIT-']) != 0:
+                    if len(values['-EDIT-']) != 0:
                         window['Edit'].update(disabled=False)
 
                     if event == 'Load':
-                        selected_config_path = str(Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0]))
+                        selected_config_path = str(Path(CONFIG_FILES_PATH).joinpath(values['-CONFIG-'][0]))
 
                         sg.user_settings()['previous_configs_path'] = sg.user_settings()['configs_path']
                         sg.user_settings()['configs_path'] = selected_config_path
@@ -691,12 +709,12 @@ def popup_window_select_config(controller: Dcs5Controller = None, location=(None
                         current_config = get_current_config()
 
                     if event == 'Delete':
-                        if value['-CONFIG-'][0] == current_config:
+                        if values['-CONFIG-'][0] == current_config:
                             sg.popup_ok('Cannot delete the configuration currently in use.',
                                         title='Deletion error', keep_on_top=True)
-                        elif sg.popup_yes_no(f"Are you sure you want to delete `{value['-CONFIG-'][0]}`"
-                                , keep_on_top=True) == 'Yes':
-                            shutil.rmtree(str(Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0])))
+                        elif sg.popup_yes_no(f"Are you sure you want to delete `{values['-CONFIG-'][0]}`",
+                                             keep_on_top=True) == 'Yes':
+                            shutil.rmtree(str(Path(CONFIG_FILES_PATH).joinpath(values['-CONFIG-'][0])))
 
                             window['-CONFIG-'].update(list_configs(), set_to_index=[])
                             window['Load'].update(disabled=True)
@@ -705,16 +723,14 @@ def popup_window_select_config(controller: Dcs5Controller = None, location=(None
                             window['Edit'].update(disabled=True)
 
                     if event == 'Edit':
-                        config_path = Path(CONFIG_FILES_PATH).joinpath(value['-CONFIG-'][0])
-                        match value['-EDIT-'][0]:
+                        config_path = Path(CONFIG_FILES_PATH).joinpath(values['-CONFIG-'][0])
+                        match values['-EDIT-'][0]:
                             case 'Controller Configuration':
-                                window.keep_on_top_clear()
                                 click.edit(filename=str(config_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)))
-                                window.keep_on_top_set()
                             case 'Devices Specification':
                                 click.edit(filename=str(config_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME)))
 
-                        if value['-CONFIG-'][0] == current_config:
+                        if values['-CONFIG-'][0] == current_config:
                             sg.user_settings()['previous_configs_path'] = current_config + '*'
                             if sg.popup_yes_no('Do you want to reload the configuration ?', keep_on_top=True) == 'Yes':
                                 reload_controller_config(controller)
@@ -739,7 +755,7 @@ def list_configs():
 
 def create_new_configs():
     folder_name = sg.popup_get_text('Enter a configuration name:', default_text=None, font=REG_FONT, keep_on_top=True)
-    if folder_name: #not None or empty string
+    if folder_name:
         if Path(folder_name).name in list_configs():
             if sg.popup_yes_no('Configuration name already exists. Do you want to overwrite it ?',
                                title='Warning', keep_on_top=True) == 'No':
@@ -797,7 +813,13 @@ def update_controller_config_paths(controller: Dcs5Controller):
     logging.debug('Config files path updated.')
 
 
-### gui element functions ###
+### gui functions ###
+
+def get_new_location(window: sg.Window) -> Tuple[int, int]:
+    x, y = window.current_location(more_accurate=True)
+    w, h = window.size
+
+    return x, y + int(h / 2)
 
 
 def dotted(value, length=50, justification='left'):
