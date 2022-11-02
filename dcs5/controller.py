@@ -213,13 +213,14 @@ class BluetoothClient:
         except OSError as err:
             if err_code := self._process_os_error_code(err) != 0:
                 self.error_msg = self.errors[err_code]
-                self.close()
+                self.reconnect()
             return ""
 
     def reconnect(self):
+        self.close()
         while not self.is_connected:
-            logging.error('Attempting to reconnect.')
-            self.connect(self.mac_address, timeout=30)
+            logging.debug('Attempting to reconnect.')
+            self.connect(self._mac_address, timeout=30)
             time.sleep(5)
 
     def clear(self):
@@ -243,18 +244,25 @@ class BluetoothClient:
         3: Bluetooth turned off
         4: Connection broken
         5: Device Unavailable
-        6: Unknown Error
+        6: Client closed.
+        99: Unknown Error
 
         """
         match err.errno:
             case None:
                 return 0
+            case 9:
+                logging.error(f'Bad file descriptor. (err{err.errno})')
+                return 6
             case 16:
                 logging.error(f'Port unavailable. (err{err.errno})')
                 return 1
             case 22:
                 logging.error(f'Port does not exist. (err{err.errno})')
                 return 1
+            case 77:
+                logging.error(f'Bad file descriptor. (err{err.errno})')
+                return 6
             case 111:
                 logging.error(f'Device unavailable. (err{err.errno})')
                 return 5
@@ -276,6 +284,9 @@ class BluetoothClient:
             case 10022:
                 logging.error(f'Bluetooth turned off. (err{err.errno})')
                 return 3
+            case 10038:
+                logging.error(f'Bad file descriptor. (err{err.errno})')
+                return 6
             case 10048:
                 logging.error(f'Device unavailable. (Maybe) (err{err.errno})')
                 return 5
@@ -296,7 +307,7 @@ class BluetoothClient:
                 return 1
             case _:
                 logging.error(f'OSError (new): {err.errno}')
-                return 6
+                return 99
 
 
 class Dcs5Controller:
@@ -459,9 +470,10 @@ class Dcs5Controller:
 
     def spam_measuring_board(self):
         "This is to raise a connection OSError if the connection is lost."
-        while self.is_listening:
-            self.client.send(" ") # a space is not a recognized command. Thus nothing is return.
-            time.sleep(MONITORING_DELAY)
+        while True:
+            if self.is_listening:
+                self.client.send(" ") # a space is not a recognized command. Thus nothing is return.
+                time.sleep(MONITORING_DELAY)
 
     def monitor_connection(self):
         while True:
