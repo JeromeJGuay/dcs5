@@ -508,14 +508,15 @@ class Dcs5Controller:
         was_listening = self.is_listening
         self.restart_listening()
 
-        self.c_set_backlighting_level(0)
+        #self.c_set_backlighting_level(0)
 
         reading_profile = self.config.reading_profiles[
             self.config.output_modes.mode_reading_profiles[self.output_mode]
         ]
         # SET DEFAULT VALUES
-        self.c_set_interface(1)
-        self.c_set_sensor_mode(0)
+        self.c_set_sensor_mode(0) #TEMPORARY FIX FOR XT
+        self.c_set_interface(0)
+
         self.c_set_stylus_detection_message(False)
 
         # SET USER VALUES
@@ -718,7 +719,7 @@ class Dcs5Controller:
         """
         FEED seems to enable box key strokes.
         """
-        self.command_handler.queue_command(f"&fm,{value}#", None)
+        self.command_handler.queue_command(f"&fm,{value}#", f"%fm,{value}\r")
         if value == 0:
             self.internal_board_state.board_interface = "DCSLinkstream"
             logging.debug(f'Interface set to {self.internal_board_state.board_interface}')
