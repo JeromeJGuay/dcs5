@@ -86,7 +86,8 @@ def main():
         logging.error(traceback.format_exc(), exc_info=True)
         sg.popup_error(f'CRITICAL ERROR. SHUTTING DOWN', title='CRITICAL ERROR', keep_on_top=True)
     finally:
-        sys.exit()
+        #sys.exit()
+        pass
 
 
 def init_dcs5_controller():
@@ -546,7 +547,8 @@ def popup_window_set_calibration_pt(controller: Dcs5Controller):
     layout = [
         [sg.Text('Enter calibration point values in mm')],
         [sg.Text('Point 1: ', size=(7, 1), font=TAB_FONT),
-         sg.InputText(default_text=controller.internal_board_state.cal_pt_1, key='cal_pt_1', size=(4, 1), justification='c', font=TAB_FONT),
+         sg.InputText(default_text=controller.internal_board_state.cal_pt_1, key='cal_pt_1', size=(4, 1),
+                      justification='c', font=TAB_FONT, enable_events=True),
          sg.Text('mm', size=(3, 1), font=TAB_FONT)],
         [sg.Text('Point 2: ', size=(7, 1), font=TAB_FONT),
          sg.InputText(default_text=controller.internal_board_state.cal_pt_2, key='cal_pt_2', size=(4, 1), justification='c', font=TAB_FONT),
@@ -554,27 +556,39 @@ def popup_window_set_calibration_pt(controller: Dcs5Controller):
         [sg.Submit(), sg.Cancel()]
     ]
 
-    window = sg.Window('Calibration points', layout, element_justification='center', keep_on_top=True)
+    window = sg.Window('Calibration points', layout, element_justification='center', keep_on_top=True,
+                       enable_close_attempted_event=True)
+
     while True:
-        event, values = window.read(timeout=0.1)
+        event, values = window.read(timeout=0.5)
+        window['cal_pt_1'].bind("<Return>", "_Enter")
+        if event is None:
+            break
 
-        if event == '__TIMEOUT__':
+        if event in '__TIMEOUT__':
             pass
+        else:
+            print(event, values)
 
-        if event == "Cancel":
+        if event in ["Cancel", "-WINDOW CLOSE ATTEMPTED-"]:
             window.close()
             break
-        else:
-            sg.SetOptions(window_location=get_new_location(window))
 
-        if event == "Submit":
+        if event == "cal_pt_1_Enter":
+            if values['cal_pt_1']:
+                window['cal_pt_2'].set_focus()
+
+        elif event == "Submit":
             if values['cal_pt_1'].isnumeric() and values['cal_pt_2'].isnumeric():
                 controller.c_set_calibration_points_mm(1, int(values['cal_pt_1']))
                 controller.c_set_calibration_points_mm(2, int(values['cal_pt_2']))
                 break
             else:
-                sg.popup_ok('Invalid values.', title='error', keep_on_top=True)
-        window.bring_to_front()
+                window.keep_on_top_clear()
+                sg.popup_error('Invalid values.', title='Error', keep_on_top=True, non_blocking=False)
+                window.keep_on_top_set()
+        else:
+            sg.SetOptions(window_location=get_new_location(window))
 
     window.close()
 
@@ -867,3 +881,4 @@ def col(cols_layout):
 
 if __name__ == "__main__":
     main()
+    c = init_dcs5_controller()
