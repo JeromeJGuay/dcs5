@@ -157,10 +157,29 @@ class BluetoothClient:
         self._port: int = None
         self.socket: socket.socket = None
         self.default_timeout = 0.1
-        self.is_connected = False
+        self._is_connected = False
         self.error_msg = ""
         self.errors = {0: 'Socket timeout', 1: 'No available ports', 2: 'Device not found', 3: 'Bluetooth not on',
                        4: 'Connection broken', 5: 'Device Unavailable',  6: 'Unknown Error'}
+
+    @property
+    def mac_address(self):
+        return self._mac_address
+
+    @property
+    def socket_timeout(self):
+        return self.socket.gettimeout()
+
+    @property
+    def port(self):
+        return self._port
+
+    @property
+    def is_connected(self):
+        return self._is_connected
+
+    def set_timeout(self, value: int):
+        self.socket.settimeout(value)
 
     def connect(self, mac_address: str = None, timeout: int = None):
         self._mac_address = mac_address
@@ -174,7 +193,7 @@ class BluetoothClient:
                 logging.debug(f'port: {port}')
                 self.socket.connect((self._mac_address, port))
                 self._port = port
-                self.is_connected = True
+                self._is_connected = True
                 logging.debug(f'Connected to port {self._port}')
                 logging.debug(f'Socket name: {self.socket.getsockname()}')
                 break
@@ -192,14 +211,6 @@ class BluetoothClient:
                     break
 
         self.socket.settimeout(self.default_timeout)
-
-    @property
-    def mac_address(self):
-        return self._mac_address
-
-    @property
-    def port(self):
-        return self._port
 
     def send(self, command: str):
         try:
@@ -228,7 +239,7 @@ class BluetoothClient:
 
     def close(self):
         self.socket.close()
-        self.is_connected = False
+        self._is_connected = False
 
     def _process_os_error_code(self, err) -> int:
         """
@@ -459,7 +470,7 @@ class Dcs5Controller:
     def stop_listening(self):
         if self.is_listening:
             self.is_listening = False
-            time.sleep(self.client.socket.gettimeout())
+            time.sleep(self.client.socket_timeout)
             logging.debug("Listening stopped.")
             logging.debug("Queues and Socket Buffer Cleared.")
         logging.debug('Board is Inactive.')
@@ -499,7 +510,7 @@ class Dcs5Controller:
         """Init measuring board.
         """
         logging.debug('Initiating Board.')
-        time.sleep(1)  # Wait 1 second to give time to the socket buffer to be cleared.
+        time.sleep(.5)  # Wait 1 second to give time to the socket buffer to be cleared.
 
         self.internal_board_state = InternalBoardState()
         self.is_sync = False
@@ -507,6 +518,7 @@ class Dcs5Controller:
 
         was_listening = self.is_listening
         self.restart_listening()
+        time.sleep(.5)
 
         #self.c_set_backlighting_level(0)
 
@@ -581,11 +593,11 @@ class Dcs5Controller:
 
         self.client.clear()
         self.client.send(f"&{pt}r#")
-        self.client.socket.settimeout(5)
+        self.client.set_timout(5)
         msg = self.client.receive()
-        self.stop_listening()
+        logging.debug(f"Calibration message received: {msg}")
         try:
-            if f'&Xr#: X={pt}\r' in msg:
+            if f'&Xr#: X={pt}\r' in msg or f"&{pt}r#\r" in msg:
                 pt_value = self.internal_board_state.__dict__[f"cal_pt_{pt}"]
                 logging.debug(f"Calibration for point {pt}. Set stylus down at {pt_value} mm ...")
                 while f'&{pt}c' not in msg:
@@ -691,12 +703,6 @@ class Dcs5Controller:
                     value = value[6:].strip(' ')
             self.shouter.shout(value)
 
-    # command removed for safety reason.
-    #def c_board_initialization(self):
-    #    self.command_handler.queue_command("&init#", "Setting EEPROM init flag.\r")
-    #    time.sleep(1)
-    #    self.close_client()
-
     def c_ping(self):
         """This could use for something more useful. Like checking at regular interval if the board is still active:
         """
@@ -717,15 +723,17 @@ class Dcs5Controller:
 
     def c_set_interface(self, value: int):
         """
+        FIXME xt: expect nothing, micro expect %fm,{value}\r
         FEED seems to enable box key strokes.
         """
         self.command_handler.queue_command(f"&fm,{value}#", f"%fm,{value}\r")
+        #if self.devices_spec.control_box.type == "xt":
         if value == 0:
             self.internal_board_state.board_interface = "DCSLinkstream"
-            logging.debug(f'Interface set to {self.internal_board_state.board_interface}')
+            logging.debug(f'Interface set to DCSLinkstream')
         elif value == 1:
             self.internal_board_state.board_interface = "FEED"
-            logging.debug(f'Interface set to {self.internal_board_state.board_interface}')
+            logging.debug(f'Interface set to FEED')
 
     def c_set_backlighting_level(self, value: int):
         if value is None:
@@ -841,6 +849,16 @@ class CommandHandler:
         elif "a:e" in received:
             self.controller.ping_event_check.set()
             logging.debug('Ping is set.')
+
+        elif "fm" in received:
+            match = re.findall(f"%fm,(\d)\r", received)
+            if len(match) > 0:
+                if match[0] == "0":
+                    self.controller.internal_board_state.board_interface = "DCSLinkstream"
+                    logging.debug(f'Interface set to DCSLinkstream')
+                elif match[0] == "1":
+                    self.controller.internal_board_state.board_interface = "FEED"
+                    logging.debug(f'Interface set to FEED')
 
         elif "sn" in received:
             match = re.findall(f"%sn:(\d)#\r", received)
