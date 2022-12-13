@@ -375,7 +375,6 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 window['-SYNC-'].update(disabled=True)
                 window.refresh()
                 controller.init_controller_and_board()
-                logging.debug('sync not mapped')
             case "-CALPTS-":
                 popup_window_set_calibration_pt(controller)
             case "-CALIBRATE-":
@@ -446,7 +445,7 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
     window['-UNITS-MM-'].update(disabled=controller.length_units == 'mm')
     window['-UNITS-CM-'].update(disabled=controller.length_units == 'cm')
 
-    window['-STYLUS-'].update(value=controller.stylus, values=list(controller.devices_spec.stylus_offset.keys()))
+    window['-STYLUS-'].update(value=controller.stylus, values=list(controller.devices_specifications.stylus_offset.keys()))
     window['-STYLUS-'].update(value=controller.stylus)
     window['-STYLUS_OFFSET-'].update(value=controller.stylus_offset)
 
