@@ -4,6 +4,24 @@ from dcs5.utils import json2dict
 
 from json.decoder import JSONDecodeError
 
+
+
+@dataclass
+class XtControlBoxParameters:
+    settling_delay = 1
+    max_deviation = 6
+    number_of_reading = 5
+    backlight_level = 0
+    backlighting_auto_mode = False
+    backlighting_sensitivity = 0
+    min_settling_delay = 0
+    max_settling_delay = 20
+    min_max_deviation = 1
+    max_max_deviation = 100
+    max_backlighting_level = 95
+    max_backlighting_sensitivity = 7
+
+
 @dataclass
 class ControlBoxParameters:
     settling_delay: int

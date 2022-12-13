@@ -2,25 +2,22 @@
 Author : JeromeJGuay
 Date : May 2022
 
-This module contains the Class relative to the DCS5_XT Board Controller and Client.
+This module contains the class relative to the DCS5 XT and Micro Board Controller and Client (bluetooth).
 
 
 References
 ----------
     https://bigfinllc.com/wp-content/uploads/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf?fbclid=IwAR0tJMwvN7jkqxgEhRQABS0W3HLLntpOflg12bMEwM5YrDOwcHStznJJNQM
 
-TODO
-- Try to connect with 2 apps on windows for error code.
-- Try re reproduce Err9. I don't Know where it cannot be catch.
 """
 
 import logging
-import queue
 import re
 import socket
 import threading
 import time
 from dataclasses import dataclass
+from itertools import cycle
 from queue import Queue
 from typing import *
 
@@ -33,7 +30,7 @@ from dcs5.controller_configurations import load_config, ControllerConfiguration,
 from dcs5.devices_specifications import load_devices_specification, DevicesSpecifications
 from dcs5.control_box_parameters import load_control_box_parameters, ControlBoxParameters
 
-MONITORING_DELAY = 2 # WINDOWS ONLY
+MONITORING_DELAY = 2  # WINDOWS ONLY
 
 AFTER_SENT_SLEEP = 0.01
 
@@ -43,13 +40,6 @@ LISTENER_SLEEP = 0.005
 
 BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
-
-
-def cycle(my_list: iter):
-    index = 0
-    while True:
-        yield my_list[index]
-        index = (index + 1) % len(my_list)
 
 
 @dataclass
@@ -73,70 +63,62 @@ class InternalBoardState:
 
 
 class Shouter:
-    """
-    Emulate keyboard presses.
-    """
+    """Emulate keyboard presses."""
     valid_meta_keys = ['ctrl', 'alt', 'shift']
 
     def __init__(self):
-        self.input: str = None
-
         self.meta_key_combo = []
 
     def shout(self, value: str):
-        self.input = value
-        if self.input in self.valid_meta_keys:
-            if self.input in self.meta_key_combo:
-                self.meta_key_combo.remove(self.input)
-            else:
-                self.meta_key_combo.append(self.input)
+        if value in self.valid_meta_keys:
+            self.handle_key_hold(value)
         else:
-            self._shout()
-            self._clear_meta_key_combo()
+            self._shout(value)
+            self.meta_key_combo = []
 
-    def _clear_meta_key_combo(self):
-        self.meta_key_combo = []
+    def handle_key_hold(self, value: str):
+        if value in self.meta_key_combo:
+            self.meta_key_combo.remove(value)  # Release
+        else:
+            self.meta_key_combo.append(value)  # Press
 
-    def _shout(self):
+    def _shout(self, value: str):
         with pag.hold(self.meta_key_combo):
-            logging.debug(f"Keyboard out: {'+'.join(self.meta_key_combo)} {self.input}")
-            if pag.isValidKey(self.input):
-                pag.press(self.input)
+            logging.debug(f"Keyboard out: {'+'.join(self.meta_key_combo)} {value}")
+            if pag.isValidKey(value):
+                pag.press(value)
             else:
-                pag.write(str(self.input))
+                pag.write(str(value))
 
 
 class BluetoothClient:
-    """
-    RFCOMM ports goes from 1 to 30
-    """
+    """RFCOMM ports goes from 1 to 30."""
     min_port = 1
     max_port = 30
     reconnection_delay = 5
 
     def __init__(self):
-        self._mac_address: str = None
-        self._port: int = None
+        self.mac_address: str = None
+        self.port: int = None
         self.socket: socket.socket = None
         self.default_timeout = 0.1
         self._is_connected = False
         self.error_msg = ""
-        self.errors = {0: 'Socket timeout', 1: 'No available ports', 2: 'Device not found', 3: 'Bluetooth not on',
-                       4: 'Connection broken', 5: 'Device Unavailable',  6: 'Unknown Error'}
+        self.errors = {
+            0: 'Socket timeout',
+            1: 'No available ports',
+            2: 'Device not found',
+            3: 'Bluetooth not on',
+            4: 'Connection broken',
+            5: 'Device Unavailable',
+            6: 'Unknown Error'
+        }
 
         self._socket_spam_thread: threading.Thread = None
 
     @property
-    def mac_address(self):
-        return self._mac_address
-
-    @property
     def socket_timeout(self):
         return self.socket.gettimeout()
-
-    @property
-    def port(self):
-        return self._port
 
     @property
     def is_connected(self):
@@ -146,7 +128,7 @@ class BluetoothClient:
         self.socket.settimeout(value)
 
     def connect(self, mac_address: str = None, timeout: int = None):
-        self._mac_address = mac_address
+        self.mac_address = mac_address
         timeout = timeout or self.default_timeout
         logging.debug(f'Attempting to connect to board. Timeout: {timeout} seconds')
 
@@ -155,10 +137,10 @@ class BluetoothClient:
             self.socket.settimeout(timeout)
             try:
                 logging.debug(f'port: {port}')
-                self.socket.connect((self._mac_address, port))
-                self._port = port
+                self.socket.connect((self.mac_address, port))
+                self.port = port
                 self._is_connected = True
-                logging.debug(f'Connected to port {self._port}')
+                logging.debug(f'Connected to port {self.port}')
                 logging.debug(f'Socket name: {self.socket.getsockname()}')
 
                 if platform.system() == 'Windows':
@@ -185,7 +167,9 @@ class BluetoothClient:
         try:
             self.socket.sendall(command.encode(BOARD_MSG_ENCODING))
         except OSError as err:
-            logging.debug(f'OSError on sendall: {err.args}')
+            logging.debug(f'OSError on sendall')
+            self.error_msg = self.errors[self._process_os_error_code(err)]
+            self.close()
 
     def receive(self):
         try:
@@ -193,15 +177,8 @@ class BluetoothClient:
         except OSError as err:
             if err_code := self._process_os_error_code(err) != 0:
                 self.error_msg = self.errors[err_code]
-                self.reconnect()
+                self.close()
             return ""
-
-    def reconnect(self):
-        self.close()
-        while not self.is_connected:
-            logging.debug('Attempting to reconnect.')
-            self.connect(self._mac_address, timeout=30)
-            time.sleep(5)
 
     def clear(self):
         self.receive()
@@ -213,7 +190,7 @@ class BluetoothClient:
     def _spam_socket(self):
         """This is to raise a connection OSError if the connection is lost."""
         while self._is_connected:
-            self.send(" ") # A Space is not a recognized command. Thus nothing is return.
+            self.send(" ")  # A Space is not a recognized command. Thus nothing is return.
             time.sleep(MONITORING_DELAY)
 
     def _process_os_error_code(self, err) -> int:
@@ -342,7 +319,7 @@ class Dcs5Controller:
         self._set_board_settings()
 
     @property
-    def mappable_commands(self) -> Dict[str:Callable]:
+    def mappable_commands(self):
         """The command are either for the controller or the board.
 
         Returns
@@ -362,15 +339,11 @@ class Dcs5Controller:
         }
 
     def _load_configs(self):
-        control_box_parameters = load_control_box_parameters(self.control_box_parameters_path)
-        devices_spec = load_devices_specification(self.devices_specifications_path)
-        config = load_config(self.config_path)
-
-        if control_box_parameters is None:
+        if (control_box_parameters := load_control_box_parameters(self.control_box_parameters_path)) is None:
             raise ConfigError(f'Error in {self.control_box_parameters_path}. File could not be loaded.')
-        if devices_spec is None:
+        if (devices_spec := load_devices_specification(self.devices_specifications_path)) is None:
             raise ConfigError(f'Error in {self.devices_specifications_path}. File could not be loaded.')
-        if config is None:
+        if (config := load_config(self.config_path)) is None:
             raise ConfigError(f'Error in {self.config_path}. File could not be loaded.')
 
         self.control_box_parameters = control_box_parameters
@@ -408,6 +381,12 @@ class Dcs5Controller:
             logging.debug('Client Closed.')
         else:
             logging.debug('Client Already Closed')
+
+    def reconnect_client(self):
+        while not self.client.is_connected:
+            logging.debug('Attempting to reconnect.')
+            self.client.connect(self.config.client.mac_address, timeout=30)
+            time.sleep(5)
 
     def restart_client(self):
         self.close_client()
@@ -451,7 +430,7 @@ class Dcs5Controller:
         while True:
             while self.client.is_connected:
                 time.sleep(1)
-            self.client.reconnect()
+            self.reconnect_client()
             logging.error('Board Reconnected')
             self.init_controller_and_board()
 
@@ -481,14 +460,18 @@ class Dcs5Controller:
         self.restart_listening()
         time.sleep(.5)
 
-        #self.c_set_backlighting_level(0)
+        # self.c_set_backlighting_level(0)
 
         reading_profile = self.config.reading_profiles[
             self.config.output_modes.mode_reading_profiles[self.output_mode]
         ]
+
         # SET DEFAULT VALUES
-        self.c_set_sensor_mode(0) #TEMPORARY FIX FOR XT
-        self.c_set_interface(0)
+        self.c_set_sensor_mode(0)  # TEMPORARY FIX FOR XT
+        if self.devices_specifications.control_box.model == "micro":
+            self.c_set_interface(0)
+        elif self.devices_specifications.control_box.model == "xt":
+            self.c_set_interface(1)
 
         self.c_set_stylus_detection_message(False)
 
@@ -685,7 +668,6 @@ class Dcs5Controller:
 
     def c_set_interface(self, value: int):
         """
-        FIXME xt: expect nothing, micro expect %fm,{value}\r
         FEED seems to enable box key strokes.
         """
 
