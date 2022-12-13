@@ -30,7 +30,7 @@ import pyautogui as pag
 pag.FAILSAFE = False
 
 from dcs5.controller_configurations import load_config, ControllerConfiguration, ConfigError
-from dcs5.devices_specification import load_devices_specification, DevicesSpecification
+from dcs5.devices_specifications import load_devices_specification, DevicesSpecifications
 from dcs5.control_box_parameters import load_control_box_parameters, ControlBoxParameters
 
 MONITORING_DELAY = 2 # WINDOWS ONLY
@@ -77,6 +77,9 @@ class InternalBoardState:
 
 
 class Shouter:
+    """
+    Emulate keyboard presses.
+    """
     valid_meta_keys = ['ctrl', 'alt', 'shift']
 
     def __init__(self):
@@ -97,43 +100,6 @@ class Shouter:
 
     def _clear_meta_key_combo(self):
         self.meta_key_combo = []
-
-    def _shout(self):
-        logging.error('Shouter _shout method not defined.')
-
-
-class ServerInput(Shouter):
-    """
-    Inputs are queued in `inputs_queue`.
-    Inputs are taken from the input_queue with the get() method.
-    If more than 5 inputs are in the queue at one time, the queue is cleared.
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.inputs_queue = queue.Queue(max_size=5)
-
-    def _shout(self):
-        _input = self.meta_key_combo + [self.input]
-        try:
-            self.inputs_queue.put_nowait(_input)
-        except queue.Full:
-            self.inputs_queue.queue.clear()
-
-    def get(self):
-        try:
-            return self.inputs_queue.get()
-        except queue.Empty:
-            return None
-
-
-class KeyboardInput(Shouter):
-    """
-    Emulate keyboard presses.
-    """
-
-    def __init__(self):
-        super().__init__()
 
     def _shout(self):
         with pag.hold(self.meta_key_combo):
@@ -330,8 +296,7 @@ class Dcs5Controller:
     stylus_offset: int
     stylus_cyclical_list: Generator
 
-    def __init__(self, config_path: str, devices_specifications_path: str, control_box_parameters_path: str,
-                 shouter='keyboard'):
+    def __init__(self, config_path: str, devices_specifications_path: str, control_box_parameters_path: str):
         """
 
         Parameters
@@ -344,49 +309,49 @@ class Dcs5Controller:
         self.devices_specifications_path = devices_specifications_path
         self.control_box_parameters_path = control_box_parameters_path
         self.config: ControllerConfiguration = None
-        self.device_specs: DevicesSpecification = None
+        self.devices_specifications: DevicesSpecifications = None
         self.control_box_parameters: ControlBoxParameters = None
         self._load_configs()
 
         self.listen_thread: threading.Thread = None
         self.command_thread: threading.Thread = None
-        self.spam_thread: threading.Thread = None
-        self.monitor_thread: threading.Thread = None
+        self.socket_spam_thread: threading.Thread = None
+        self.auto_reconnect_thread: threading.Thread = None
+        self.listener_handler_sync_barrier = threading.Barrier(2)
+        self.ping_event_check = threading.Event()
+
+        self.client = BluetoothClient()
+        self.shouter = Shouter()
+        self.internal_board_state = InternalBoardState()  # Board Current State
 
         self.socket_listener = SocketListener(self)
         self.command_handler = CommandHandler(self)
 
+        self.is_sync = False  # True if the Dcs5Controller board settings are the same as the Board Internal Settings.
         self.is_listening = False  # listening to the keyboard on the connected socket.
         self.is_muted = False  # Message are processed but keyboard input are suppress.
 
-        self.ping_event_check = threading.Event()
-        self.thread_barrier = threading.Barrier(2)
+        self._set_board_settings()
 
-        self.client = BluetoothClient()
+    @property
+    def mappable_commands(self) -> Dict[str:Callable]:
+        """The command are either for the controller or the board.
 
-        self.internal_board_state = InternalBoardState()  # Board Current State
-        self.set_board_settings()
-        self.is_sync = False  # True if the Dcs5Controller board settings are the same as the Board Internal Settings.
-
-        self.mappable_commands = {  # Item are callable methods.
-            "BACKLIGHT_UP": self.backlight_up,
-            "BACKLIGHT_DOWN": self.backlight_down,
+        Returns
+        -------
+            Dictionary of commands (Callable).
+        """
+        return {
             "CHANGE_STYLUS": self.cycle_stylus,
             "UNITS_mm": self.change_length_units_mm,
             "UNITS_cm": self.change_length_units_cm,
             "MODE_TOP": self._mode_top,
             "MODE_LENGTH": self._mode_length,
-            "MODE_BOTTOM": self._mode_bottom
+            "MODE_BOTTOM": self._mode_bottom,
+            # XT SPECIFIC
+            "BACKLIGHT_UP": self.backlight_up,
+            "BACKLIGHT_DOWN": self.backlight_down,
         }
-
-        if shouter not in ['keyboard', 'server']:
-            logging.error('Invalid shouter method: Must be one of [keyboard, server]. Defaulting to keyboard.')
-            shouter = 'keyboard'
-
-        if shouter == 'keyboard':
-            self.shouter = KeyboardInput()
-        else:
-            self.shouter = ServerInput()
 
     def _load_configs(self):
         control_box_parameters = load_control_box_parameters(self.control_box_parameters_path)
@@ -401,29 +366,29 @@ class Dcs5Controller:
             raise ConfigError(f'Error in {self.config_path}. File could not be loaded.')
 
         self.control_box_parameters = control_box_parameters
-        self.devices_spec = devices_spec
+        self.devices_specifications = devices_spec
         self.config = validate_config(config, self.control_box_parameters)
 
     def reload_configs(self):
         self.is_sync = False
         self._load_configs()
-        self.set_board_settings()
+        self._set_board_settings()
 
-    def set_board_settings(self):
+    def _set_board_settings(self):
         self.dynamic_stylus_settings = self.config.launch_settings.dynamic_stylus_mode
         self.output_mode = self.config.launch_settings.output_mode
         self.reading_profile = self.config.launch_settings.reading_profile
         self.length_units = self.config.launch_settings.length_units
         self.stylus: str = self.config.launch_settings.stylus
-        self.stylus_offset = self.devices_spec.stylus_offset[self.stylus]
-        self.stylus_cyclical_list = cycle(list(self.devices_spec.stylus_offset.keys()))
+        self.stylus_offset = self.devices_specifications.stylus_offset[self.stylus]
+        self.stylus_cyclical_list = cycle(list(self.devices_specifications.stylus_offset.keys()))
 
     def start_client(self, mac_address: str = None):
         """Create a socket and tries to connect with the board."""
         if self.client.is_connected:
             logging.debug("Client Already Connected.")
-            self.monitor_thread = threading.Thread(target=self.monitor_connection,name="monitor", daemon=True)
-            self.monitor_thread.start()
+            self.auto_reconnect_thread = threading.Thread(target=self.monitor_connection, name="monitor", daemon=True)
+            self.auto_reconnect_thread.start()
         else:
             mac_address = mac_address or self.config.client.mac_address
             self.client.connect(mac_address, timeout=30)
@@ -462,8 +427,8 @@ class Dcs5Controller:
             self.listen_thread.start()
 
             if platform.system() == 'Windows':
-                self.spam_thread = threading.Thread(target=self.spam_measuring_board, name='spam', daemon=True)
-                self.spam_thread.start()
+                self.socket_spam_thread = threading.Thread(target=self.spam_measuring_board, name='spam', daemon=True)
+                self.socket_spam_thread.start()
 
         logging.debug('Board is Active.')
 
@@ -543,6 +508,7 @@ class Dcs5Controller:
 
         if self.wait_for_ping() is True:
             if (
+                    self.internal_board_state.board_interface == "Dcs5LinkStream" and
                     self.internal_board_state.sensor_mode == "length" and
                     self.internal_board_state.stylus_status_msg == "disable" and
                     self.internal_board_state.stylus_settling_delay == reading_profile.settling_delay and
@@ -572,48 +538,6 @@ class Dcs5Controller:
         logging.debug('Waiting for ping event.')
         return self.ping_event_check.wait(timeout)
 
-    def calibrate(self, pt: int) -> int:
-        """
-
-        Parameters
-        ----------
-        pt
-
-        Returns
-        -------
-        1 for good calibration
-        0 for failed calibration
-        """
-
-        logging.debug("Calibration Mode Enable.")
-
-        was_listening = self.is_listening
-
-        self.stop_listening()
-
-        self.client.clear()
-        self.client.send(f"&{pt}r#")
-        self.client.set_timout(5)
-        msg = self.client.receive()
-        logging.debug(f"Calibration message received: {msg}")
-        try:
-            if f'&Xr#: X={pt}\r' in msg or f"&{pt}r#\r" in msg:
-                pt_value = self.internal_board_state.__dict__[f"cal_pt_{pt}"]
-                logging.debug(f"Calibration for point {pt}. Set stylus down at {pt_value} mm ...")
-                while f'&{pt}c' not in msg:
-                    msg += self.client.receive()
-                logging.debug(f'Point {pt} calibrated.')
-                return 1
-            else:
-                return 0
-        except KeyError:
-            logging.debug('Calibration Failed.')
-            return 0
-        finally:
-            self.client.socket.settimeout(self.client.default_timeout)
-            if was_listening:
-                self.start_listening()
-
     def change_length_units_mm(self, flash=True):
         self.length_units = "mm"
         logging.debug(f"Length Units Change to mm")
@@ -629,22 +553,13 @@ class Dcs5Controller:
     def change_stylus(self, value: str, flash=True):
         """Stylus must be one of [pen, finger]"""
         self.stylus = value
-        self.stylus_offset = self.devices_spec.stylus_offset[self.stylus]
+        self.stylus_offset = self.devices_specifications.stylus_offset[self.stylus]
         logging.debug(f'Stylus set to {self.stylus}. Stylus offset {self.stylus_offset}')
         if self.client.is_connected and flash is True:
             self.flash_lights(1, interval=.25)
 
     def cycle_stylus(self):
         self.change_stylus(next(self.stylus_cyclical_list))
-
-    def _mode_top(self):
-        self.change_board_output_mode('top')
-
-    def _mode_length(self):
-        self.change_board_output_mode('length')
-
-    def _mode_bottom(self):
-        self.change_board_output_mode('bottom')
 
     def change_board_output_mode(self, value: str, flash=True):
         """
@@ -668,6 +583,23 @@ class Dcs5Controller:
                 self.c_set_stylus_max_deviation(reading_profile.max_deviation)
                 self.c_set_stylus_number_of_reading(reading_profile.number_of_reading)
         logging.debug(f'Board entry: {self.output_mode}.')
+
+    def _mode_top(self):
+        self.change_board_output_mode('top')
+
+    def _mode_length(self):
+        self.change_board_output_mode('length')
+
+    def _mode_bottom(self):
+        self.change_board_output_mode('bottom')
+
+    def shout(self, value: Union[int, float, str]):
+        if not self.is_muted:
+            logging.debug(f"Shouted value {value}")
+            if isinstance(value, str):
+                if value.startswith('print '):
+                    value = value[6:].strip(' ')
+            self.shouter.shout(value)
 
     def backlight_up(self):
         if self.internal_board_state.backlighting_level < self.control_box_parameters.max_backlighting_level:
@@ -695,13 +627,47 @@ class Dcs5Controller:
             self.c_set_backlighting_level(current_backlight_level)
             time.sleep(interval / 2)
 
-    def shout(self, value: Union[int, float, str]):
-        if not self.is_muted:
-            logging.debug(f"Shouted value {value}")
-            if isinstance(value, str):
-                if value.startswith('print '):
-                    value = value[6:].strip(' ')
-            self.shouter.shout(value)
+    def calibrate(self, pt: int) -> int:
+        """
+
+        Parameters
+        ----------
+        pt
+
+        Returns
+        -------
+        1 for good calibration
+        0 for failed calibration
+        """
+
+        logging.debug("Calibration Mode Enable.")
+
+        was_listening = self.is_listening
+
+        self.stop_listening()
+
+        self.client.clear()
+        self.client.send(f"&{pt}r#")
+        self.client.set_timeout(5)
+        msg = self.client.receive()
+        logging.debug(f"Calibration message received: {msg}")
+        try:
+            if f'&Xr#: X={pt}\r' in msg or f"&{pt}r#\r" in msg:
+                pt_value = self.internal_board_state.__dict__[f"cal_pt_{pt}"]
+                logging.debug(f"Calibration for point {pt}. Set stylus down at {pt_value} mm ...")
+                while f'&{pt}c' not in msg:
+                    msg += self.client.receive()
+                logging.debug(f'Point {pt} calibrated.')
+                return 1
+            else:
+                return 0
+        except KeyError:
+            logging.debug('Calibration Failed.')
+            return 0
+        finally:
+            self.client.socket.settimeout(self.client.default_timeout)
+            if was_listening:
+                self.start_listening()
 
     def c_ping(self):
         """This could use for something more useful. Like checking at regular interval if the board is still active:
@@ -726,14 +692,17 @@ class Dcs5Controller:
         FIXME xt: expect nothing, micro expect %fm,{value}\r
         FEED seems to enable box key strokes.
         """
-        self.command_handler.queue_command(f"&fm,{value}#", f"%fm,{value}\r")
-        #if self.devices_spec.control_box.type == "xt":
-        if value == 0:
-            self.internal_board_state.board_interface = "DCSLinkstream"
-            logging.debug(f'Interface set to DCSLinkstream')
-        elif value == 1:
-            self.internal_board_state.board_interface = "FEED"
-            logging.debug(f'Interface set to FEED')
+
+        if self.devices_specifications.control_box.model == "xt":
+            self.command_handler.queue_command(f"&fm,{value}#")
+            if value == 0:
+                self.internal_board_state.board_interface = "DCSLinkstream"
+                logging.debug(f'Interface set to DCSLinkstream')
+            elif value == 1:
+                self.internal_board_state.board_interface = "FEED"
+                logging.debug(f'Interface set to FEED')
+        elif self.devices_specifications.control_box.model == "micro":
+            self.command_handler.queue_command(f"&fm,{value}#", f"%fm,{value}\r")
 
     def c_set_backlighting_level(self, value: int):
         if value is None:
@@ -809,7 +778,7 @@ class CommandHandler:
 
     def processes_queues(self):
         self.clear_queues()
-        self.controller.thread_barrier.wait()
+        self.controller.listener_handler_sync_barrier.wait()
         logging.debug('Command Handling Started')
         while self.controller.is_listening:
             if not self.received_queue.empty():
@@ -936,7 +905,7 @@ class SocketListener:
         self.message_queue = Queue()
         self.swipe_triggered = False
         self.buffer = ""
-        self.with_mode = False # Note MODE
+        self.with_mode = False
         self.last_key = None
         self.last_command = None
 
@@ -950,7 +919,7 @@ class SocketListener:
         self.controller.client.clear()
         self.message_queue.queue.clear()
         logging.debug("Listener Queue and Client Buffers Cleared.")
-        self.controller.thread_barrier.wait()
+        self.controller.listener_handler_sync_barrier.wait()
         logging.debug('Listener Queue cleared & Client Buffer Clear.')
         logging.debug('Listening started')
         while self.controller.is_listening:
@@ -1028,7 +997,7 @@ class SocketListener:
                     self.controller.shout(value)
 
     def _map_control_box_output(self, value):
-        key = self.controller.devices_spec.control_box.keys_layout[value]
+        key = self.controller.devices_specifications.control_box.keys_layout[value]
         self.last_key = key
         if self.with_mode:
             return self.controller.config.key_maps.control_box_mode[key]
@@ -1044,11 +1013,11 @@ class SocketListener:
             return out_value
         else:
             index = int(
-                (value - self.controller.devices_spec.board.relative_zero)
-                / self.controller.devices_spec.board.key_to_mm_ratio
+                (value - self.controller.devices_specifications.board.relative_zero)
+                / self.controller.devices_specifications.board.key_to_mm_ratio
             )
-            if index < self.controller.devices_spec.board.number_of_keys:
-                key = self.controller.devices_spec.board.keys_layout[self.controller.output_mode][index]
+            if index < self.controller.devices_specifications.board.number_of_keys:
+                key = self.controller.devices_specifications.board.keys_layout[self.controller.output_mode][index]
                 self.last_key = key
                 if self.with_mode:
                     return self.controller.config.key_maps.board_mode[key]
