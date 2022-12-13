@@ -52,10 +52,6 @@ def cycle(my_list: iter):
         index = (index + 1) % len(my_list)
 
 
-class ConnectionLost(Exception):
-    pass
-
-
 @dataclass
 class InternalBoardState:
     sensor_mode: str = None
@@ -128,6 +124,8 @@ class BluetoothClient:
         self.errors = {0: 'Socket timeout', 1: 'No available ports', 2: 'Device not found', 3: 'Bluetooth not on',
                        4: 'Connection broken', 5: 'Device Unavailable',  6: 'Unknown Error'}
 
+        self._socket_spam_thread: threading.Thread = None
+
     @property
     def mac_address(self):
         return self._mac_address
@@ -162,7 +160,12 @@ class BluetoothClient:
                 self._is_connected = True
                 logging.debug(f'Connected to port {self._port}')
                 logging.debug(f'Socket name: {self.socket.getsockname()}')
+
+                if platform.system() == 'Windows':
+                    self._socket_spam_thread = threading.Thread(target=self._spam_socket, name='spam', daemon=True)
+                    self._socket_spam_thread.start()
                 break
+
             except PermissionError:
                 logging.debug('Client.connect: PermissionError')
                 self.error_msg = 'Permission error'
@@ -206,6 +209,12 @@ class BluetoothClient:
     def close(self):
         self.socket.close()
         self._is_connected = False
+
+    def _spam_socket(self):
+        """This is to raise a connection OSError if the connection is lost."""
+        while self._is_connected:
+            self.send(" ") # A Space is not a recognized command. Thus nothing is return.
+            time.sleep(MONITORING_DELAY)
 
     def _process_os_error_code(self, err) -> int:
         """
@@ -315,7 +324,6 @@ class Dcs5Controller:
 
         self.listen_thread: threading.Thread = None
         self.command_thread: threading.Thread = None
-        self.socket_spam_thread: threading.Thread = None
         self.auto_reconnect_thread: threading.Thread = None
         self.listener_handler_sync_barrier = threading.Barrier(2)
         self.ping_event_check = threading.Event()
@@ -419,16 +427,11 @@ class Dcs5Controller:
         if not self.is_listening:
             logging.debug('Starting Threads.')
             self.is_listening = True
-            self.command_thread = threading.Thread(target=self.command_handler.processes_queues, name='command',
-                                                   daemon=True)
+            self.command_thread = threading.Thread(target=self.command_handler.processes_queues, name='command', daemon=True)
             self.command_thread.start()
 
             self.listen_thread = threading.Thread(target=self.socket_listener.listen, name='listen', daemon=True)
             self.listen_thread.start()
-
-            if platform.system() == 'Windows':
-                self.socket_spam_thread = threading.Thread(target=self.spam_measuring_board, name='spam', daemon=True)
-                self.socket_spam_thread.start()
 
         logging.debug('Board is Active.')
 
@@ -443,13 +446,6 @@ class Dcs5Controller:
     def restart_listening(self):
         self.stop_listening()
         self.start_listening()
-
-    def spam_measuring_board(self):
-        "This is to raise a connection OSError if the connection is lost."
-        while True:
-            if self.is_listening:
-                self.client.send(" ") # a space is not a recognized command. Thus nothing is return.
-                time.sleep(MONITORING_DELAY)
 
     def monitor_connection(self):
         while True:
