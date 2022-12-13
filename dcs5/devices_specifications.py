@@ -5,6 +5,12 @@ from dcs5.utils import json2dict
 
 from json.decoder import JSONDecodeError
 
+CONTROL_BOX_MODELS = ['xt', 'micro']
+
+
+class ConfigError(Exception):
+    pass
+
 
 @dataclass
 class Board:
@@ -20,11 +26,16 @@ class Board:
 
 @dataclass
 class ControlBox:
+    model: str
     keys_layout: Dict[str, str]
+
+    def __post_init__(self):
+        if self.model not in CONTROL_BOX_MODELS:
+            raise ConfigError(f'Invalid value for `control_box/model`. Must be in {CONTROL_BOX_MODELS}')
 
 
 @dataclass
-class DevicesSpecification:
+class DevicesSpecifications:
     board: Board
     control_box: ControlBox
     stylus_offset: Dict[str, str]
@@ -37,7 +48,7 @@ class DevicesSpecification:
 def load_devices_specification(path: str):
     specification = json2dict(path)
     try:
-        return DevicesSpecification(**specification)
+        return DevicesSpecifications(**specification)
     except (JSONDecodeError, TypeError):  # Catch JsonError Missing keys error.
         return None
 

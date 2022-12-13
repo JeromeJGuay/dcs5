@@ -118,11 +118,11 @@ class LaunchSettings:
 
     def __post_init__(self):
         if self.length_units not in VALID_UNITS:
-            raise ConfigError(f'`length_units` must be one of {VALID_UNITS}')
+            raise ConfigError(f'Invalid value for `launch_settings/length_units`. Must be one of {VALID_UNITS}')
         if not isinstance(self.dynamic_stylus_mode, bool):
-            raise ConfigError('launch_settings/dynamic_stylus_mode must but in (true/false)')
+            raise ConfigError('Invalid value for `launch_settings/dynamic_stylus_mode`. Must but in (true/false)')
         if not isinstance(self.backlighting_auto_mode, bool):
-            raise ConfigError('launch_settings/back_light_auto_mode must but in (true/false)')
+            raise ConfigError('Invalid value for `launch_settings/back_light_auto_mode`. Must but in (true/false)')
 
 
 @dataclass
@@ -152,9 +152,9 @@ class OutputModes:
     def __post_init__(self):
         self.mode_reading_profiles = ModeReadingProfiles(**self.mode_reading_profiles)
         if len(self.segments_limits) - 1 != len(self.segments_mode):
-            raise ConfigError('`segments_limits` needs to have one more element than `segments_mode`.')
+            raise ConfigError('Invalid value for `output_modes/segments_limits`. It needs to have one more element than `segments_mode`.')
         if any(m not in VALID_SEGMENTS_MODE for m in self.segments_mode):
-            raise ConfigError(f'`segments_mode` value must be in {VALID_SEGMENTS_MODE}')
+            raise ConfigError(f'Invalid value for `outputs_modes/segments_mode`. Must be in {VALID_SEGMENTS_MODE}')
 
 
 @dataclass
@@ -187,13 +187,13 @@ class ControllerConfiguration:
         self.key_maps = KeyMaps(**self.key_maps)
 
         if self.launch_settings.reading_profile not in self.reading_profiles:
-            raise ConfigError('launch_settings/reading_profile values is not a reading_profile name.')
+            raise ConfigError('Invalid value for  `launch_settings/reading_profile`. Value not in reading_profiles.')
         if self.output_modes.mode_reading_profiles.top not in self.reading_profiles:
-            raise ConfigError('output_mode/mode_reading_profile/top values is not a reading_profile name.')
+            raise ConfigError('Invalid value for  `output_mode/mode_reading_profile/top`. Value not in reading_profiles.')
         if self.output_modes.mode_reading_profiles.length not in self.reading_profiles:
-            raise ConfigError('output_mode/mode_reading_profile/length value is not a reading_profile name.')
+            raise ConfigError('Invalid value for  `output_mode/mode_reading_profile/length`. Value not in reading_profiles.')
         if self.output_modes.mode_reading_profiles.bottom not in self.reading_profiles:
-            raise ConfigError('output_mode/mode_reading_profile/bottom value is not a reading_profile name.')
+            raise ConfigError('Invalid value for  `output_mode/mode_reading_profile/bottom`. Value not in reading_profiles.')
 
 
 def load_config(path: str):
