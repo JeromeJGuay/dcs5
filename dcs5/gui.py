@@ -27,12 +27,12 @@ if os.environ.get('EDITOR') == 'EMACS':
 #PATH
 CONTROLLER_CONFIGURATION_FILE_NAME = 'controller_configuration.json'
 DEVICES_SPECIFICATION_FILE_NAME = 'devices_specification.json'
-CONTROL_BOX_PARAMETERS_FILE_NAME = "control_box_parameters.json"
+#CONTROL_BOX_PARAMETERS_FILE_NAME = "control_box_parameters.json"# FIXME
 
 DEFAULT_CONFIG_PATH = "default_configs/"
 DEFAULT_CONTROLLER_CONFIGURATION_FILE = str(resolve_relative_path(DEFAULT_CONFIG_PATH + CONTROLLER_CONFIGURATION_FILE_NAME, __file__))
 DEFAULT_DEVICES_SPECIFICATION_FILE = str(resolve_relative_path(DEFAULT_CONFIG_PATH + DEVICES_SPECIFICATION_FILE_NAME, __file__))
-DEFAULT_CONTROL_BOX_PARAMETERS_FILE = str(resolve_relative_path(DEFAULT_CONFIG_PATH + CONTROL_BOX_PARAMETERS_FILE_NAME, __file__))
+#DEFAULT_CONTROL_BOX_PARAMETERS_FILE = str(resolve_relative_path(DEFAULT_CONFIG_PATH + CONTROL_BOX_PARAMETERS_FILE_NAME, __file__))# FIXME
 
 USER_GUIDE_FILE = str(resolve_relative_path('static/UserGuide_fr.pdf', __file__))
 
@@ -93,16 +93,20 @@ def main():
 def init_dcs5_controller():
     controller_config_path = Path(sg.user_settings()['configs_path']).joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)
     devices_specifications_path = Path(sg.user_settings()['configs_path']).joinpath(DEVICES_SPECIFICATION_FILE_NAME)
-    control_box_parameters_path = Path(sg.user_settings()['configs_path']).joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)
+   # control_box_parameters_path = Path(sg.user_settings()['configs_path']).joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)# FIXME
 
     check_config_integrity(
         controller_config_path=controller_config_path,
         devices_specifications_path=devices_specifications_path,
-        control_box_parameters_path=control_box_parameters_path
+#        control_box_parameters_path=control_box_parameters_path# FIXME
     )
 
     try:
-        controller = Dcs5Controller(controller_config_path, devices_specifications_path, control_box_parameters_path)
+        controller = Dcs5Controller(
+            controller_config_path,
+            devices_specifications_path,
+        #    control_box_parameters_path# FIXME
+        )
         logging.debug('Controller initiated.')
         return controller
     except ConfigError:
@@ -116,7 +120,11 @@ def init_dcs5_controller():
         return None
 
 
-def check_config_integrity(controller_config_path, devices_specifications_path, control_box_parameters_path):
+def check_config_integrity(
+        controller_config_path,
+        devices_specifications_path,
+#        control_box_parameters_path# FIXME
+):
     if not controller_config_path.exists():
         sg.popup_ok(
             f'`controller_config.json` was missing from the directory: {controller_config_path.parent}. One was created.',
@@ -126,11 +134,11 @@ def check_config_integrity(controller_config_path, devices_specifications_path, 
         sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created.',
                     title='Missing file', keep_on_top=True)
         shutil.copyfile(DEFAULT_DEVICES_SPECIFICATION_FILE, devices_specifications_path)
-    if not control_box_parameters_path.exists():
-        shutil.copyfile(DEFAULT_CONTROL_BOX_PARAMETERS_FILE, control_box_parameters_path)
-        sg.popup_ok(
-            f'`devices_specifications.json` was missing from the directory {control_box_parameters_path.parent}. One was created.',
-            title='Missing file', keep_on_top=True)
+    # if not control_box_parameters_path.exists():# FIXME
+    #     shutil.copyfile(DEFAULT_CONTROL_BOX_PARAMETERS_FILE, control_box_parameters_path)
+    #     sg.popup_ok(
+    #         f'`devices_specifications.json` was missing from the directory {control_box_parameters_path.parent}. One was created.',
+    #         title='Missing file', keep_on_top=True)
 
 
 def load_user_settings():
@@ -780,12 +788,12 @@ def create_new_configs():
         local_files = [
             new_configs_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME),
             new_configs_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME),
-            new_configs_path.joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)
+#            new_configs_path.joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)# FIXME
         ]
         default_files = [
             DEFAULT_CONTROLLER_CONFIGURATION_FILE,
             DEFAULT_DEVICES_SPECIFICATION_FILE,
-            DEFAULT_CONTROL_BOX_PARAMETERS_FILE
+ #           DEFAULT_CONTROL_BOX_PARAMETERS_FILE  # FIXME
         ]
 
         for lf, df in zip(local_files, default_files):
@@ -822,7 +830,7 @@ def update_controller_config_paths(controller: Dcs5Controller):
     configs_path = sg.user_settings()['configs_path'].strip('*')
     controller.config_path = Path(configs_path).joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)
     controller.devices_specifications_path = Path(configs_path).joinpath(DEVICES_SPECIFICATION_FILE_NAME)
-    controller.control_box_parameters_path = Path(configs_path).joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)
+  #  controller.control_box_parameters_path = Path(configs_path).joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME) # FIXME
     logging.debug('Config files path updated.')
 
 

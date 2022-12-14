@@ -13,7 +13,6 @@ References
 
 import logging
 import re
-import socket
 import threading
 import time
 from dataclasses import dataclass
@@ -21,26 +20,24 @@ from itertools import cycle
 from queue import Queue
 from typing import *
 
-import platform
-
 import pyautogui as pag
+
+from dcs5.bluetooth_client import BluetoothClient
+from dcs5.keyboard_emulator import KeyboardEmulator
+
 pag.FAILSAFE = False
 
 from dcs5.controller_configurations import load_config, ControllerConfiguration, ConfigError
 from dcs5.devices_specifications import load_devices_specification, DevicesSpecifications
-from dcs5.control_box_parameters import load_control_box_parameters, ControlBoxParameters
+from control_box_parameters import XtControlBoxParameters, MicroControlBoxParameters
 
-MONITORING_DELAY = 2  # WINDOWS ONLY
+
 
 AFTER_SENT_SLEEP = 0.01
 
 HANDLER_SLEEP = 0.01
 
 LISTENER_SLEEP = 0.005
-
-BOARD_MSG_ENCODING = 'UTF-8'
-BUFFER_SIZE = 1024
-
 
 @dataclass
 class InternalBoardState:
@@ -62,217 +59,6 @@ class InternalBoardState:
     backlighting_sensitivity: int = None
 
 
-class Shouter:
-    """Emulate keyboard presses."""
-    valid_meta_keys = ['ctrl', 'alt', 'shift']
-
-    def __init__(self):
-        self.meta_key_combo = []
-
-    def shout(self, value: str):
-        if value in self.valid_meta_keys:
-            self.handle_key_hold(value)
-        else:
-            self._shout(value)
-            self.meta_key_combo = []
-
-    def handle_key_hold(self, value: str):
-        if value in self.meta_key_combo:
-            self.meta_key_combo.remove(value)  # Release
-        else:
-            self.meta_key_combo.append(value)  # Press
-
-    def _shout(self, value: str):
-        with pag.hold(self.meta_key_combo):
-            logging.debug(f"Keyboard out: {'+'.join(self.meta_key_combo)} {value}")
-            if pag.isValidKey(value):
-                pag.press(value)
-            else:
-                pag.write(str(value))
-
-
-class BluetoothClient:
-    """RFCOMM ports goes from 1 to 30."""
-    min_port = 1
-    max_port = 30
-    reconnection_delay = 5
-
-    def __init__(self):
-        self.mac_address: str = None
-        self.port: int = None
-        self.socket: socket.socket = None
-        self.default_timeout = 0.1
-        self._is_connected = False
-        self.error_msg = ""
-        self.errors = {
-            0: 'Socket timeout',
-            1: 'No available ports',
-            2: 'Device not found',
-            3: 'Bluetooth not on',
-            4: 'Connection broken',
-            5: 'Device Unavailable',
-            6: 'Unknown Error'
-        }
-
-        self._socket_spam_thread: threading.Thread = None
-
-    @property
-    def socket_timeout(self):
-        return self.socket.gettimeout()
-
-    @property
-    def is_connected(self):
-        return self._is_connected
-
-    def set_timeout(self, value: int):
-        self.socket.settimeout(value)
-
-    def connect(self, mac_address: str = None, timeout: int = None):
-        self.mac_address = mac_address
-        timeout = timeout or self.default_timeout
-        logging.debug(f'Attempting to connect to board. Timeout: {timeout} seconds')
-
-        for port in range(self.min_port, self.max_port + 1):  # check for all available ports
-            self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
-            self.socket.settimeout(timeout)
-            try:
-                logging.debug(f'port: {port}')
-                self.socket.connect((self.mac_address, port))
-                self.port = port
-                self._is_connected = True
-                logging.debug(f'Connected to port {self.port}')
-                logging.debug(f'Socket name: {self.socket.getsockname()}')
-
-                if platform.system() == 'Windows':
-                    self._socket_spam_thread = threading.Thread(target=self._spam_socket, name='spam', daemon=True)
-                    self._socket_spam_thread.start()
-                break
-
-            except PermissionError:
-                logging.debug('Client.connect: PermissionError')
-                self.error_msg = 'Permission error'
-                pass
-            except OSError as err:
-                if (err_code := self._process_os_error_code(err)) == 1:
-                    if port == self.max_port:
-                        logging.error('No available ports were found.')
-                        self.error_msg = self.errors[err_code]
-                else:
-                    self.error_msg = self.errors[err_code]
-                    break
-
-        self.socket.settimeout(self.default_timeout)
-
-    def send(self, command: str):
-        try:
-            self.socket.sendall(command.encode(BOARD_MSG_ENCODING))
-        except OSError as err:
-            logging.debug(f'OSError on sendall')
-            self.error_msg = self.errors[self._process_os_error_code(err)]
-            self.close()
-
-    def receive(self):
-        try:
-            return self.socket.recv(BUFFER_SIZE).decode(BOARD_MSG_ENCODING)
-        except OSError as err:
-            if err_code := self._process_os_error_code(err) != 0:
-                self.error_msg = self.errors[err_code]
-                self.close()
-            return ""
-
-    def clear(self):
-        self.receive()
-
-    def close(self):
-        self.socket.close()
-        self._is_connected = False
-
-    def _spam_socket(self):
-        """This is to raise a connection OSError if the connection is lost."""
-        while self._is_connected:
-            self.send(" ")  # A Space is not a recognized command. Thus nothing is return.
-            time.sleep(MONITORING_DELAY)
-
-    def _process_os_error_code(self, err) -> int:
-        """
-        Parameters
-        ----------
-        err : OS error code.
-
-        Returns
-        -------
-        0: Socket timeout
-        1: Port Unavailable
-        2: Device not Found
-        3: Bluetooth turned off
-        4: Connection broken
-        5: Device Unavailable
-        6: Client closed.
-        99: Unknown Error
-
-        """
-        match err.errno:
-            case None:
-                return 0
-            case 9:
-                logging.error(f'Bad file descriptor. (err{err.errno})')
-                return 6
-            case 16:
-                logging.error(f'Port unavailable. (err{err.errno})')
-                return 1
-            case 22:
-                logging.error(f'Port does not exist. (err{err.errno})')
-                return 1
-            case 77:
-                logging.error(f'Bad file descriptor. (err{err.errno})')
-                return 6
-            case 111:
-                logging.error(f'Device unavailable. (err{err.errno})')
-                return 5
-            case 112:
-                logging.error(f'Device not found. (err{err.errno})')
-                return 2
-            case 104:
-                logging.error(f'Connection broken. (err{err.errno})')
-                return 4
-            case 110:
-                logging.error(f'Connection broken. (err{err.errno})')
-                return 4
-            case 112:
-                logging.error(f'Device not found. (err{err.errno})')
-                return 2
-            case 113:
-                logging.error(f'Bluetooth turned off. (err{err.errno})')
-                return 3
-            case 10022:
-                logging.error(f'Bluetooth turned off. (err{err.errno})')
-                return 3
-            case 10038:
-                logging.error(f'Bad file descriptor. (err{err.errno})')
-                return 6
-            case 10048:
-                logging.error(f'Device unavailable. (Maybe) (err{err.errno})')
-                return 5
-            case 10049:
-                logging.error(f'Port does not exist. (err{err.errno})')
-                return 1
-            case 10050:
-                logging.error(f'Bluetooth turned off. (err{err.errno})')
-                return 3
-            case 10053:
-                logging.error(f'Connection broken. (err{err.errno})')
-                return 4
-            case 10060:
-                logging.error(f'Device not found. (err{err.errno})')
-                return 2
-            case 10064:
-                logging.error(f'Port {self.port} unavailable. (err{err.errno})')
-                return 1
-            case _:
-                logging.error(f'OSError (new): {err.errno}')
-                return 99
-
-
 class Dcs5Controller:
     dynamic_stylus_settings: bool
     output_mode: str
@@ -282,7 +68,7 @@ class Dcs5Controller:
     stylus_offset: int
     stylus_cyclical_list: Generator
 
-    def __init__(self, config_path: str, devices_specifications_path: str, control_box_parameters_path: str):
+    def __init__(self, config_path: str, devices_specifications_path: str):
         """
 
         Parameters
@@ -293,10 +79,9 @@ class Dcs5Controller:
         """
         self.config_path = config_path
         self.devices_specifications_path = devices_specifications_path
-        self.control_box_parameters_path = control_box_parameters_path
         self.config: ControllerConfiguration = None
         self.devices_specifications: DevicesSpecifications = None
-        self.control_box_parameters: ControlBoxParameters = None
+        self.control_box_parameters: Union[XtControlBoxParameters, MicroControlBoxParameters] = None
         self._load_configs()
 
         self.listen_thread: threading.Thread = None
@@ -306,7 +91,7 @@ class Dcs5Controller:
         self.ping_event_check = threading.Event()
 
         self.client = BluetoothClient()
-        self.shouter = Shouter()
+        self.shouter = KeyboardEmulator()
         self.internal_board_state = InternalBoardState()  # Board Current State
 
         self.socket_listener = SocketListener(self)
@@ -318,37 +103,44 @@ class Dcs5Controller:
 
         self._set_board_settings()
 
-    @property
-    def mappable_commands(self):
-        """The command are either for the controller or the board.
-
-        Returns
-        -------
-            Dictionary of commands (Callable).
-        """
-        return {
-            "CHANGE_STYLUS": self.cycle_stylus,
-            "UNITS_mm": self.change_length_units_mm,
-            "UNITS_cm": self.change_length_units_cm,
-            "MODE_TOP": self._mode_top,
-            "MODE_LENGTH": self._mode_length,
-            "MODE_BOTTOM": self._mode_bottom,
-            # XT SPECIFIC
-            "BACKLIGHT_UP": self.backlight_up,
-            "BACKLIGHT_DOWN": self.backlight_down,
-        }
+        self.controller_commands = [
+            "CHANGE_STYLUS",
+            "UNITS_mm",
+            "UNITS_cm",
+            "MODE_TOP",
+            "MODE_LENGTH",
+            "MODE_BOTTOM"
+            ]
+        if self.devices_specifications.control_box.model == "xt":
+            self.controller_commands += ["BACKLIGHT_UP", "BACKLIGHT_DOWN"]
 
     def _load_configs(self):
-        if (control_box_parameters := load_control_box_parameters(self.control_box_parameters_path)) is None:
-            raise ConfigError(f'Error in {self.control_box_parameters_path}. File could not be loaded.')
         if (devices_spec := load_devices_specification(self.devices_specifications_path)) is None:
             raise ConfigError(f'Error in {self.devices_specifications_path}. File could not be loaded.')
+        else:
+            self.devices_specifications = devices_spec
+
         if (config := load_config(self.config_path)) is None:
             raise ConfigError(f'Error in {self.config_path}. File could not be loaded.')
 
-        self.control_box_parameters = control_box_parameters
-        self.devices_specifications = devices_spec
-        self.config = validate_config(config, self.control_box_parameters)
+        match self.devices_specifications.control_box.model:
+            case "xt":
+                self.control_box_parameters = XtControlBoxParameters()
+                if not 0 <= config.launch_settings.backlighting_level <= self.control_box_parameters.max_backlighting_level:
+                    raise ConfigError(
+                        f'launch_settings/Backlight_level outside range {(0, self.control_box_parameters.max_backlighting_level)}')
+            case "micro":
+                self.control_box_parameters = MicroControlBoxParameters()
+
+        for key, item in config.reading_profiles.items():
+            if not self.control_box_parameters.min_settling_delay <= item.settling_delay <= self.control_box_parameters.max_settling_delay:
+                raise ConfigError(
+                    f'reading_profiles/{key}/settling_delay outside range {(self.control_box_parameters.min_settling_delay, self.control_box_parameters.max_settling_delay)}')
+            if not self.control_box_parameters.min_max_deviation <= item.max_deviation <= self.control_box_parameters.max_max_deviation:
+                raise ConfigError(
+                    f'reading_profiles/{key}/max_deviation outside range {(self.control_box_parameters.min_max_deviation, self.control_box_parameters.max_max_deviation)}')
+
+        self.config = config
 
     def reload_configs(self):
         self.is_sync = False
@@ -576,7 +368,7 @@ class Dcs5Controller:
         if not self.is_muted:
             logging.debug(f"Shouted value {value}")
             if isinstance(value, str):
-                if value.startswith('print '):
+                if value.startswith('print '): # could be its own function
                     value = value[6:].strip(' ')
             self.shouter.shout(value)
 
@@ -605,6 +397,20 @@ class Dcs5Controller:
             time.sleep(interval / 2)
             self.c_set_backlighting_level(current_backlight_level)
             time.sleep(interval / 2)
+
+    def mapped_commands(self, command: str):
+        commands = {
+            "CHANGE_STYLUS": self.cycle_stylus,
+            "UNITS_mm": self.change_length_units_mm,
+            "UNITS_cm": self.change_length_units_cm,
+            "MODE_TOP": self._mode_top,
+            "MODE_LENGTH": self._mode_length,
+            "MODE_BOTTOM": self._mode_bottom,
+            # XT SPECIFIC
+            "BACKLIGHT_UP": self.backlight_up,
+            "BACKLIGHT_DOWN": self.backlight_down,
+        }
+        commands[command]()
 
     def calibrate(self, pt: int) -> int:
         """
@@ -649,8 +455,6 @@ class Dcs5Controller:
                 self.start_listening()
 
     def c_ping(self):
-        """This could use for something more useful. Like checking at regular interval if the board is still active:
-        """
         self.command_handler.queue_command("a#", "%a:e#")
 
     def c_get_board_stats(self):
@@ -729,7 +533,7 @@ class Dcs5Controller:
     def c_restore_cal_data(self):
         self.command_handler.queue_command("&cr,m1,m2,raw1,raw2#", None)
 
-    def _clear_cal_data(self):
+    def c_clear_cal_data(self):
         self.command_handler.queue_command("&ca#", None)
         self.calibrated = False
 
@@ -969,8 +773,8 @@ class SocketListener:
                 self.with_mode = not self.with_mode
             else:
                 self.with_mode = False
-                if value in self.controller.mappable_commands:
-                    self.controller.mappable_commands[value]()
+                if value in self.controller.controller_commands:
+                    self.controller.mapped_commands(value)
                 else:
                     self.controller.shout(value)
 
@@ -1013,17 +817,3 @@ class SocketListener:
                 if l_max >= int(value) > l_min:
                     self.controller.change_board_output_mode(mode)
                     break
-
-
-def validate_config(config: ControllerConfiguration, control_box: ControlBoxParameters):
-    if not 0 <= config.launch_settings.backlighting_level <= control_box.max_backlighting_level:
-        raise ConfigError(f'launch_settings/Backlight_level outside range {(0, control_box.max_backlighting_level)}')
-
-    for key, item in config.reading_profiles.items():
-        if not control_box.min_settling_delay <= item.settling_delay <= control_box.max_settling_delay:
-            raise ConfigError(
-                f'reading_profiles/{key}/settling_delay outside range {(control_box.min_settling_delay, control_box.max_settling_delay)}')
-        if not control_box.min_max_deviation <= item.max_deviation <= control_box.max_max_deviation:
-            raise ConfigError(
-                f'reading_profiles/{key}/max_deviation outside range {(control_box.min_max_deviation, control_box.max_max_deviation)}')
-    return config
