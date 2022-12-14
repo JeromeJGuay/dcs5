@@ -40,12 +40,12 @@ The controller_configuration.json is used to configure the controller behavior.
   - mode_reading_profiles: The corresponding reading_profiles for each output modes.
 + keys_maps: Mapping of the key to either command or keyboard input.
   - Two commands for a key. One default and one for when MODE is activated.
-  - The name of the keys are set in [dcs5/default_configs/devices_specification.json](dcs5/default_configs/devices_specification.json).
+  - The name of the keys are set in [dcs5/default_configs/devices_specification.json](dcs5/default_configs/xt_devices_specification.json).
   - Valid commands `"BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm", "MODE", "MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM", print <string to print>]`
   - See the [dcs5/controller_configurations.py](dcs5/controller_configurations.py) module for the valid keyboard input.
   - List of commands are accepted and executed one at a time.
 
-### [dcs5/default_configs/devices_specification.json](dcs5/default_configs/devices_specification.json)
+### [dcs5/default_configs/devices_specification.json](dcs5/default_configs/xt_devices_specification.json)
 + board:
   - number_of_keys: The keys correspond to the grey circle on the board.
   - key_to_mm_ratio: The distance in mm from one edge of a circle (larger one) to the next.

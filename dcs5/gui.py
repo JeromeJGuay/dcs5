@@ -24,15 +24,15 @@ if os.environ.get('EDITOR') == 'EMACS':
     os.environ.update({'EDITOR': 'pluma'})  # This is a fix for my computer. Should not influence anything.
 
 
-#PATH
+#FILENAMES
 CONTROLLER_CONFIGURATION_FILE_NAME = 'controller_configuration.json'
-DEVICES_SPECIFICATION_FILE_NAME = 'devices_specification.json'
-#CONTROL_BOX_PARAMETERS_FILE_NAME = "control_box_parameters.json"# FIXME
-
+XT_DEVICES_SPECIFICATION_FILE_NAME = 'xt_devices_specification.json'
+MICRO_DEVICES_SPECIFICATION_FILE_NAME = 'micro_devices_specification.json'
+#PATHS
 DEFAULT_CONFIG_PATH = "default_configs/"
 DEFAULT_CONTROLLER_CONFIGURATION_FILE = str(resolve_relative_path(DEFAULT_CONFIG_PATH + CONTROLLER_CONFIGURATION_FILE_NAME, __file__))
-DEFAULT_DEVICES_SPECIFICATION_FILE = str(resolve_relative_path(DEFAULT_CONFIG_PATH + DEVICES_SPECIFICATION_FILE_NAME, __file__))
-#DEFAULT_CONTROL_BOX_PARAMETERS_FILE = str(resolve_relative_path(DEFAULT_CONFIG_PATH + CONTROL_BOX_PARAMETERS_FILE_NAME, __file__))# FIXME
+XT_DEFAULT_DEVICES_SPECIFICATION_FILE = str(resolve_relative_path(DEFAULT_CONFIG_PATH + XT_DEVICES_SPECIFICATION_FILE_NAME, __file__))
+MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE = str(resolve_relative_path(DEFAULT_CONFIG_PATH + XT_DEVICES_SPECIFICATION_FILE_NAME, __file__))
 
 USER_GUIDE_FILE = str(resolve_relative_path('static/UserGuide_fr.pdf', __file__))
 
@@ -92,7 +92,7 @@ def main():
 
 def init_dcs5_controller():
     controller_config_path = Path(sg.user_settings()['configs_path']).joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)
-    devices_specifications_path = Path(sg.user_settings()['configs_path']).joinpath(DEVICES_SPECIFICATION_FILE_NAME)
+    devices_specifications_path = Path(sg.user_settings()['configs_path']).joinpath(XT_DEVICES_SPECIFICATION_FILE_NAME)
    # control_box_parameters_path = Path(sg.user_settings()['configs_path']).joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)# FIXME
 
     check_config_integrity(
@@ -131,9 +131,9 @@ def check_config_integrity(
             title='Missing file', keep_on_top=True)
         shutil.copyfile(DEFAULT_CONTROLLER_CONFIGURATION_FILE, controller_config_path)
     if not devices_specifications_path.exists():
-        sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created.',
+        sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created (default model: xt).',
                     title='Missing file', keep_on_top=True)
-        shutil.copyfile(DEFAULT_DEVICES_SPECIFICATION_FILE, devices_specifications_path)
+        shutil.copyfile(XT_DEFAULT_DEVICES_SPECIFICATION_FILE, devices_specifications_path)
     # if not control_box_parameters_path.exists():# FIXME
     #     shutil.copyfile(DEFAULT_CONTROL_BOX_PARAMETERS_FILE, control_box_parameters_path)
     #     sg.popup_ok(
@@ -164,6 +164,8 @@ def make_window():
             'Device', [
                 [sg.Text(dotted(" Name", 18), pad=(0, 0), font=REG_FONT),
                  sg.Text(dotted("N\A ", DEVICE_LAYOUT_PADDING, 'right'), font=REG_FONT, p=(0, 0), key='-NAME-')],
+                [sg.Text(dotted(" Model", 18), pad=(0, 0), font=REG_FONT),
+                 sg.Text(dotted("N\A ", DEVICE_LAYOUT_PADDING, 'right'), font=REG_FONT, p=(0, 0), key='-MODEL-')],
                 [sg.Text(dotted(" MAC address", 18), pad=(0, 0), font=REG_FONT),
                  sg.Text(dotted("N\A", DEVICE_LAYOUT_PADDING, 'right'), font=REG_FONT, p=(0, 0), key='-MAC-')],
                 [sg.Text(dotted(" Port (Bt Channel)", 18), pad=(0, 0), font=REG_FONT),
@@ -440,6 +442,7 @@ def refresh_layout(window: sg.Window, controller: Dcs5Controller):
 
 def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
     window['-NAME-'].update(dotted(controller.config.client.device_name + " ", DEVICE_LAYOUT_PADDING, 'right'))
+    window['-MODEL-'].update(dotted(controller.devices_specifications.control_box.model + " ", DEVICE_LAYOUT_PADDING, 'right'))
     window['-MAC-'].update(dotted(controller.config.client.mac_address + " ", DEVICE_LAYOUT_PADDING, 'right'))
 
     window['-SETTLING-DELAY-'].update(controller.internal_board_state.stylus_settling_delay)
@@ -482,8 +485,9 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
 
             window["-ACTIVATED_LED-"].update(**LED_ON)
             window["-ACTIVATE-"].update(disabled=True)
-            window['-BACKLIGHT-'].update(disabled=False,
-                                         value=controller.internal_board_state.backlighting_level) #  or None ? Removed
+            if controller.devices_specifications.control_box.model == 'xt':
+                window['-BACKLIGHT-'].update(disabled=False,
+                                             value=controller.internal_board_state.backlighting_level) #  or None ? Removed
             if controller.socket_listener.last_key is not None:
                 window['-LAST_KEY-'].update('< ' + str(controller.socket_listener.last_key) + ' >')
                 window['-LAST_COMMAND-'].update('< ' + str(controller.socket_listener.last_command) + ' >')
@@ -749,7 +753,7 @@ def popup_window_select_config(controller: Dcs5Controller = None) -> Dcs5Control
                             case 'Controller Configuration':
                                 click.edit(filename=str(config_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)))
                             case 'Devices Specification':
-                                click.edit(filename=str(config_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME)))
+                                click.edit(filename=str(config_path.joinpath(XT_DEVICES_SPECIFICATION_FILE_NAME)))
 
                         if values['-CONFIG-'][0] == current_config:
                             sg.user_settings()['previous_configs_path'] = current_config + '*'
@@ -774,38 +778,63 @@ def list_configs():
     return [x.name for x in Path(CONFIG_FILES_PATH).iterdir() if x.is_dir()]
 
 
+def new_config_window():
+
+    model_layout = [[sg.Text('Model: ', font=REG_FONT), sg.DropDown(['xt', 'micro'], default_value='xt', size=(20, 4), enable_events=False, font=REG_FONT, key='-MODEL-')]]
+    path_layout = [[sg.Text('Name:  ', font=REG_FONT), sg.InputText(key='-PATH-', font=REG_FONT, size=[20,1], default_text=None)]]
+    submit_layout = [[
+        button('Create', size=(6, 1), button_color=('black', "orange")),
+        button('Close', size=(6, 1), button_color=ENABLED_BUTTON_COLOR)
+    ]]
+
+    global_layout = [model_layout,path_layout,submit_layout]
+
+    window = sg.Window('Configurations', global_layout, element_justification='center', keep_on_top=True)
+
+    return window
+
+
 def create_new_configs():
-    folder_name = sg.popup_get_text('Enter a configuration name:', default_text=None, font=REG_FONT, keep_on_top=True)
-    if folder_name:
-        if Path(folder_name).name in list_configs():
-            if sg.popup_yes_no('Configuration name already exists. Do you want to overwrite it ?',
-                               title='Warning', keep_on_top=True) == 'No':
-                return None
+    window = new_config_window()
+    while True:
+        event, values = window.read()
+        if event in ['Close', sg.WIN_CLOSED]:
+            break
 
-        new_configs_path = CONFIG_FILES_PATH.joinpath(folder_name)
-        new_configs_path.mkdir(parents=True, exist_ok=True)
+        if event is None or event == 'Create':
+            if values['-PATH-']:
+                if Path(values['-PATH-']).name in list_configs():
+                    if sg.popup_yes_no('Configuration name already exists. Do you want to overwrite it ?',
+                                       title='Warning', keep_on_top=True) == 'No':
+                        break
 
-        local_files = [
-            new_configs_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME),
-            new_configs_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME),
-#            new_configs_path.joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)# FIXME
-        ]
-        default_files = [
-            DEFAULT_CONTROLLER_CONFIGURATION_FILE,
-            DEFAULT_DEVICES_SPECIFICATION_FILE,
- #           DEFAULT_CONTROL_BOX_PARAMETERS_FILE  # FIXME
-        ]
+                if values['-MODEL-'] == 'xt':
+                    default_device_specifications_file = XT_DEFAULT_DEVICES_SPECIFICATION_FILE
+                else:
+                    default_device_specifications_file = MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE
 
-        for lf, df in zip(local_files, default_files):
-            if not Path(lf).exists():
-                shutil.copyfile(df, lf)
-            else:
-                shutil.copyfile(df, lf)
-                logging.debug(f'Writing file: {lf}')
+                new_configs_path = CONFIG_FILES_PATH.joinpath(values['-PATH-'])
+                new_configs_path.mkdir(parents=True, exist_ok=True)
 
-        return new_configs_path
+                local_files = [
+                    new_configs_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME),
+                    new_configs_path.joinpath(XT_DEVICES_SPECIFICATION_FILE_NAME),
+                ]
+                default_files = [
+                    DEFAULT_CONTROLLER_CONFIGURATION_FILE,
+                    default_device_specifications_file,
+                ]
 
-    sg.popup_ok('No name provided. Aborted', title='Warning', keep_on_top=True)
+                for lf, df in zip(local_files, default_files):
+                    if not Path(lf).exists():
+                        shutil.copyfile(df, lf)
+                    else:
+                        shutil.copyfile(df, lf)
+                        logging.debug(f'Writing file: {lf}')
+
+                window.close()
+                return new_configs_path
+    window.close()
     return None
 
 
@@ -829,7 +858,7 @@ def reload_controller_config(controller: Dcs5Controller):
 def update_controller_config_paths(controller: Dcs5Controller):
     configs_path = sg.user_settings()['configs_path'].strip('*')
     controller.config_path = Path(configs_path).joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)
-    controller.devices_specifications_path = Path(configs_path).joinpath(DEVICES_SPECIFICATION_FILE_NAME)
+    controller.devices_specifications_path = Path(configs_path).joinpath(XT_DEVICES_SPECIFICATION_FILE_NAME)
   #  controller.control_box_parameters_path = Path(configs_path).joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME) # FIXME
     logging.debug('Config files path updated.')
 
