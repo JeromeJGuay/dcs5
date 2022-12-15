@@ -166,6 +166,8 @@ def make_window():
                  sg.Text(dotted("N\A ", DEVICE_LAYOUT_PADDING, 'right'), font=REG_FONT, p=(0, 0), key='-NAME-')],
                 [sg.Text(dotted(" Model", 18), pad=(0, 0), font=REG_FONT),
                  sg.Text(dotted("N\A ", DEVICE_LAYOUT_PADDING, 'right'), font=REG_FONT, p=(0, 0), key='-MODEL-')],
+                [sg.Text(dotted(" Firmware", 18), pad=(0, 0), font=REG_FONT),
+                 sg.Text(dotted("N\A ", DEVICE_LAYOUT_PADDING, 'right'), font=REG_FONT, p=(0, 0), key='-FIRMWARE-')],
                 [sg.Text(dotted(" MAC address", 18), pad=(0, 0), font=REG_FONT),
                  sg.Text(dotted("N\A", DEVICE_LAYOUT_PADDING, 'right'), font=REG_FONT, p=(0, 0), key='-MAC-')],
                 [sg.Text(dotted(" Port (Bt Channel)", 18), pad=(0, 0), font=REG_FONT),
@@ -474,6 +476,10 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
 
         window['-PORT-'].update(dotted(str(controller.client.port) + " " or "N/A ", DEVICE_LAYOUT_PADDING, 'right'))
         window['-SYNC-'].update(disabled=False)
+
+        if controller.internal_board_state.firmware is not None:
+            window['-FIRMWARE-'].update(
+                dotted(controller.internal_board_state.firmware + " ", DEVICE_LAYOUT_PADDING, 'right'))
 
         if controller.internal_board_state.cal_pt_1 is not None \
                 and controller.internal_board_state.cal_pt_2 is not None:

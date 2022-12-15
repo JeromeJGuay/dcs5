@@ -46,6 +46,7 @@ class InternalBoardState:
     stylus_max_deviation: int = None
     number_of_reading: int = None
 
+    firmware: str = None
     battery_level: str = None
     board_stats: str = None
     board_interface: str = None
@@ -282,6 +283,7 @@ class Dcs5Controller:
             self.c_set_backlighting_auto_mode(self.config.launch_settings.backlighting_auto_mode)
 
         self.c_check_calibration_state()
+        self.c_get_board_stats()
 
         if self.wait_for_ping(timeout=5) is True:
             if (
@@ -662,6 +664,8 @@ class CommandHandler:
             if len(match) > 0:
                 logging.debug(f'Board State: {match[0]}')
                 self.controller.internal_board_state.board_stats = match[0]
+                firmware_version = match[0].split(',')[1]
+                self.controller.internal_board_state.firmware = firmware_version[:-2]+'.'+firmware_version[-2:]
 
         elif "%q" in received:
             match = re.findall("%q:(-*\d*,\d*)#", received)
