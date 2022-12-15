@@ -851,10 +851,11 @@ def reload_controller_config(controller: Dcs5Controller):
                 controller.init_controller_and_board()
         sg.user_settings()['configs_path'] = sg.user_settings()['configs_path'].strip('*')
 
-    except ConfigError:
-        logging.debug('ConfigError while loading config files.')
+    except ConfigError as err:
+        logging.debug(f'ConfigError while loading config files.\n {err}')
         sg.popup_ok('Could not load the configuration files.\n'
-                    ' Error in the configurations files. ', keep_on_top=True)
+                    ' Error in the configurations files. \n'
+                    f'{err}', keep_on_top=True)
         sg.user_settings().update({'configs_path': sg.user_settings()['previous_configs_path']})
 
 

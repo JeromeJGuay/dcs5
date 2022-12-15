@@ -773,7 +773,7 @@ class SocketListener:
 
     @staticmethod
     def _decode_board_message(value: str):
-        pattern = "%t,([0-9])#|%l,([0-9]*)#|%s,([0-9]*)#|F,([0-9]{2})#"
+        pattern = "%t,([0-9])#|%l,([0-9]*)#|%s,([0-9]*)#|F,([0-9]{2})#|%hs([0-9])#"
         match = re.findall(pattern, value)
         if len(match) > 0:
             if match[0][1] != "":
@@ -782,6 +782,8 @@ class SocketListener:
                 return 'swipe', int(match[0][2])
             elif match[0][3] != "":
                 return 'controller_box_key', match[0][3]
+            elif match[0][4] != "":
+                return 'controller_box_key', match[0][4]
         else:
             return 'solicited', value
 

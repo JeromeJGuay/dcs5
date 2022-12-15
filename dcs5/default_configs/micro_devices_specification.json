@@ -112,7 +112,7 @@
     "control_box": {
         "model": "micro",
         "keys_layout": {
-                "03": "a1"
+                "3": "a3"
             }
     },
     "stylus_offset": {
