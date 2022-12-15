@@ -32,7 +32,7 @@ MICRO_DEVICES_SPECIFICATION_FILE_NAME = 'micro_devices_specification.json'
 DEFAULT_CONFIG_PATH = "default_configs/"
 DEFAULT_CONTROLLER_CONFIGURATION_FILE = str(resolve_relative_path(DEFAULT_CONFIG_PATH + CONTROLLER_CONFIGURATION_FILE_NAME, __file__))
 XT_DEFAULT_DEVICES_SPECIFICATION_FILE = str(resolve_relative_path(DEFAULT_CONFIG_PATH + XT_DEVICES_SPECIFICATION_FILE_NAME, __file__))
-MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE = str(resolve_relative_path(DEFAULT_CONFIG_PATH + XT_DEVICES_SPECIFICATION_FILE_NAME, __file__))
+MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE = str(resolve_relative_path(DEFAULT_CONFIG_PATH + MICRO_DEVICES_SPECIFICATION_FILE_NAME, __file__))
 
 USER_GUIDE_FILE = str(resolve_relative_path('static/UserGuide_fr.pdf', __file__))
 
@@ -344,7 +344,8 @@ def run():
 
 def init_layout(window: sg.Window, controller: Dcs5Controller):
     if controller is not None:
-        window['-BACKLIGHT-'].update(range=(0, controller.control_box_parameters.max_backlighting_level))
+        if controller.devices_specifications.control_box.model == 'xt':
+            window['-BACKLIGHT-'].update(range=(0, controller.control_box_parameters.max_backlighting_level))
     refresh_layout(window, controller)
 
 
@@ -804,9 +805,11 @@ def create_new_configs():
         if event is None or event == 'Create':
             if values['-PATH-']:
                 if Path(values['-PATH-']).name in list_configs():
+                    window.keep_on_top_clear()
                     if sg.popup_yes_no('Configuration name already exists. Do you want to overwrite it ?',
                                        title='Warning', keep_on_top=True) == 'No':
                         break
+                    window.keep_on_top_set()
 
                 if values['-MODEL-'] == 'xt':
                     default_device_specifications_file = XT_DEFAULT_DEVICES_SPECIFICATION_FILE
@@ -844,7 +847,7 @@ def reload_controller_config(controller: Dcs5Controller):
         controller.reload_configs()
         logging.debug('Controller reloaded.')
         if controller.client.is_connected:
-            if sg.popup_yes_no('Do you want to synchronize board ?', keep_on_top=True):
+            if sg.popup_yes_no('Do you want to synchronize board ?', keep_on_top=True) == "yes":
                 controller.init_controller_and_board()
         sg.user_settings()['configs_path'] = sg.user_settings()['configs_path'].strip('*')
 

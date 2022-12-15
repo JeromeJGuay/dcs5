@@ -32,7 +32,6 @@ from dcs5.devices_specifications import load_devices_specification, DevicesSpeci
 from control_box_parameters import XtControlBoxParameters, MicroControlBoxParameters
 
 
-
 AFTER_SENT_SLEEP = 0.01
 
 HANDLER_SLEEP = 0.01
@@ -197,6 +196,7 @@ class Dcs5Controller:
         logging.debug(f"Active Threads: {threading.enumerate()}")
         if not self.is_listening:
             logging.debug('Starting Threads.')
+
             self.is_listening = True
             self.command_thread = threading.Thread(target=self.command_handler.processes_queues, name='command', daemon=True)
             self.command_thread.start()
@@ -216,6 +216,9 @@ class Dcs5Controller:
 
     def restart_listening(self):
         self.stop_listening()
+        time.sleep(0.05) # Safety
+        self.client.receive()
+        self.socket_listener.clear_buffer()
         self.start_listening()
 
     def monitor_connection(self):
@@ -250,9 +253,9 @@ class Dcs5Controller:
 
         was_listening = self.is_listening
         self.restart_listening()
-        time.sleep(.5)
 
-        # self.c_set_backlighting_level(0)
+        if self.devices_specifications.control_box.model == "xt": # make a function that select what to do for xt vs micro
+            self.c_set_backlighting_level(0)
 
         reading_profile = self.config.reading_profiles[
             self.config.output_modes.mode_reading_profiles[self.output_mode]
@@ -261,8 +264,10 @@ class Dcs5Controller:
         # SET DEFAULT VALUES
         self.c_set_sensor_mode(0)  # TEMPORARY FIX FOR XT
         if self.devices_specifications.control_box.model == "micro":
+            board_interface = "Dcs5LinkStream"
             self.c_set_interface(0)
         elif self.devices_specifications.control_box.model == "xt":
+            board_interface = "FEED"
             self.c_set_interface(1)
 
         self.c_set_stylus_detection_message(False)
@@ -271,15 +276,16 @@ class Dcs5Controller:
         self.c_set_stylus_settling_delay(reading_profile.settling_delay)
         self.c_set_stylus_max_deviation(reading_profile.max_deviation)
         self.c_set_stylus_number_of_reading(reading_profile.number_of_reading)
-        self.c_set_backlighting_level(self.config.launch_settings.backlighting_level)
-        self.c_set_backlighting_sensitivity(self.config.launch_settings.backlighting_sensitivity)
-        self.c_set_backlighting_auto_mode(self.config.launch_settings.backlighting_auto_mode)
+        if self.devices_specifications.control_box.model == 'xt': #make it a function like ... init_light_indication().. which looks for model.
+            self.c_set_backlighting_level(self.config.launch_settings.backlighting_level)
+            self.c_set_backlighting_sensitivity(self.config.launch_settings.backlighting_sensitivity)
+            self.c_set_backlighting_auto_mode(self.config.launch_settings.backlighting_auto_mode)
 
         self.c_check_calibration_state()
 
-        if self.wait_for_ping() is True:
+        if self.wait_for_ping(timeout=5) is True:
             if (
-                    self.internal_board_state.board_interface == "Dcs5LinkStream" and
+                    self.internal_board_state.board_interface == board_interface and
                     self.internal_board_state.sensor_mode == "length" and
                     self.internal_board_state.stylus_status_msg == "disable" and
                     self.internal_board_state.stylus_settling_delay == reading_profile.settling_delay and
@@ -299,6 +305,9 @@ class Dcs5Controller:
                 logging.debug(str(state))
         else:
             logging.debug("Ping was not received. Board initiation failed.")
+            # If the sync failed, clearing the queues is a good idea if an unexpected message offsets the
+            # received and command queues.
+            self.command_handler.clear_queues()
 
         if not was_listening:
             self.stop_listening()
@@ -307,7 +316,11 @@ class Dcs5Controller:
         self.c_ping()
         self.ping_event_check.clear()
         logging.debug('Waiting for ping event.')
-        return self.ping_event_check.wait(timeout)
+        if self.ping_event_check.wait(timeout):
+            logging.debug('Ping received.')
+            return True
+        logging.debug('Ping not received.')
+        return False
 
     def change_length_units_mm(self, flash=True):
         self.length_units = "mm"
@@ -391,12 +404,16 @@ class Dcs5Controller:
             logging.debug("Backlighting is already at minimum.")
 
     def flash_lights(self, period: int, interval: int):
-        current_backlight_level = self.internal_board_state.backlighting_level
-        for i in range(period):
-            self.c_set_backlighting_level(0)
-            time.sleep(interval / 2)
-            self.c_set_backlighting_level(current_backlight_level)
-            time.sleep(interval / 2)
+        if self.devices_specifications.control_box.model == 'xt':
+            current_backlight_level = self.internal_board_state.backlighting_level
+            for i in range(period):
+                self.c_set_backlighting_level(0)
+                time.sleep(interval / 2)
+                self.c_set_backlighting_level(current_backlight_level)
+                time.sleep(interval / 2)
+        else:
+            #TODO Make a wrapping function that calls flash if xt ?
+            pass
 
     def mapped_commands(self, command: str):
         commands = {
@@ -478,8 +495,8 @@ class Dcs5Controller:
         if self.devices_specifications.control_box.model == "xt":
             self.command_handler.queue_command(f"&fm,{value}#")
             if value == 0:
-                self.internal_board_state.board_interface = "DCSLinkstream"
-                logging.debug(f'Interface set to DCSLinkstream')
+                self.internal_board_state.board_interface = "Dcs5LinkStream"
+                logging.debug(f'Interface set to Dcs5LinkStream')
             elif value == 1:
                 self.internal_board_state.board_interface = "FEED"
                 logging.debug(f'Interface set to FEED')
@@ -576,6 +593,7 @@ class CommandHandler:
         received = self.received_queue.get()
         expected = self.expected_message_queue.get()
         logging.debug(f'Received: {[received]}, Expected: {[expected]}')
+
         if "regex_" in expected:
             match = re.findall("(" + expected.strip('regex_') + ")", received)
             if len(match) > 0:
@@ -588,7 +606,7 @@ class CommandHandler:
         else:
             logging.error(f'Invalid: Command received: {[received]}, Command expected: {[expected]}')
 
-    def _process_valid_commands(self, received):
+    def _process_valid_commands(self, received: str):
         logging.debug('Command Valid')
         if 'mode activated' in received:
             for i in ["length", "alpha", "shortcut", "numeric"]:
@@ -605,8 +623,8 @@ class CommandHandler:
             match = re.findall(f"%fm,(\d)\r", received)
             if len(match) > 0:
                 if match[0] == "0":
-                    self.controller.internal_board_state.board_interface = "DCSLinkstream"
-                    logging.debug(f'Interface set to DCSLinkstream')
+                    self.controller.internal_board_state.board_interface = "Dcs5LinkStream"
+                    logging.debug(f'Interface set to DcsLinkStream')
                 elif match[0] == "1":
                     self.controller.internal_board_state.board_interface = "FEED"
                     logging.debug(f'Interface set to FEED')
@@ -696,6 +714,9 @@ class SocketListener:
         i = len(self.buffer) if i is None else i
         out, self.buffer = self.buffer[:i], self.buffer[i:]
         return out
+
+    def clear_buffer(self):
+        self.buffer = ""
 
     def listen(self):
         self.controller.client.clear()
