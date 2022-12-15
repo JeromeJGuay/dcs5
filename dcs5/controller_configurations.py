@@ -85,7 +85,7 @@ def validate_command(key, value):
     if isinstance(value, list):
         for _value in value:
             validate_command(key, _value)
-    elif value is not None:
+    elif value not in [None, ""]:
         if value.startswith('print '):
             pass
         else:
