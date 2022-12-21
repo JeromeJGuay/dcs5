@@ -420,16 +420,15 @@ class Dcs5Controller:
             logging.debug("Backlighting is already at minimum.")
 
     def flash_lights(self, period: int, interval: int):
-        if self.devices_specifications.control_box.model == 'xt':
-            current_backlight_level = self.internal_board_state.backlighting_level
-            for i in range(period):
-                self.c_set_backlighting_level(0)
-                time.sleep(interval / 2)
-                self.c_set_backlighting_level(current_backlight_level)
-                time.sleep(interval / 2)
-        else:
-            #TODO Make a wrapping function that calls flash if xt ?
-            pass
+        current_backlight_level = self.internal_board_state.backlighting_level
+        for i in range(period):
+        #    self.c_set_backlighting_level(0)
+            self.c_flash_light()
+            time.sleep(interval / 2)
+        #    self.c_set_backlighting_level(current_backlight_level)
+            self.c_flash_light()
+            time.sleep(interval / 2)
+
 
     def mapped_commands(self, command: str):
         commands = {
@@ -489,6 +488,9 @@ class Dcs5Controller:
             if was_listening:
                 self.start_listening()
 
+    def c_flash_light(self):
+        self.command_handler.queue_command("&ra#", None)
+
     def c_ping(self):
         self.command_handler.queue_command("a#", "%a:e#")
 
@@ -506,16 +508,7 @@ class Dcs5Controller:
         -------
 
         """
-        if self.devices_specifications.control_box.model == "xt":
-            self.command_handler.queue_command('&q#', [
-                "regex_%q:\d+,\d+#",])
-        elif self.devices_specifications.control_box.model == "micro":
-            self.command_handler.queue_command('&q#', [
-                'regex_,Battery charge-voltage-current-ttfull-ttempty:,\d+,\d+,\d+,\d+,\d+\r',
-                "regex_%q:\d+,\d+#",
-                        ])
-        else:
-            raise ValueError("get_battery_level invalid model.")
+        self.command_handler.queue_command('&q#', "regex_%q:\d+,\d+#")
 
     def c_get_temperature_humidity(self):
         self.command_handler.queue_command('&t#', "regex_%t,\d+,\d+#")
@@ -856,6 +849,7 @@ class SocketListener:
             "F,([0-9]{2})#",  # xt button v1.07
             "F,([0-9]{3})#"  # Xt button v1.12+
             "%hs([0-9])",  # Micro button
+            ",Battery charge-voltage-current-ttfull-ttempty:,(\d+),(\d+),(\d+),(\d+),(\d+)\r"
 
         ]
         "|".join(patterns)
@@ -871,6 +865,9 @@ class SocketListener:
                 return 'controller_box_key', match[0][4][-2:]
             elif match[0][5] != "":
                 return 'controller_box_key', match[0][5]
+            elif match[0][6] != "": # temporary fix
+                logging.debug(f"micro unsolicited battery state {value}")
+                return None, None
         else:
             return 'solicited', value
 
