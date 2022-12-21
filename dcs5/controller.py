@@ -94,6 +94,7 @@ class Dcs5Controller:
 
         self.board_state_monitoring_thread: threading.Thread = None
         self.auto_reconnect_thread: threading.Thread = None
+        self.auto_reconnect = False
         self.listener_handler_sync_barrier = threading.Barrier(2)
         self.ping_event_check = threading.Event()
 
@@ -165,6 +166,7 @@ class Dcs5Controller:
 
     def start_client(self, mac_address: str = None):
         """Create a socket and tries to connect with the board."""
+        self.auto_reconnect = True
         if self.client.is_connected:
             logging.debug("Client Already Connected.")
             self.auto_reconnect_thread = threading.Thread(target=self.monitor_connection, name="connection monitoring", daemon=True)
@@ -174,6 +176,7 @@ class Dcs5Controller:
             self.client.connect(mac_address, timeout=30)
 
     def close_client(self):
+        self.auto_reconnect = False
         if self.client.is_connected:
             self.stop_listening()
             self.client.close()
@@ -233,7 +236,7 @@ class Dcs5Controller:
         self.start_listening()
 
     def monitor_connection(self):
-        while True:
+        while self.auto_reconnect:
             while self.client.is_connected:
                 time.sleep(1)
             self.reconnect_client()
@@ -503,10 +506,16 @@ class Dcs5Controller:
         -------
 
         """
-        self.command_handler.queue_command('&q#', [
-            "regex_%q:\d+,\d+#",
-            ',Battery charge-voltage-current-ttfull-ttempty:,\d+,\d+,\d+,\d+,\d+\r'
-        ])
+        if self.devices_specifications.control_box.model == "xt":
+            self.command_handler.queue_command('&q#', [
+                "regex_%q:\d+,\d+#",])
+        elif self.devices_specifications.control_box.model == "micro":
+            self.command_handler.queue_command('&q#', [
+                'regex_,Battery charge-voltage-current-ttfull-ttempty:,\d+,\d+,\d+,\d+,\d+\r',
+                "regex_%q:\d+,\d+#",
+                        ])
+        else:
+            raise ValueError("get_battery_level invalid model.")
 
     def c_get_temperature_humidity(self):
         self.command_handler.queue_command('&t#', "regex_%t,\d+,\d+#")
