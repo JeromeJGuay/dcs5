@@ -23,20 +23,22 @@ if os.environ.get('EDITOR') == 'EMACS':
     print('Text editor changed.')
     os.environ.update({'EDITOR': 'pluma'})  # This is a fix for my computer. Should not influence anything.
 
-
-#FILENAMES
+# FILENAMES
 CONTROLLER_CONFIGURATION_FILE_NAME = 'controller_configuration.json'
 XT_DEVICES_SPECIFICATION_FILE_NAME = 'xt_devices_specification.json'
 MICRO_DEVICES_SPECIFICATION_FILE_NAME = 'micro_devices_specification.json'
-#PATHS
+# PATHS
 DEFAULT_CONFIG_PATH = "default_configs/"
-DEFAULT_CONTROLLER_CONFIGURATION_FILE = str(resolve_relative_path(DEFAULT_CONFIG_PATH + CONTROLLER_CONFIGURATION_FILE_NAME, __file__))
-XT_DEFAULT_DEVICES_SPECIFICATION_FILE = str(resolve_relative_path(DEFAULT_CONFIG_PATH + XT_DEVICES_SPECIFICATION_FILE_NAME, __file__))
-MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE = str(resolve_relative_path(DEFAULT_CONFIG_PATH + MICRO_DEVICES_SPECIFICATION_FILE_NAME, __file__))
+DEFAULT_CONTROLLER_CONFIGURATION_FILE = str(
+    resolve_relative_path(DEFAULT_CONFIG_PATH + CONTROLLER_CONFIGURATION_FILE_NAME, __file__))
+XT_DEFAULT_DEVICES_SPECIFICATION_FILE = str(
+    resolve_relative_path(DEFAULT_CONFIG_PATH + XT_DEVICES_SPECIFICATION_FILE_NAME, __file__))
+MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE = str(
+    resolve_relative_path(DEFAULT_CONFIG_PATH + MICRO_DEVICES_SPECIFICATION_FILE_NAME, __file__))
 
 USER_GUIDE_FILE = str(resolve_relative_path('static/UserGuide_fr.pdf', __file__))
 
-if sys.platform in ("linux","linux2"):
+if sys.platform in ("linux", "linux2"):
     LOGO_PATH = str(resolve_relative_path('static/bigfin_logo.png', __file__))
 
 elif sys.platform == "win32":
@@ -67,7 +69,6 @@ LED_ON = {'value': '\u2B24', 'text_color': 'Green', 'font': TAB_FONT}
 LED_WAIT = {'value': '\u25B2', 'text_color': 'Orange', 'font': LED_FONT}
 LED_OFF = {'value': '\u25CB', 'text_color': 'Red', 'font': LED_FONT + ' bold'}
 
-
 ENABLED_BUTTON_COLOR = ('black', "light blue")
 DISABLED_BUTTON_COLOR = ('gray', "light grey")
 SELECTED_BUTTON_COLOR = ('OrangeRed', "light grey")
@@ -86,26 +87,23 @@ def main():
         logging.error(traceback.format_exc(), exc_info=True)
         sg.popup_error(f'CRITICAL ERROR. SHUTTING DOWN', title='CRITICAL ERROR', keep_on_top=True)
     finally:
-        #sys.exit()
+        # sys.exit()
         pass
 
 
 def init_dcs5_controller():
     controller_config_path = Path(sg.user_settings()['configs_path']).joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)
     devices_specifications_path = Path(sg.user_settings()['configs_path']).joinpath(XT_DEVICES_SPECIFICATION_FILE_NAME)
-   # control_box_parameters_path = Path(sg.user_settings()['configs_path']).joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME)# FIXME
 
     check_config_integrity(
         controller_config_path=controller_config_path,
         devices_specifications_path=devices_specifications_path,
-#        control_box_parameters_path=control_box_parameters_path# FIXME
     )
 
     try:
         controller = Dcs5Controller(
             controller_config_path,
             devices_specifications_path,
-        #    control_box_parameters_path# FIXME
         )
         logging.debug('Controller initiated.')
         return controller
@@ -123,7 +121,6 @@ def init_dcs5_controller():
 def check_config_integrity(
         controller_config_path,
         devices_specifications_path,
-#        control_box_parameters_path# FIXME
 ):
     if not controller_config_path.exists():
         sg.popup_ok(
@@ -131,14 +128,10 @@ def check_config_integrity(
             title='Missing file', keep_on_top=True)
         shutil.copyfile(DEFAULT_CONTROLLER_CONFIGURATION_FILE, controller_config_path)
     if not devices_specifications_path.exists():
-        sg.popup_ok('`devices_specifications.json` was missing from the directory. One was created (default model: xt).',
-                    title='Missing file', keep_on_top=True)
+        sg.popup_ok(
+            '`devices_specifications.json` was missing from the directory. One was created (default model: xt).',
+            title='Missing file', keep_on_top=True)
         shutil.copyfile(XT_DEFAULT_DEVICES_SPECIFICATION_FILE, devices_specifications_path)
-    # if not control_box_parameters_path.exists():# FIXME
-    #     shutil.copyfile(DEFAULT_CONTROL_BOX_PARAMETERS_FILE, control_box_parameters_path)
-    #     sg.popup_ok(
-    #         f'`devices_specifications.json` was missing from the directory {control_box_parameters_path.parent}. One was created.',
-    #         title='Missing file', keep_on_top=True)
 
 
 def load_user_settings():
@@ -171,7 +164,17 @@ def make_window():
                 [sg.Text(dotted(" MAC address", 18), pad=(0, 0), font=REG_FONT),
                  sg.Text(dotted("N\A", DEVICE_LAYOUT_PADDING, 'right'), font=REG_FONT, p=(0, 0), key='-MAC-')],
                 [sg.Text(dotted(" Port (Bt Channel)", 18), pad=(0, 0), font=REG_FONT),
-                 sg.Text(dotted("N\A ", DEVICE_LAYOUT_PADDING, 'right'), font=REG_FONT, p=(0, 0), key='-PORT-')]
+                 sg.Text(dotted("N\A ", DEVICE_LAYOUT_PADDING, 'right'), font=REG_FONT, p=(0, 0), key='-PORT-')],
+                [sg.HSeparator()],
+
+                [sg.Text("Temperature:", font=REG_FONT), sg.Text("N\A", key="-TEMPERATURE-", font=REG_FONT),
+                 sg.Push(),
+                 sg.Text("Battery:", font=REG_FONT), sg.Text("N\A", key="-BATTERY-", font=REG_FONT)
+                 ],
+                [sg.Text("Humidity:", font=REG_FONT), sg.Text("N\A", key="-HUMIDITY-", font=REG_FONT),
+                 sg.Push(),
+                 sg.Text("Charging:", font=REG_FONT), sg.Text("N\A", key="-CHARGING-", font=REG_FONT)
+                 ]
             ],
             font=TAB_FONT
         )
@@ -188,7 +191,8 @@ def make_window():
         [sg.Text('  Muted', font=REG_FONT), led(key='-MUTED_LED-')],
         [ibutton('Mute', size=(11, 1), key='-MUTE-')]]
 
-    restart_layout = [sg.Push(),
+    restart_layout = [ibutton('Disconnect', size=(11, 1), key='-DISCONNECT-', button_color='orange'),
+                      sg.Push(),
                       sg.Button('Restart', size=(11, 1),
                                 font=REG_FONT,
                                 pad=(1, 1),
@@ -229,9 +233,9 @@ def make_window():
     _last_command_layout = [[sg.Text('Key'), sg.Text("", font=REG_FONT_BOLD, size=(10, 1), p=(1, 1), relief='solid',
                                                      border_width=2, justification='c', background_color='white',
                                                      key="-LAST_KEY-"),
-                            sg.Text('Command'), sg.Text("", font=REG_FONT_BOLD, size=(20, 1), p=(1, 1), relief='solid',
-                                                        border_width=2, justification='c', background_color='white',
-                                                        key="-LAST_COMMAND-")]]
+                             sg.Text('Command'), sg.Text("", font=REG_FONT_BOLD, size=(20, 1), p=(1, 1), relief='solid',
+                                                         border_width=2, justification='c', background_color='white',
+                                                         key="-LAST_COMMAND-")]]
     last_command_layout = [[sg.Frame('Last Inputs', _last_command_layout, font=TAB_FONT)]]
 
     ### BACKLIGHT
@@ -244,11 +248,12 @@ def make_window():
     units_layout = [[sg.Frame('Units', _units_layout, font=TAB_FONT)]]
 
     ### STYLUS
-    _stylus_layout = [[sg.Combo(values=[''], key='-STYLUS-', enable_events=True, size=(10,1),pad=(1,1), font=REG_FONT),
-                       sg.Text('Offset:', font=REG_FONT),
-                       sg.Text("-", font=REG_FONT_BOLD, background_color='white',
-                               size=(3, 1), p=(1, 0), justification='c', key='-STYLUS_OFFSET-')
-                      ]]
+    _stylus_layout = [
+        [sg.Combo(values=[''], key='-STYLUS-', enable_events=True, size=(10, 1), pad=(1, 1), font=REG_FONT),
+         sg.Text('Offset:', font=REG_FONT),
+         sg.Text("-", font=REG_FONT_BOLD, background_color='white',
+                 size=(3, 1), p=(1, 0), justification='c', key='-STYLUS_OFFSET-')
+         ]]
     stylus_layout = [[sg.Frame('Stylus', _stylus_layout, font=TAB_FONT)]]
 
     ### MODE
@@ -369,10 +374,12 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
             case "-CONNECT-":
                 window.metadata['is_connecting'] = True
                 window.perform_long_operation(controller.start_client, end_key='-END_CONNECT-')
+            case "-DISCONNECT-":
+                controller.close_client()
             case "-END_CONNECT-":
                 window.metadata['is_connecting'] = False
                 if not controller.client.is_connected:
-                    sg.popup_ok(controller.client.error_msg,  title='Failed.', keep_on_top=True, font=REG_FONT)
+                    sg.popup_ok(controller.client.error_msg, title='Failed.', keep_on_top=True, font=REG_FONT)
             case "-ACTIVATE-":
                 window['-ACTIVATED_LED-'].update(**LED_WAIT)
                 window['-ACTIVATE-'].update(disabled=True)
@@ -432,7 +439,8 @@ def refresh_layout(window: sg.Window, controller: Dcs5Controller):
         _controller_refresh_layout(window, controller)
     else:
         for key in ['-CONNECT-', '-ACTIVATE-',
-                    '-RESTART-', f'-MUTE-',
+                    'DISCONNECT', '-RESTART-',
+                    '-MUTE-',
                     '-SYNC-', '-CALIBRATE-',
                     '-CALPTS-', '-BACKLIGHT-',
                     '-UNITS-MM-', '-UNITS-CM-',
@@ -445,7 +453,8 @@ def refresh_layout(window: sg.Window, controller: Dcs5Controller):
 
 def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
     window['-NAME-'].update(dotted(controller.config.client.device_name + " ", DEVICE_LAYOUT_PADDING, 'right'))
-    window['-MODEL-'].update(dotted(controller.devices_specifications.control_box.model + " ", DEVICE_LAYOUT_PADDING, 'right'))
+    window['-MODEL-'].update(
+        dotted(controller.devices_specifications.control_box.model + " ", DEVICE_LAYOUT_PADDING, 'right'))
     window['-MAC-'].update(dotted(controller.config.client.mac_address + " ", DEVICE_LAYOUT_PADDING, 'right'))
 
     window['-SETTLING-DELAY-'].update(controller.internal_board_state.stylus_settling_delay)
@@ -459,7 +468,8 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
     window['-UNITS-MM-'].update(disabled=controller.length_units == 'mm')
     window['-UNITS-CM-'].update(disabled=controller.length_units == 'cm')
 
-    window['-STYLUS-'].update(value=controller.stylus, values=list(controller.devices_specifications.stylus_offset.keys()))
+    window['-STYLUS-'].update(value=controller.stylus,
+                              values=list(controller.devices_specifications.stylus_offset.keys()))
     window['-STYLUS-'].update(value=controller.stylus)
     window['-STYLUS_OFFSET-'].update(value=controller.stylus_offset)
 
@@ -470,6 +480,7 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
     window['-MUTE-'].update(disabled=False)
 
     if controller.client.is_connected:
+        window["-DISCONNECT-"].update(disabled=False)
         window["-CONNECTED_LED-"].update(**LED_ON)
         window["-CONNECT-"].update(disabled=True)
         window["-RESTART-"].update(disabled=False)
@@ -488,19 +499,29 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
             window['-CALIBRATE-'].update(disabled=True)
 
         if controller.is_listening:
+            if (battery := controller.internal_board_state.battery_level) is not None:
+                window["-BATTERY-"].update(f"{battery}%")
+            if (charging := controller.internal_board_state.is_charging) is not None:
+                window["-CHARGING-"].update('yes' if charging else 'no')
+            if (temperature := controller.internal_board_state.temperature) is not None:
+                window["-TEMPERATURE-"].update(f"{temperature}°C")
+            if (humidity := controller.internal_board_state.humidity) is not None:
+                window["-HUMIDITY-"].update(f"{humidity}%")
+
             window['-CALPTS-'].update(disabled=False)
 
             window["-ACTIVATED_LED-"].update(**LED_ON)
             window["-ACTIVATE-"].update(disabled=True)
             if controller.devices_specifications.control_box.model == 'xt':
                 window['-BACKLIGHT-'].update(disabled=False,
-                                             value=controller.internal_board_state.backlighting_level) #  or None ? Removed
+                                             value=controller.internal_board_state.backlighting_level)  # or None ? Removed
             if controller.socket_listener.last_key is not None:
                 window['-LAST_KEY-'].update('< ' + str(controller.socket_listener.last_key) + ' >')
                 window['-LAST_COMMAND-'].update('< ' + str(controller.socket_listener.last_command) + ' >')
             else:
                 window['-LAST_KEY-'].update('-')
                 window['-LAST_COMMAND-'].update('-')
+
         else:
             window["-ACTIVATED_LED-"].update(**LED_OFF)
             window["-ACTIVATE-"].update(disabled=False)
@@ -535,6 +556,7 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
             window["-META-"].update(**META_OFF)
 
     else:
+        window["-DISCONNECT-"].update(disabled=True)
         window['-BACKLIGHT-'].update(disabled=True, value=None)
 
         window["-SYNC_LED-"].update(**LED_OFF)
@@ -549,6 +571,9 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
 
         window['-LAST_KEY-'].update('-')
         window['-LAST_COMMAND-'].update('-')
+
+        for field in ["-BATTERY-", "-CHARGING-", "-TEMPERATURE-", "-HUMIDITY-"]:
+            window[field].update("N\A")
 
         if window.metadata['is_connecting']:
             window["-CONNECTED_LED-"].update(**LED_WAIT)
@@ -569,7 +594,8 @@ def popup_window_set_calibration_pt(controller: Dcs5Controller):
                       justification='c', font=TAB_FONT, enable_events=True),
          sg.Text('mm', size=(3, 1), font=TAB_FONT)],
         [sg.Text('Point 2: ', size=(7, 1), font=TAB_FONT),
-         sg.InputText(default_text=controller.internal_board_state.cal_pt_2, key='cal_pt_2', size=(4, 1), justification='c', font=TAB_FONT),
+         sg.InputText(default_text=controller.internal_board_state.cal_pt_2, key='cal_pt_2', size=(4, 1),
+                      justification='c', font=TAB_FONT),
          sg.Text('mm', size=(3, 1), font=TAB_FONT)],
         [sg.Submit(), sg.Cancel()]
     ]
@@ -616,9 +642,10 @@ def popup_window_calibrate(controller: Dcs5Controller):
     cal_pt_values = {1: controller.internal_board_state.cal_pt_1, 2: {controller.internal_board_state.cal_pt_2}}
     for i in [1, 2]:
         layout = [
-            [sg.Text(f'Set Stylus down for calibration point {i}: {cal_pt_values[i]} mm', pad=(5,5), font=TAB_FONT)],
+            [sg.Text(f'Set Stylus down for calibration point {i}: {cal_pt_values[i]} mm', pad=(5, 5), font=TAB_FONT)],
         ]
-        window = sg.Window(f'Calibrate point {i}', layout, finalize=True, element_justification='center', keep_on_top=True)
+        window = sg.Window(f'Calibrate point {i}', layout, finalize=True, element_justification='center',
+                           keep_on_top=True)
         window.perform_long_operation(lambda: controller.calibrate(i), end_key=f'-cal_pt_{i}-')
 
         while True:
@@ -786,15 +813,17 @@ def list_configs():
 
 
 def new_config_window():
-
-    model_layout = [[sg.Text('Model: ', font=REG_FONT), sg.DropDown(['xt', 'micro'], default_value='xt', size=(20, 4), enable_events=False, font=REG_FONT, key='-MODEL-')]]
-    path_layout = [[sg.Text('Name:  ', font=REG_FONT), sg.InputText(key='-PATH-', font=REG_FONT, size=[20,1], default_text=None)]]
+    model_layout = [[sg.Text('Model: ', font=REG_FONT),
+                     sg.DropDown(['xt', 'micro'], default_value='xt', size=(20, 4), enable_events=False, font=REG_FONT,
+                                 key='-MODEL-')]]
+    path_layout = [
+        [sg.Text('Name:  ', font=REG_FONT), sg.InputText(key='-PATH-', font=REG_FONT, size=[20, 1], default_text=None)]]
     submit_layout = [[
         button('Create', size=(6, 1), button_color=('black', "orange")),
         button('Close', size=(6, 1), button_color=ENABLED_BUTTON_COLOR)
     ]]
 
-    global_layout = [model_layout,path_layout,submit_layout]
+    global_layout = [model_layout, path_layout, submit_layout]
 
     window = sg.Window('Configurations', global_layout, element_justification='center', keep_on_top=True)
 
@@ -869,7 +898,6 @@ def update_controller_config_paths(controller: Dcs5Controller):
     configs_path = sg.user_settings()['configs_path'].strip('*')
     controller.config_path = Path(configs_path).joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)
     controller.devices_specifications_path = Path(configs_path).joinpath(XT_DEVICES_SPECIFICATION_FILE_NAME)
-  #  controller.control_box_parameters_path = Path(configs_path).joinpath(CONTROL_BOX_PARAMETERS_FILE_NAME) # FIXME
     logging.debug('Config files path updated.')
 
 
