@@ -956,3 +956,5 @@ def col(cols_layout):
 if __name__ == "__main__":
     main()
     c = init_dcs5_controller()
+    c.start_client()
+    #c.start_listening()
