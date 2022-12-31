@@ -222,8 +222,11 @@ class Dcs5Controller:
 
         logging.debug('Board is Active.')
 
+        self.change_board_output_mode('length')
+
     def stop_listening(self):
         if self.is_listening:
+            self.c_set_fuel_gauge('off')
             self.is_listening = False
             time.sleep(self.client.socket_timeout)
             logging.debug("Listening stopped.")
@@ -364,12 +367,12 @@ class Dcs5Controller:
         self.change_stylus(next(self.stylus_cyclical_list))
 
     def change_board_output_mode(self, value: str, flash=True):
-        """
+        """FIXME
         value must be one of  [length, bottom, top]
         """
         self.output_mode = value
         if self.client.is_connected:
-            if self.is_listening and flash is True:
+            if self.is_listening:# and flash is True:
                 if self.output_mode == 'bottom':
                     self.c_set_fuel_gauge("bot")
                     #self.flash_lights(1, interval=.25)
@@ -563,12 +566,13 @@ class Dcs5Controller:
         """
         FEED seems to enable box keystrokes.
         """
-        self.command_handler.queue_command(f"&pl,{value}#", ['HostApp=FEED\r', f"%pl,{value}\r"])
+        host_app = {0:'DCSLinkstream', 1: "FEED"}[value]
+        self.command_handler.queue_command(f"&pl,{value}#", [f'HostApp={host_app}\r', f"%pl,{value}\r"])
 
     def c_set_fuel_gauge(self, value: str):
         values = ("top", "mid", "bot", "off")
         if value in values:
-            self.command_handler.queue_command(f"&lf, {value[0]}", f"%lf,{value[0]}#")
+            self.command_handler.queue_command(f"&lf,{value[0]}#", f"%lf,{value[0]}#\r")
         else:
             logging.warning(f"fuel gauge value must be in {values}")
 
@@ -884,11 +888,10 @@ class SocketListener:
             "F,([0-9]{2})#",  # xt button v1.07
             "F,([0-9]{3})#"  # Xt button v1.12+
             "%hs([0-9])",  # Micro button
-            "k,([0-9]{2})#"  # Xt button v2.0.0+
-            ",Battery charge-voltage-current-ttfull-ttempty:,(\d+),(\d+),(\d+),(\d+),(\d+)\r"
+            "%k,([0-9]{2})#",  # Xt button v2.0.0+
+            ",Battery charge-voltage-current-ttfull-ttempty:,(\d+),(\d+),(\d+),(\d+),(\d+)"
 
         ]
-        "|".join(patterns)
         match = re.findall("|".join(patterns), value)
         if len(match) > 0:
             if match[0][1] != "":
@@ -901,11 +904,11 @@ class SocketListener:
                 return 'controller_box_key', match[0][4][-2:]
             elif match[0][5] != "":
                 return 'controller_box_key', match[0][5]
-            elif match[0][6] != "":  # temporary fix
+            elif match[0][6] != "":
+                return 'controller_box_key', match[0][6]
+            elif match[0][7] != "":  # temporary fix FIXME
                 logging.debug(f"micro unsolicited battery state {value}")
                 return None, None
-            elif match[0][7] != "":
-                return 'controller_box_key', match[0][5]
         else:
             return 'solicited', value
 
