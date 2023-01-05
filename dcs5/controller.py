@@ -109,6 +109,8 @@ class Dcs5Controller:
         self.is_listening = False  # listening to the keyboard on the connected socket.
         self.is_muted = False  # Message are processed but keyboard input are suppress.
 
+        self.user_set_backlight_value: int = None # Used to save backlight value when MODE key is lit.
+
         self._set_board_settings()
 
         self.controller_commands = [
@@ -346,46 +348,51 @@ class Dcs5Controller:
         self.length_units = "mm"
         logging.debug(f"Length Units Change to mm")
         if self.is_listening and flash is True:
-            key = self.find_command_key('UNITS_mm')
-            if key is not None:
-                self.c_flash_key_backlight(level=95, key=key)
+            self.c_flash_fuel_gauge()
 
     def change_length_units_cm(self, flash=True):
         self.length_units = "cm"
         logging.debug(f"Length Units Change to cm")
         if self.is_listening and flash is True:
-            key = self.find_command_key('UNITS_cm')
-            if key is not None:
-                self.c_flash_key_backlight(level=95, key=key)
+            self.c_flash_fuel_gauge()
 
     def change_stylus(self, value: str, flash=True):
         """Stylus must be one of [pen, finger]"""
         self.stylus = value
         self.stylus_offset = self.devices_specifications.stylus_offset[self.stylus]
         logging.debug(f'Stylus set to {self.stylus}. Stylus offset {self.stylus_offset}')
-        if self.client.is_connected and flash is True:
-            key = self.find_command_key('CHANGE_STYLUS')
-            if self.is_listening and flash is True:
-                if key is not None:
-                    self.c_flash_key_backlight(level=95, key=key)
+        if self.is_listening and flash is True:
+            self.c_flash_fuel_gauge()
 
     def mode_key_backlight_pattern(self, value: bool):
         if self.is_listening:
             if value is True:
                 key = self.find_command_key('MODE')
                 if key is not None:
-                    self.c_set_backlighting_level(round(self.control_box_parameters.max_backlighting_level / 2))
+                    key -= 1  # led keys are numbered 0-31 in the firmware
+                    self.user_set_backlight_value = self.internal_board_state.backlighting_level
+                    self.c_set_backlighting_level(round(self.control_box_parameters.max_backlighting_level / 3))
                     self.c_set_key_backlighting_level(level=self.control_box_parameters.max_backlighting_level, key=key)
             else:
-                self.c_set_backlighting_level(self.internal_board_state.backlighting_level)
+                self.c_set_backlighting_level(self.user_set_backlight_value)
 
-    def find_command_key(self, command):
-        if command in self.config.key_maps.control_box.values():
-            return dict(zip(self.config.key_maps.control_box.values(),
-                            self.config.key_maps.control_box.keys()))[command]
-        elif self.config.key_maps.control_box_mode.values():
-            return dict(zip(self.config.key_maps.control_box_mode.values(),
-                            self.config.key_maps.control_box_mode.keys()))[command]
+    def find_command_key(self, command: str):
+        """Return the controller box internal key value."""
+        _key = None
+        for key in self.config.key_maps.control_box:
+            for value in (self.config.key_maps.control_box[key], self.config.key_maps.control_box_mode[key]):
+                if isinstance(value, str):
+                    if command == value:
+                        _key = key
+                        break
+
+                else:
+                    if command in value:
+                        _key = key
+                        break
+        if _key is not None:
+            return int(dict(zip(self.devices_specifications.control_box.keys_layout.values(),
+                            self.devices_specifications.control_box.keys_layout.keys()))[_key])
         return None
 
     def cycle_stylus(self):
@@ -550,7 +557,7 @@ class Dcs5Controller:
         self.command_handler.queue_command(f"&pl,{value}#", [f'HostApp={host_app}\r', f"%pl,{value}#\r"])
 
     def c_flash_fuel_gauge(self):
-        self.command_handler.queue_command("&ra#", "%ra#/r")
+        self.command_handler.queue_command("&ra#", "%ra#\r")
 
     def c_set_fuel_gauge(self, value: str):
         values = ("top", "mid", "bot", "off")
@@ -564,17 +571,9 @@ class Dcs5Controller:
             level = self.control_box_parameters.max_backlighting_level
         if 0 <= level <= self.control_box_parameters.max_backlighting_level:
             self.command_handler.queue_command(f'&la,{level}#', f"%la,{level}#\r")
-            self.internal_board_state.backlighting_level = level
+            self.internal_board_state.backlighting_level = level # FIXME THIS SHOULD BE DONE IN  COMMAND HANDLER
         else:
             logging.warning(f"Backlighting level range: (0, {self.control_box_parameters.max_backlighting_level})")
-
-    def c_flash_backlight(self, level: int):
-        """ Flash backlight from 0 to level.
-        """
-        if level is None:
-            level = self.control_box_parameters.max_backlighting_level
-        self.command_handler.queue_command(f'&laf,{level}#', f"%laf,{level}#\r")
-        self.internal_board_state.backlighting_level = level
 
     def c_set_key_backlighting_level(self, level: int, key: int):
         if level is None:
@@ -583,14 +582,6 @@ class Dcs5Controller:
             self.command_handler.queue_command(f'&lk,{level},{key}#', f"%lk,{level},{key}#\r")
         else:
             logging.warning(f"Backlighting level range: (0, {self.control_box_parameters.max_backlighting_level})")
-
-    def c_flash_key_backlight(self, level: int, key: int):
-        """ Flash key backlight from 0 to level.
-        """
-        if level is None:
-            level = self.control_box_parameters.max_backlighting_level
-        self.command_handler.queue_command(f'&lkf,{level},{key}#', f"%lkf,{level},{key}#\r")
-        self.internal_board_state.backlighting_level = level
 
     def c_set_backlighting_auto_mode(self, value: bool):  # NOT IMPLEMENTED IN THE CURRENT FIRMWARE FIXME
         logging.warning('Command not implemented in the current firmware')
@@ -862,6 +853,7 @@ class SocketListener:
             logging.debug(f"Message Type: {msg_type}, Message Value: {msg_value}")
             if msg_type == "controller_box_key":
                 out_value = self._map_control_box_output(msg_value)
+                logging.debug(f"Controller Box Output: {out_value}")
 
             elif msg_type == 'swipe':
                 self.swipe_value = msg_value
@@ -932,12 +924,12 @@ class SocketListener:
                 else:
                     self.controller.shout(value)
 
-    def set_with_mode(self, value):
-        if not (value and self.with_mode):
-            pass
-        else:
+    def set_with_mode(self, value: bool):
+        if value is not self.with_mode:
             self.with_mode = not self.with_mode
             self.controller.mode_key_backlight_pattern(self.with_mode)
+        else:
+            pass
 
     def _map_control_box_output(self, value):
         key = self.controller.devices_specifications.control_box.keys_layout[value]
