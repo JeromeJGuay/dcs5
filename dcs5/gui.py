@@ -420,11 +420,11 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
             case '-UNITS-CM-':
                 controller.change_length_units_cm(flash=False)
             case '-MODE-TOP-':
-                controller.change_board_output_mode('top', flash=False)
+                controller.change_board_output_mode('top')
             case '-MODE-LENGTH-':
-                controller.change_board_output_mode('length', flash=False)
+                controller.change_board_output_mode('length')
             case '-MODE-BOTTOM-':
-                controller.change_board_output_mode('bottom', flash=False)
+                controller.change_board_output_mode('bottom')
             case '-MUTE-':
                 if controller.is_muted:
                     controller.unmute_board()

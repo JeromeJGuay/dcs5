@@ -39,6 +39,7 @@ HANDLER_SLEEP = 0.01
 
 LISTENER_SLEEP = 0.005
 
+
 @dataclass
 class InternalBoardState:
     sensor_mode: str = None
@@ -119,7 +120,7 @@ class Dcs5Controller:
             "MODE_BOTTOM"
         ]
         if self.devices_specifications.control_box.model == "xt":
-            self.controller_commands += ["BACKLIGHT_UP", "BACKLIGHT_DOWN"]
+            self.controller_commands += ["MODE", "BACKLIGHT_UP", "BACKLIGHT_DOWN"]
 
     def _load_configs(self):
         if (devices_spec := load_devices_specification(self.devices_specifications_path)) is None:
@@ -228,6 +229,9 @@ class Dcs5Controller:
         if self.is_listening:
             self.c_set_fuel_gauge('off')
             self.is_listening = False
+            time.sleep(0.1)  # Safety
+            self.client.receive()
+            self.socket_listener.clear_buffer()
             time.sleep(self.client.socket_timeout)
             logging.debug("Listening stopped.")
             logging.debug("Queues and Socket Buffer Cleared.")
@@ -235,9 +239,6 @@ class Dcs5Controller:
 
     def restart_listening(self):
         self.stop_listening()
-        time.sleep(0.05)  # Safety
-        self.client.receive()
-        self.socket_listener.clear_buffer()
         self.start_listening()
 
     def monitor_connection(self):
@@ -287,7 +288,6 @@ class Dcs5Controller:
         ]
 
         # SET DEFAULT VALUES
-        # self.c_set_sensor_mode(0) FIXME
         self.c_set_interface(0)
 
         self.c_set_stylus_detection_message(False)
@@ -298,8 +298,8 @@ class Dcs5Controller:
         self.c_set_stylus_number_of_reading(reading_profile.number_of_reading)
         if self.devices_specifications.control_box.model == 'xt':  # make it a function like ... init_light_indication().. which looks for model.
             self.c_set_backlighting_level(self.config.launch_settings.backlighting_level)
-            self.c_set_backlighting_sensitivity(self.config.launch_settings.backlighting_sensitivity)
-            self.c_set_backlighting_auto_mode(self.config.launch_settings.backlighting_auto_mode)
+            # self.c_set_backlighting_sensitivity(self.config.launch_settings.backlighting_sensitivity)
+            # self.c_set_backlighting_auto_mode(self.config.launch_settings.backlighting_auto_mode)
 
         self.c_check_calibration_state()
         self.c_get_board_stats()
@@ -307,7 +307,6 @@ class Dcs5Controller:
         if self.wait_for_ping(timeout=5) is True:
             if (
                     self.internal_board_state.board_interface == "Dcs5LinkStream" and
-                    self.internal_board_state.sensor_mode == "length" and
                     self.internal_board_state.stylus_status_msg == "disable" and
                     self.internal_board_state.stylus_settling_delay == reading_profile.settling_delay and
                     self.internal_board_state.stylus_max_deviation == reading_profile.max_deviation and
@@ -347,13 +346,17 @@ class Dcs5Controller:
         self.length_units = "mm"
         logging.debug(f"Length Units Change to mm")
         if self.is_listening and flash is True:
-            self.flash_lights(1, interval=.25)
+            key = self.find_command_key('UNITS_mm')
+            if key is not None:
+                self.c_flash_key_backlight(level=95, key=key)
 
     def change_length_units_cm(self, flash=True):
         self.length_units = "cm"
         logging.debug(f"Length Units Change to cm")
         if self.is_listening and flash is True:
-            self.flash_lights(1, interval=.25)
+            key = self.find_command_key('UNITS_cm')
+            if key is not None:
+                self.c_flash_key_backlight(level=95, key=key)
 
     def change_stylus(self, value: str, flash=True):
         """Stylus must be one of [pen, finger]"""
@@ -361,27 +364,46 @@ class Dcs5Controller:
         self.stylus_offset = self.devices_specifications.stylus_offset[self.stylus]
         logging.debug(f'Stylus set to {self.stylus}. Stylus offset {self.stylus_offset}')
         if self.client.is_connected and flash is True:
-            self.flash_lights(1, interval=.25)
+            key = self.find_command_key('CHANGE_STYLUS')
+            if self.is_listening and flash is True:
+                if key is not None:
+                    self.c_flash_key_backlight(level=95, key=key)
+
+    def mode_key_backlight_pattern(self, value: bool):
+        if self.is_listening:
+            if value is True:
+                key = self.find_command_key('MODE')
+                if key is not None:
+                    self.c_set_backlighting_level(round(self.control_box_parameters.max_backlighting_level / 2))
+                    self.c_set_key_backlighting_level(level=self.control_box_parameters.max_backlighting_level, key=key)
+            else:
+                self.c_set_backlighting_level(self.internal_board_state.backlighting_level)
+
+    def find_command_key(self, command):
+        if command in self.config.key_maps.control_box.values():
+            return dict(zip(self.config.key_maps.control_box.values(),
+                            self.config.key_maps.control_box.keys()))[command]
+        elif self.config.key_maps.control_box_mode.values():
+            return dict(zip(self.config.key_maps.control_box_mode.values(),
+                            self.config.key_maps.control_box_mode.keys()))[command]
+        return None
 
     def cycle_stylus(self):
         self.change_stylus(next(self.stylus_cyclical_list))
 
-    def change_board_output_mode(self, value: str, flash=True):
-        """FIXME
+    def change_board_output_mode(self, value: str):
+        """
         value must be one of  [length, bottom, top]
         """
         self.output_mode = value
         if self.client.is_connected:
-            if self.is_listening:# and flash is True:
+            if self.is_listening:  # and flash is True:
                 if self.output_mode == 'bottom':
                     self.c_set_fuel_gauge("bot")
-                    #self.flash_lights(1, interval=.25)
                 elif self.output_mode == 'top':
                     self.c_set_fuel_gauge("top")
-                    #self.flash_lights(1, interval=.25)
                 else:
                     self.c_set_fuel_gauge("mid")
-                    #self.flash_lights(1, interval=.25)
 
             if self.dynamic_stylus_settings is True:
                 reading_profile = self.config.reading_profiles[
@@ -426,45 +448,6 @@ class Dcs5Controller:
             self.c_set_backlighting_level(self.internal_board_state.backlighting_level)
         else:
             logging.debug("Backlighting is already at minimum.")
-
-    def flash_lights(self, period: int, interval: int):
-        #  current_backlight_level = self.internal_board_state.backlighting_level
-        for i in range(period):
-            #    self.c_set_backlighting_level(0)
-            self.c_flash_light()
-            time.sleep(interval / 2)
-            #    self.c_set_backlighting_level(current_backlight_level)
-            self.c_flash_light()
-            time.sleep(interval / 2)
-
-    def led_wave(self, count:int, freq: int): #TODO remove
-        levels = [
-            #[95, 20, 0, 0, 0, 0],
-            [95, 40, 20, 5, 0, 0],
-            [30, 95, 30, 10, 0, 0],
-            [10, 30, 95, 30, 10, 0],
-            [0, 10, 30, 95, 30, 10],
-            [0, 0, 10, 30, 95, 30],
-            [0, 0, 5, 20, 40, 95],
-           # [0, 0, 0, 0, 20, 95],
-        ]
-        #self.c_set_backlighting_level(0)
-        for c in range(count):
-            for i in range(6):
-                level = levels[i]
-                for l in range(6):
-                    self.c_set_key_backlighting_level(level[l], l)
-                    #self.c_set_key_backlighting_level(level[l], l + 6)
-                time.sleep(1/freq)
-
-            for i in range(4, 0, -1):
-                level = levels[i]
-                for l in range(6):
-                    self.c_set_key_backlighting_level(level[l], l)
-                  #  self.c_set_key_backlighting_level(level[l], l + 6)
-                time.sleep(1 / freq)
-
-        self.c_set_backlighting_level(self.internal_board_state.backlighting_level)
 
     def mapped_commands(self, command: str):
         commands = {
@@ -525,9 +508,6 @@ class Dcs5Controller:
             if was_listening:
                 self.start_listening()
 
-    def c_flash_light(self):
-        self.command_handler.queue_command("&ra#", None)
-
     def c_ping(self):
         self.command_handler.queue_command("a#", "%a:e#")
 
@@ -536,7 +516,7 @@ class Dcs5Controller:
 
     def c_get_battery_level(self):
         """
-        when charging micro sends
+        when charging micro sends FIXME
         (2022-12-19 13:54:36,208) - {listen}   - [DEBUG]    - Raw Buffer: [',Battery charge-voltage-current-ttfull-ttempty:,1,']
         (2022-12-19 13:54:36,213) - {listen}   - [DEBUG]    - Raw Buffer: [',Battery charge-voltage-current-ttfull-ttempty:,1,3765,']
         (2022-12-19 13:54:36,219) - {listen}   - [DEBUG]    - Raw Buffer: [',Battery charge-voltage-current-ttfull-ttempty:,1,3765,565,396,']
@@ -566,8 +546,11 @@ class Dcs5Controller:
         """
         FEED seems to enable box keystrokes.
         """
-        host_app = {0:'DCSLinkstream', 1: "FEED"}[value]
-        self.command_handler.queue_command(f"&pl,{value}#", [f'HostApp={host_app}\r', f"%pl,{value}\r"])
+        host_app = {0: 'DCSLinkstream', 1: "FEED"}[value]
+        self.command_handler.queue_command(f"&pl,{value}#", [f'HostApp={host_app}\r', f"%pl,{value}#\r"])
+
+    def c_flash_fuel_gauge(self):
+        self.command_handler.queue_command("&ra#", "%ra#/r")
 
     def c_set_fuel_gauge(self, value: str):
         values = ("top", "mid", "bot", "off")
@@ -585,20 +568,43 @@ class Dcs5Controller:
         else:
             logging.warning(f"Backlighting level range: (0, {self.control_box_parameters.max_backlighting_level})")
 
-    def c_set_key_backlighting_level(self, level: int, key: int):
-        self.command_handler.queue_command(f'&lk,{level},{key}#', f"%lk,{level},{key}#\r")
+    def c_flash_backlight(self, level: int):
+        """ Flash backlight from 0 to level.
+        """
+        if level is None:
+            level = self.control_box_parameters.max_backlighting_level
+        self.command_handler.queue_command(f'&laf,{level}#', f"%laf,{level}#\r")
+        self.internal_board_state.backlighting_level = level
 
-    def c_set_backlighting_auto_mode(self, value: bool): # NOT IMPLEMENTED IN THE CURRENT FIRMWARE FIXME
-        self.command_handler.queue_command(f"&oa,{int(value)}", None)
-        self.internal_board_state.backlighting_auto_mode = {True: 'auto', False: 'manual'}
+    def c_set_key_backlighting_level(self, level: int, key: int):
+        if level is None:
+            level = self.control_box_parameters.max_backlighting_level
+        if 0 <= level <= self.control_box_parameters.max_backlighting_level:
+            self.command_handler.queue_command(f'&lk,{level},{key}#', f"%lk,{level},{key}#\r")
+        else:
+            logging.warning(f"Backlighting level range: (0, {self.control_box_parameters.max_backlighting_level})")
+
+    def c_flash_key_backlight(self, level: int, key: int):
+        """ Flash key backlight from 0 to level.
+        """
+        if level is None:
+            level = self.control_box_parameters.max_backlighting_level
+        self.command_handler.queue_command(f'&lkf,{level},{key}#', f"%lkf,{level},{key}#\r")
+        self.internal_board_state.backlighting_level = level
+
+    def c_set_backlighting_auto_mode(self, value: bool):  # NOT IMPLEMENTED IN THE CURRENT FIRMWARE FIXME
+        logging.warning('Command not implemented in the current firmware')
+        # self.command_handler.queue_command(f"&oa,{int(value)}", None)
+        # self.internal_board_state.backlighting_auto_mode = {True: 'auto', False: 'manual'}
 
     def c_set_backlighting_sensitivity(self, value: int):  # NOT IMPLEMENTED IN THE CURRENT FIRMWARE FIXME
-        if 0 <= value <= self.control_box_parameters.max_backlighting_sensitivity:
-            self.command_handler.queue_command(f"&os,{value}", None)
-            self.internal_board_state.backlighting_sensitivity = value
-        else:
-            logging.warning(
-                f"Backlighting sensitivity range: (0, {self.control_box_parameters.max_backlighting_sensitivity})")
+        logging.warning('Command not implemented in the current firmware')
+        # if 0 <= value <= self.control_box_parameters.max_backlighting_sensitivity:
+        #     self.command_handler.queue_command(f"&os,{value}", None)
+        #     self.internal_board_state.backlighting_sensitivity = value
+        # else:
+        #     logging.warning(
+        #         f"Backlighting sensitivity range: (0, {self.control_box_parameters.max_backlighting_sensitivity})")
 
     def c_set_stylus_detection_message(self, value: bool):
         """
@@ -703,7 +709,7 @@ class CommandHandler:
             logging.debug('Ping is set.')
 
         elif "pl" in received:
-            match = re.findall(f"%pl,(\d)\r", received)
+            match = re.findall(f"%pl,(\d)#\r", received)
             if len(match) > 0:
                 if match[0] == "0":
                     self.controller.internal_board_state.board_interface = "Dcs5LinkStream"
@@ -918,13 +924,20 @@ class SocketListener:
                 self._process_output(_value)
         else:
             if value == "MODE":
-                self.with_mode = not self.with_mode
+                self.set_with_mode(not self.with_mode)
             else:
-                self.with_mode = False
+                self.set_with_mode(False)
                 if value in self.controller.controller_commands:
                     self.controller.mapped_commands(value)
                 else:
                     self.controller.shout(value)
+
+    def set_with_mode(self, value):
+        if not (value and self.with_mode):
+            pass
+        else:
+            self.with_mode = not self.with_mode
+            self.controller.mode_key_backlight_pattern(self.with_mode)
 
     def _map_control_box_output(self, value):
         key = self.controller.devices_specifications.control_box.keys_layout[value]
