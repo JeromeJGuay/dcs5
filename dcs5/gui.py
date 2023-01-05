@@ -395,7 +395,10 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 controller.start_listening()
             case "-RESTART-":
                 window.metadata['is_connecting'] = True
-                window.perform_long_operation(controller.restart_client, end_key='-END_CONNECT-')
+                window.perform_long_operation(controller.restart_client, end_key='-END_RESTART-')
+            case "-END_RESTART-":
+                controller.init_controller_and_board()
+                controller.start_listening()
             case '-SYNC-':
                 window['-SYNC_LED-'].update(**LED_WAIT)
                 window['-SYNC-'].update(disabled=True)
