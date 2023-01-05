@@ -1,13 +1,14 @@
 """
 """
-from typing import *
 import logging
 import os
 import shutil
 import sys
+import time
 import traceback
 import webbrowser
 from pathlib import Path
+from typing import *
 
 import PySimpleGUI as sg
 import click
@@ -49,6 +50,10 @@ def scale_font(font_size: int) -> int:
     monitor_width, monitor_height = pag.size()
     return int(font_size * monitor_height / 1080)
 
+
+REFRESH_PERIOD = .05
+
+BACKLIGHT_SLIDER_MAX = 95
 
 DEVICE_LAYOUT_PADDING = 20
 
@@ -352,7 +357,8 @@ def run():
 def init_layout(window: sg.Window, controller: Dcs5Controller):
     if controller is not None:
         if controller.devices_specifications.control_box.model == 'xt':
-            window['-BACKLIGHT-'].update(range=(0, controller.control_box_parameters.max_backlighting_level))
+            #window['-BACKLIGHT-'].update(range=(0, controller.control_box_parameters.max_backlighting_level, 5))
+            window['-BACKLIGHT-'].update(range=(0, BACKLIGHT_SLIDER_MAX), value=0)
     refresh_layout(window, controller)
 
 
@@ -404,7 +410,11 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
             case '-STYLUS-':
                 controller.change_stylus(values['-STYLUS-'], flash=False)
             case '-BACKLIGHT-':
-                controller.c_set_backlighting_level(int(values['-BACKLIGHT-']))
+                controller.c_set_backlighting_level(
+                    int(
+                        (values['-BACKLIGHT-'] / BACKLIGHT_SLIDER_MAX) * controller.control_box_parameters.max_backlighting_level
+                    )
+                )
             case '-UNITS-MM-':
                 controller.change_length_units_mm(flash=False)
             case '-UNITS-CM-':
@@ -426,6 +436,8 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 webbrowser.open_new(USER_GUIDE_FILE)
 
         refresh_layout(window, controller)
+
+        time.sleep(REFRESH_PERIOD)
 
     window.close()
 
@@ -513,8 +525,11 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
             window["-ACTIVATED_LED-"].update(**LED_ON)
             window["-ACTIVATE-"].update(disabled=True)
             if controller.devices_specifications.control_box.model == 'xt':
+                backlight_level = round(
+                    (controller.internal_board_state.backlighting_level / controller.control_box_parameters.max_backlighting_level) * BACKLIGHT_SLIDER_MAX
+                )
                 window['-BACKLIGHT-'].update(disabled=False,
-                                             value=controller.internal_board_state.backlighting_level)  # or None ? Removed
+                                             value=backlight_level)  # or None ? Removed
             if controller.socket_listener.last_key is not None:
                 window['-LAST_KEY-'].update('< ' + str(controller.socket_listener.last_key) + ' >')
                 window['-LAST_COMMAND-'].update('< ' + str(controller.socket_listener.last_command) + ' >')
