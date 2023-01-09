@@ -395,10 +395,7 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 controller.start_listening()
             case "-RESTART-":
                 window.metadata['is_connecting'] = True
-                window.perform_long_operation(controller.restart_client, end_key='-END_RESTART-')
-            case "-END_RESTART-":
-                controller.init_controller_and_board()
-                controller.start_listening()
+                window.perform_long_operation(controller.restart_client, end_key='-END_CONNECT-')
             case '-SYNC-':
                 window['-SYNC_LED-'].update(**LED_WAIT)
                 window['-SYNC-'].update(disabled=True)
@@ -419,15 +416,20 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                     )
                 )
             case '-UNITS-MM-':
-                controller.change_length_units_mm(flash=False)
+                if controller.is_listening:
+                    controller.change_length_units_mm(flash=False) # QUICK FIX shoud be disabled from the gui
             case '-UNITS-CM-':
-                controller.change_length_units_cm(flash=False)
+                if controller.is_listening:
+                    controller.change_length_units_cm(flash=False)
             case '-MODE-TOP-':
-                controller.change_board_output_mode('top')
+                if controller.is_listening:
+                    controller.change_board_output_mode('top')
             case '-MODE-LENGTH-':
-                controller.change_board_output_mode('length')
+                if controller.is_listening:
+                    controller.change_board_output_mode('length')
             case '-MODE-BOTTOM-':
-                controller.change_board_output_mode('bottom')
+                if controller.is_listening:
+                    controller.change_board_output_mode('bottom')
             case '-MUTE-':
                 if controller.is_muted:
                     controller.unmute_board()
@@ -528,11 +530,12 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
             window["-ACTIVATED_LED-"].update(**LED_ON)
             window["-ACTIVATE-"].update(disabled=True)
             if controller.devices_specifications.control_box.model == 'xt':
-                backlight_level = round(
-                    (controller.internal_board_state.backlighting_level / controller.control_box_parameters.max_backlighting_level) * BACKLIGHT_SLIDER_MAX
-                )
-                window['-BACKLIGHT-'].update(disabled=False,
-                                             value=backlight_level)  # or None ? Removed
+                if controller.internal_board_state.backlighting_level is not None:
+                    backlight_level = round(
+                        (controller.internal_board_state.backlighting_level / controller.control_box_parameters.max_backlighting_level) * BACKLIGHT_SLIDER_MAX
+                    )
+                    window['-BACKLIGHT-'].update(disabled=False,
+                                                 value=backlight_level)  # or None ? Removed
             if controller.socket_listener.last_key is not None:
                 window['-LAST_KEY-'].update('< ' + str(controller.socket_listener.last_key) + ' >')
                 window['-LAST_COMMAND-'].update('< ' + str(controller.socket_listener.last_command) + ' >')
@@ -973,6 +976,6 @@ def col(cols_layout):
 
 if __name__ == "__main__":
     main()
-    c = init_dcs5_controller()
-    c.start_client()
+#    c = init_dcs5_controller()
+#    c.start_client()
     #c.start_listening()

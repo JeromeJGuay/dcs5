@@ -29,6 +29,8 @@ from dcs5.controller_configurations import load_config, ControllerConfiguration,
 from dcs5.devices_specifications import load_devices_specification, DevicesSpecifications
 from control_box_parameters import XtControlBoxParameters, MicroControlBoxParameters
 
+BOARD_MESSAGE_DELIMITER = "\r"
+
 pag.FAILSAFE = False
 
 BOARD_STATE_MONITORING_SLEEP = 5
@@ -96,6 +98,7 @@ class Dcs5Controller:
         self.auto_reconnect_thread: threading.Thread = None
         self.auto_reconnect = False
         self.listener_handler_sync_barrier = threading.Barrier(2)
+        self.listening_stopped_barrier = threading.Barrier(3)
         self.ping_event_check = threading.Event()
 
         self.client = BluetoothClient()
@@ -168,89 +171,95 @@ class Dcs5Controller:
 
     def start_client(self, mac_address: str = None):
         """Create a socket and tries to connect with the board."""
-        self.auto_reconnect = True
         if self.client.is_connected:
             logging.debug("Client Already Connected.")
-            self.auto_reconnect_thread = threading.Thread(target=self.monitor_connection, name="connection monitoring",
-                                                          daemon=True)
-            self.auto_reconnect_thread.start()
         else:
+            self.is_sync = False  # If the board is Deconnected. Set sync flag to False.
             mac_address = mac_address or self.config.client.mac_address
             self.client.connect(mac_address, timeout=30)
 
+            if self.client.is_connected:
+                self.start_auto_reconnect_thread()
+
     def close_client(self):
-        self.auto_reconnect = False
+        """"Should only be called from the thread main thread."""
         if self.client.is_connected:
+            self.auto_reconnect = False
             self.stop_listening()
             self.client.close()
             logging.debug('Client Closed.')
         else:
             logging.debug('Client Already Closed')
 
-    def reconnect_client(self):
-        while not self.client.is_connected:
-            logging.debug('Attempting to reconnect.')
-            self.client.connect(self.config.client.mac_address, timeout=30)
-            time.sleep(5)
-
     def restart_client(self):
         self.close_client()
         time.sleep(0.5)
-        was_listening = self.is_listening
-        try:
-            self.start_client()
-        except OSError as err:
-            logging.error(f'Failed to Start_Client. Trying again ...')
-            logging.debug(f'restart_client OSError: {str(err)}')
-            self.restart_client()
+        self.start_client()
+
+    def start_auto_reconnect_thread(self):
+        self.auto_reconnect = True
+        self.auto_reconnect_thread = threading.Thread(target=self.monitor_connection,
+                                                      name="auto reconnect", daemon=True)
+        self.auto_reconnect_thread.start()
+        logging.debug('Auto Reconnect Thread Started')
+
+    def monitor_connection(self):
+        while self.auto_reconnect is True:
+            while self.client.is_connected:
+                time.sleep(1) #FIXME Make into a global variables
+            was_listening = self.is_listening
+            self.stop_listening()
+
+            if self.auto_reconnect is True:
+                while not self.client.is_connected:
+                    logging.debug('Attempting to reconnect.')
+                    self.client.connect(self.config.client.mac_address, timeout=30)
+                    time.sleep(.25)
+
             if was_listening:
                 self.start_listening()
+                self.init_controller_and_board()
 
     def start_listening(self):
-        logging.debug(f"Active Threads: {threading.enumerate()}")
-        if not self.is_listening:
-            logging.debug('Starting Threads.')
+        if self.client.is_connected:
+            logging.debug(f"Active Threads: {threading.active_count()} {threading.enumerate()}")
+            if not self.is_listening:
+                logging.debug('Starting Threads.')
 
-            self.is_listening = True
-            self.command_thread = threading.Thread(target=self.command_handler.processes_queues, name='command',
-                                                   daemon=True)
-            self.command_thread.start()
+                self.is_listening = True
+                self.command_thread = threading.Thread(target=self.command_handler.processes_queues, name='command handler',
+                                                       daemon=True)
+                self.command_thread.start()
 
-            self.listen_thread = threading.Thread(target=self.socket_listener.listen, name='listen', daemon=True)
-            self.listen_thread.start()
+                self.listen_thread = threading.Thread(target=self.socket_listener.listen, name='listener', daemon=True)
+                self.listen_thread.start()
 
-            self.board_state_monitoring_thread = threading.Thread(target=self.monitor_board_state, name='monitoring',
-                                                                  daemon=True)
-            self.board_state_monitoring_thread.start()
+                if isinstance(self.board_state_monitoring_thread, threading.Thread):
+                    if not self.board_state_monitoring_thread.is_alive():
+                        self.start_board_state_monitoring_thread()
+                else:
+                    self.start_board_state_monitoring_thread()
 
-        logging.debug('Board is Active.')
+                self.change_board_output_mode('length')
 
-        self.change_board_output_mode('length')
+        else:
+            logging.debug('Cannot start listening, board is not connected.')
 
     def stop_listening(self):
         if self.is_listening:
-            self.c_set_fuel_gauge('off')
             self.is_listening = False
-            time.sleep(0.1)  # Safety
-            self.client.receive()
-            self.socket_listener.clear_buffer()
-            time.sleep(self.client.socket_timeout)
-            logging.debug("Listening stopped.")
-            logging.debug("Queues and Socket Buffer Cleared.")
-        logging.debug('Board is Inactive.')
+            barrier_value = self.listening_stopped_barrier.wait()
+            logging.debug(f"Wait Called. Wait value: {barrier_value}.")
 
     def restart_listening(self):
         self.stop_listening()
         self.start_listening()
 
-    def monitor_connection(self):
-        while self.auto_reconnect:
-            while self.client.is_connected:
-                time.sleep(1)
-            self.reconnect_client()
-            logging.error('Board Reconnected')
-            self.init_controller_and_board()
-
+    def start_board_state_monitoring_thread(self):
+        self.board_state_monitoring_thread = threading.Thread(target=self.monitor_board_state,
+                                                              name='monitoring',
+                                                              daemon=True)  # FIXME uncomment
+        self.board_state_monitoring_thread.start()
     def monitor_board_state(self):
         while self.is_listening:
             self.c_get_battery_level()
@@ -272,8 +281,7 @@ class Dcs5Controller:
     def init_controller_and_board(self):
         """Init measuring board.
         """
-        logging.debug('Initiating Board.')
-        time.sleep(.5)  # Wait 1 second to give time to the socket buffer to be cleared.
+        logging.debug('Initializing Board.')
 
         self.internal_board_state = InternalBoardState()
         self.is_sync = False
@@ -300,8 +308,6 @@ class Dcs5Controller:
         self.c_set_stylus_number_of_reading(reading_profile.number_of_reading)
         if self.devices_specifications.control_box.model == 'xt':  # make it a function like ... init_light_indication().. which looks for model.
             self.c_set_backlighting_level(self.config.launch_settings.backlighting_level)
-            # self.c_set_backlighting_sensitivity(self.config.launch_settings.backlighting_sensitivity)
-            # self.c_set_backlighting_auto_mode(self.config.launch_settings.backlighting_auto_mode)
 
         self.c_check_calibration_state()
         self.c_get_board_stats()
@@ -327,9 +333,6 @@ class Dcs5Controller:
                 logging.debug(str(state))
         else:
             logging.debug("Ping was not received. Board initiation failed.")
-            # If the sync failed, clearing the queues is a good idea if an unexpected message offsets the
-            # received and command queues.
-            self.command_handler.clear_queues()
 
         if not was_listening:
             self.stop_listening()
@@ -430,7 +433,7 @@ class Dcs5Controller:
     def _mode_bottom(self):
         self.change_board_output_mode('bottom')
 
-    def shout(self, value: Union[int, float, str]):
+    def to_keyboard(self, value: Union[int, float, str]):
         if not self.is_muted:
             logging.debug(f"Shouted value {value}")
             if isinstance(value, str):
@@ -456,7 +459,7 @@ class Dcs5Controller:
         else:
             logging.debug("Backlighting is already at minimum.")
 
-    def mapped_commands(self, command: str):
+    def mapped_controller_commands(self, command: str):
         commands = {
             "CHANGE_STYLUS": self.cycle_stylus,
             "UNITS_mm": self.change_length_units_mm,
@@ -495,9 +498,6 @@ class Dcs5Controller:
         msg = self.client.receive()
         logging.debug(f"Calibration message received: {msg}")
         try:
-            # if f'&Xr#: X={pt}\r' in msg \
-            #         or f"&{pt}r#\r" in msg \
-            #         or f"&{pt}c" in msg:
             if f"&{pt}r#\r" in msg:
                 pt_value = self.internal_board_state.__dict__[f"cal_pt_{pt}"]
                 logging.debug(f"Calibration for point {pt}. Set stylus down at {pt_value} mm ...")
@@ -516,10 +516,10 @@ class Dcs5Controller:
                 self.start_listening()
 
     def c_ping(self):
-        self.command_handler.queue_command("a#", "%a:e#")
+        self.command_handler.queue_command("p#", "%p#\r")
 
     def c_get_board_stats(self):
-        self.command_handler.queue_command("b#", "regex_%b.*#")
+        self.command_handler.queue_command("b#", "regex_%b.*#\r")
 
     def c_get_battery_level(self):
         """
@@ -532,22 +532,16 @@ class Dcs5Controller:
         -------
 
         """
-        self.command_handler.queue_command('&q#', "regex_%q:\d+,\d+#")
+        self.command_handler.queue_command('&q#', "regex_%q:\d+,\d+#\r")
 
     def c_get_temperature_humidity(self):
-        self.command_handler.queue_command('&t#', "regex_%t,\d+,\d+#")
+        self.command_handler.queue_command('&t#', "regex_%t,\d+,\d+#\r")
 
     def c_board_initialization(self):
         self.command_handler.queue_command("&init#", ["Setting EEPROM init flag.\r", "Rebooting in 2 seconds.\r"])
         time.sleep(1)
         self.close_client()
 
-    # def c_set_sensor_mode(self, value):
-    #     """ 'length', 'alpha', 'shortcut', 'numeric' """
-    #     self.command_handler.queue_command(
-    #         f'&fm,{value}#', ['length mode activated\r', 'alpha mode activated\r',
-    #                           'shortcut mode activated\r', 'numeric mode activated\r'][value]
-    #     )
 
     def c_set_interface(self, value: int):
         """
@@ -571,7 +565,6 @@ class Dcs5Controller:
             level = self.control_box_parameters.max_backlighting_level
         if 0 <= level <= self.control_box_parameters.max_backlighting_level:
             self.command_handler.queue_command(f'&la,{level}#', f"%la,{level}#\r")
-            self.internal_board_state.backlighting_level = level # FIXME THIS SHOULD BE DONE IN  COMMAND HANDLER
         else:
             logging.warning(f"Backlighting level range: (0, {self.control_box_parameters.max_backlighting_level})")
 
@@ -645,6 +638,15 @@ class CommandHandler:
         self.received_queue = Queue()
         self.expected_message_queue = Queue()
 
+    def queue_command(self, command: str, message: Union[str, List[str]] = None):
+        if message is not None:
+            if isinstance(message, list):
+                [self.expected_message_queue.put(msg) for msg in message]
+            else:
+                self.expected_message_queue.put(message)
+        self.send_queue.put(command)
+        logging.debug(f'Queuing: Command -> {[command]}, Expected -> {[message]}')
+
     def clear_queues(self):
         self.send_queue.queue.clear()
         self.received_queue.queue.clear()
@@ -656,50 +658,29 @@ class CommandHandler:
         self.controller.listener_handler_sync_barrier.wait()
         logging.debug('Command Handling Started')
         while self.controller.is_listening:
+
             if not self.received_queue.empty():
-                self._validate_commands()
+                self._process_commands()
+
             if not self.send_queue.empty():
                 self._send_command()
                 time.sleep(AFTER_SENT_SLEEP)
+
             time.sleep(HANDLER_SLEEP)
+        barrier_value = self.controller.listening_stopped_barrier.wait()
+        logging.debug(f"Wait Called. Wait value: {barrier_value}.")
         logging.debug('Command Handling Stopped')
 
-    def _validate_commands(self):
-        command_is_valid = False
+    def _process_commands(self):
         received = self.received_queue.get()
-        expected = self.expected_message_queue.get()
-        logging.debug(f'Received: {[received]}, Expected: {[expected]}')
 
-        if "regex_" in expected:
-            match = re.findall("(" + expected.strip('regex_') + ")", received)
-            if len(match) > 0:
-                command_is_valid = True
-        elif received == expected:
-            command_is_valid = True
+        self._compared_with_expected(received)
 
-        # if command_is_valid:
-        #     self._process_valid_commands(received) # should it process invalid(unmatched) command too ?
-        # else:
-        #     logging.error(f'Invalid: Command received: {[received]}, Command expected: {[expected]}')
-        # ALL COMMAND ARE PASS THROUGH PROCESS_VALID_COMMAND. missmatching queues will still be processed.
-        if not command_is_valid:
-            logging.error(f'Invalid: Command received: {[received]}, Command expected: {[expected]}')
-        self._process_commands(received)  # should it process invalid(unmatched) command too ?
-
-    def _process_commands(self, received: str):
-        logging.debug('Command Valid')
-        # if 'mode activated' in received:
-        #     for i in ["length", "alpha", "shortcut", "numeric"]:
-        #         if i in received:
-        #             self.controller.internal_board_state.sensor_mode = i
-        #
-        #     logging.debug(f'{received}')
-
-        if "a:e" in received:
+        if "%p#" in received:
             self.controller.ping_event_check.set()
             logging.debug('Ping is set.')
 
-        elif "pl" in received:
+        elif "%pl" in received:
             match = re.findall(f"%pl,(\d)#\r", received)
             if len(match) > 0:
                 if match[0] == "0":
@@ -709,7 +690,7 @@ class CommandHandler:
                     self.controller.internal_board_state.board_interface = "FEED"
                     logging.debug(f'Interface set to FEED')
 
-        elif "sn" in received:
+        elif "%sn" in received:
             match = re.findall(f"%sn:(\d)#\r", received)
             if len(match) > 0:
                 if match[0] == "1":
@@ -719,19 +700,19 @@ class CommandHandler:
                     self.controller.internal_board_state.stylus_status_msg = "disable"
                     logging.debug('Stylus Status Message Disable')
 
-        elif "di" in received:
+        elif "%di" in received:
             match = re.findall(f"%di:(\d+)#\r", received)
             if len(match) > 0:
                 self.controller.internal_board_state.stylus_settling_delay = int(match[0])
                 logging.debug(f"Stylus settling delay set to {match[0]}")
 
-        elif "dm" in received:
+        elif "%dm" in received:
             match = re.findall(f"%dm:(\d+)#\r", received)
             if len(match) > 0:
                 self.controller.internal_board_state.stylus_max_deviation = int(match[0])
                 logging.debug(f"Stylus max deviation set to {int(match[0])}")
 
-        elif "dn" in received:
+        elif "%dn" in received:
             match = re.findall(f"%dn:(\d+)#\r", received)
             if len(match) > 0:
                 self.controller.internal_board_state.number_of_reading = int(match[0])
@@ -771,10 +752,15 @@ class CommandHandler:
             else:
                 logging.error(f'Calibration state {received}')
 
-        elif 'Cal Pt' in received:  # FOR MICRO
+        elif "%la" in received:
+            match = re.findall("%la,(\d+)#", received)
+            if len(match) > 0:
+                self.controller.internal_board_state.backlighting_level = int(match[0])
+                logging.debug(f'Backlight level set to {match[0]}')
+
+        elif 'Cal Pt' in received:  # FOR MICRO #FIXME MAKE IT THE SAME IN THE FIRMWARE
             logging.debug(received.strip("\r") + " mm")
-            match = re.findall("Cal Pt (\d+) set to: (\d+)",
-                               received)  # used to work on firmware v1.07 (I think) of XT.
+            match = re.findall("Cal Pt (\d+) set to: (\d+)", received)  # used to work on firmware v1.07 (I think) of XT.
             if len(match) > 0:
                 self.controller.internal_board_state.__dict__[f'cal_pt_{match[0][0]}'] = int(match[0][1])
 
@@ -784,14 +770,22 @@ class CommandHandler:
             if len(match) > 0:
                 self.controller.internal_board_state.__dict__[f'cal_pt_{match[0][0]}'] = int(match[0][1])
 
-    def queue_command(self, command: str, message: Union[str, List[str]] = None):
-        if message is not None:
-            if isinstance(message, list):
-                [self.expected_message_queue.put(msg) for msg in message]
-            else:
-                self.expected_message_queue.put(message)
-        self.send_queue.put(command)
-        logging.debug(f'Queuing: Command -> {[command]}, Expected -> {[message]}')
+    def _compared_with_expected(self, received: str):
+        command_is_valid = False
+        expected = self.expected_message_queue.get()
+        logging.debug(f'Received: {[received]}, Expected: {[expected]}')
+
+        if "regex_" in expected:
+            match = re.findall("(" + expected.strip('regex_') + ")", received)
+            if len(match) > 0:
+                command_is_valid = True
+        elif received == expected:
+            command_is_valid = True
+
+        if command_is_valid:
+            logging.debug('Command Valid')
+        else:
+            logging.error(f'Unexpected: Command received: {[received]}, Command expected: {[expected]}')
 
     def _send_command(self):
         command = self.send_queue.get()
@@ -800,30 +794,34 @@ class CommandHandler:
 
 
 class SocketListener:
+    """The socket listener also do the command interpretation."""
     def __init__(self, controller: Dcs5Controller):
         self.controller = controller
         self.message_queue = Queue()
-        self.swipe_triggered = False
         self.buffer = ""
+        self.swipe_triggered = False
         self.with_mode = False
         self.last_key = None
         self.last_command = None
 
-    def pop(self, i=None):
-        """Return and clear the client buffer."""
-        i = len(self.buffer) if i is None else i
-        out, self.buffer = self.buffer[:i], self.buffer[i:]
-        return out
+    def reset(self):
+        self.swipe_triggered = False
+        self.with_mode = False
+        self.last_key = None
+        self.last_command = None
+
+        self.controller.client.clear()
+        self.clear_buffer()
+        self.message_queue.queue.clear()
 
     def clear_buffer(self):
         self.buffer = ""
 
     def listen(self):
-        self.controller.client.clear()
-        self.message_queue.queue.clear()
+        self.reset()
         logging.debug("Listener Queue and Client Buffers Cleared.")
         self.controller.listener_handler_sync_barrier.wait()
-        logging.debug('Listener Queue cleared & Client Buffer Clear.')
+
         logging.debug('Listening started')
         while self.controller.is_listening:
             self.buffer += self.controller.client.receive()
@@ -832,28 +830,29 @@ class SocketListener:
                 self._split_board_message()
                 self._process_board_message()
             time.sleep(LISTENER_SLEEP)
+
+        barrier_value = self.controller.listening_stopped_barrier.wait()
+        logging.debug(f"Wait Called. Wait value: {barrier_value}.")
         logging.debug('Listening stopped')
 
     def _split_board_message(self):
-        delimiters = ["\n", "\r", "#"]
-        for d in delimiters:
-            msg = self.buffer.split(d, 1)
-            if len(msg) > 1:
-                self.message_queue.put(msg[0] + d)
-                self.buffer = msg[1]
-                break
+        msg = self.buffer.split(BOARD_MESSAGE_DELIMITER, 1)
+        if len(msg) > 1:
+            self.message_queue.put(msg[0] + BOARD_MESSAGE_DELIMITER)
+            self.buffer = msg[1]
 
     def _process_board_message(self):
         """ANALYZE SOLICITED VS UNSOLICITED MESSAGE"""
         while not self.message_queue.empty():
             message = self.message_queue.get()
             logging.debug(f'Received Message: {message}')
-            out_value = None
+            output_value = None
             msg_type, msg_value = self._decode_board_message(message)
             logging.debug(f"Message Type: {msg_type}, Message Value: {msg_value}")
+
             if msg_type == "controller_box_key":
-                out_value = self._map_control_box_output(msg_value)
-                logging.debug(f"Controller Box Output: {out_value}")
+                output_value = self._map_control_box_output(msg_value)
+                logging.debug(f"Controller Box Output: {output_value}")
 
             elif msg_type == 'swipe':
                 self.swipe_value = msg_value
@@ -864,30 +863,27 @@ class SocketListener:
                 if self.swipe_triggered is True:
                     self._check_for_stylus_swipe(msg_value)
                 else:
-                    out_value = self._map_board_length_measurement(msg_value)
+                    output_value = self._map_board_length_measurement(msg_value)
             elif msg_type == "solicited":
                 self.controller.command_handler.received_queue.put(msg_value)
 
-            if out_value is not None:
-                self.last_command = out_value
-                self._process_output(out_value)
+            if output_value is not None:
+                self.last_command = output_value
+                self._process_output(output_value)
 
     @staticmethod
     def _decode_board_message(value: str):
         """
-        Notes
-        -----
-            some firmware returned this: d,D([0-9]{2})
         """
         patterns = [
             "%t,([0-9])#",  # stylus up/down
             "%l,([0-9]*)#",  # length measurement
             "%s,([0-9]*)#",  # swipe
-            "F,([0-9]{2})#",  # xt button v1.07
-            "F,([0-9]{3})#"  # Xt button v1.12+
+            #"F,([0-9]{2})#",  # xt button v1.07 #FIXME REMOVE
+            #"F,([0-9]{3})#"  # Xt button v1.12+ #FIXME REMOVE
             "%hs([0-9])",  # Micro button
             "%k,([0-9]{2})#",  # Xt button v2.0.0+
-            ",Battery charge-voltage-current-ttfull-ttempty:,(\d+),(\d+),(\d+),(\d+),(\d+)"
+            ",Battery charge-voltage-current-ttfull-ttempty:,(\d+),(\d+),(\d+),(\d+),(\d+)" #FIXME REMOVE
 
         ]
         match = re.findall("|".join(patterns), value)
@@ -899,13 +895,9 @@ class SocketListener:
             elif match[0][3] != "":
                 return 'controller_box_key', match[0][3]
             elif match[0][4] != "":
-                return 'controller_box_key', match[0][4][-2:]
-            elif match[0][5] != "":
-                return 'controller_box_key', match[0][5]
-            elif match[0][6] != "":
-                return 'controller_box_key', match[0][6]
-            elif match[0][7] != "":  # temporary fix FIXME
-                logging.debug(f"micro unsolicited battery state {value}")
+                return 'controller_box_key', match[0][4]
+            elif match[0][5] != "":  # temporary fix FIXME
+                logging.debug(f"micro unsolicited battery state {value}") #FIXME REMOVE
                 return None, None
         else:
             return 'solicited', value
@@ -920,9 +912,9 @@ class SocketListener:
             else:
                 self.set_with_mode(False)
                 if value in self.controller.controller_commands:
-                    self.controller.mapped_commands(value)
+                    self.controller.mapped_controller_commands(value)
                 else:
-                    self.controller.shout(value)
+                    self.controller.to_keyboard(value)
 
     def set_with_mode(self, value: bool):
         if value is not self.with_mode:

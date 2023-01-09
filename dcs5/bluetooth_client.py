@@ -61,8 +61,7 @@ class BluetoothClient:
                 logging.debug(f'Socket name: {self.socket.getsockname()}')
 
                 if platform.system() == 'Windows':
-                    self._socket_spam_thread = threading.Thread(target=self._spam_socket, name='spam', daemon=True)
-                    self._socket_spam_thread.start()
+                    self.start_connection_spam_thread()
                 break
 
             except PermissionError:
@@ -98,11 +97,16 @@ class BluetoothClient:
             return ""
 
     def clear(self):
-        self.receive()
+        while self.receive() != "":
+            continue
 
     def close(self):
         self.socket.close()
         self._is_connected = False
+
+    def start_connection_spam_thread(self):
+        self._socket_spam_thread = threading.Thread(target=self._spam_socket, name='spam', daemon=True)
+        self._socket_spam_thread.start()
 
     def _spam_socket(self):
         """This is to raise a connection OSError if the connection is lost."""
