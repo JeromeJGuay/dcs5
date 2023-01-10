@@ -878,9 +878,7 @@ class SocketListener:
         patterns = [
             "%t,([0-9])#",  # stylus up/down
             "%l,([0-9]*)#",  # length measurement
-            "%s,([0-9]*)#",  # swipe
-            #"F,([0-9]{2})#",  # xt button v1.07 #FIXME REMOVE
-            #"F,([0-9]{3})#"  # Xt button v1.12+ #FIXME REMOVE
+            "%s,(-?\d+)#",  # swipe
             "%hs([0-9])",  # Micro button
             "%k,([0-9]{2})#",  # Xt button v2.0.0+
             ",Battery charge-voltage-current-ttfull-ttempty:,(\d+),(\d+),(\d+),(\d+),(\d+)" #FIXME REMOVE
