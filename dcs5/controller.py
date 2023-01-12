@@ -563,6 +563,8 @@ class Dcs5Controller:
         if level is None:
             level = self.control_box_parameters.max_backlighting_level
         if 0 <= level <= self.control_box_parameters.max_backlighting_level:
+            if self.devices_specifications.control_box.model == "micro":
+                level = int(level * (255/95))
             self.command_handler.queue_command(f'&la,{level}#', f"%la,{level}#\r")
         else:
             logging.warning(f"Backlighting level range: (0, {self.control_box_parameters.max_backlighting_level})")
@@ -755,8 +757,11 @@ class CommandHandler:
         elif "%la" in received:
             match = re.findall("%la,(\d+)#", received)
             if len(match) > 0:
-                self.controller.internal_board_state.backlighting_level = int(match[0])
-                logging.debug(f'Backlight level set to {match[0]}')
+                level = int(match[0])
+                if self.controller.devices_specifications.control_box.model == "micro":
+                    level = int(level * (95 / 255))
+                self.controller.internal_board_state.backlighting_level = level
+                logging.debug(f'Backlight level set to {level}')
 
         elif 'Cal Pt' in received:  # FOR MICRO #FIXME MAKE IT THE SAME IN THE FIRMWARE
             logging.debug(received.strip("\r") + " mm")
@@ -879,9 +884,9 @@ class SocketListener:
             "%t,([0-9])#",  # stylus up/down
             "%l,([0-9]*)#",  # length measurement
             "%s,(-?\d+)#",  # swipe
-            "%hs([0-9])",  # Micro button
+            "%hs,([0-9])#",  # Micro button
             "%k,([0-9]{2})#",  # Xt button v2.0.0+
-            ",Battery charge-voltage-current-ttfull-ttempty:,(\d+),(\d+),(\d+),(\d+),(\d+)" #FIXME REMOVE
+            ",Battery charge-voltage-current-ttfull-ttempty:,(\d+),(\d+),(\d+),(\d+),(\d+)" #FIXME REMOVE Semms to be fixed
 
         ]
         match = re.findall("|".join(patterns), value)

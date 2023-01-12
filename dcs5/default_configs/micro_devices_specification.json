@@ -112,6 +112,8 @@
     "control_box": {
         "model": "micro",
         "keys_layout": {
+                "1": "a1",
+                "2": "a2",
                 "3": "a3"
             }
     },
