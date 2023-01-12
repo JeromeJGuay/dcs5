@@ -122,10 +122,9 @@ class Dcs5Controller:
             "UNITS_cm",
             "MODE_TOP",
             "MODE_LENGTH",
-            "MODE_BOTTOM"
+            "MODE_BOTTOM",
+            "MODE", "BACKLIGHT_UP", "BACKLIGHT_DOWN"
         ]
-        if self.devices_specifications.control_box.model == "xt":
-            self.controller_commands += ["MODE", "BACKLIGHT_UP", "BACKLIGHT_DOWN"]
 
     def _load_configs(self):
         if (devices_spec := load_devices_specification(self.devices_specifications_path)) is None:
@@ -139,11 +138,12 @@ class Dcs5Controller:
         match self.devices_specifications.control_box.model:
             case "xt":
                 self.control_box_parameters = XtControlBoxParameters()
-                if not 0 <= config.launch_settings.backlighting_level <= self.control_box_parameters.max_backlighting_level:
-                    raise ConfigError(
-                        f'launch_settings/Backlight_level outside range {(0, self.control_box_parameters.max_backlighting_level)}')
             case "micro":
                 self.control_box_parameters = MicroControlBoxParameters()
+
+        if not 0 <= config.launch_settings.backlighting_level <= self.control_box_parameters.max_backlighting_level:
+            raise ConfigError(
+                f'launch_settings/Backlight_level outside range {(0, self.control_box_parameters.max_backlighting_level)}')
 
         for key, item in config.reading_profiles.items():
             if not self.control_box_parameters.min_settling_delay <= item.settling_delay <= self.control_box_parameters.max_settling_delay:
@@ -260,6 +260,7 @@ class Dcs5Controller:
                                                               name='monitoring',
                                                               daemon=True)  # FIXME uncomment
         self.board_state_monitoring_thread.start()
+
     def monitor_board_state(self):
         while self.is_listening:
             self.c_get_battery_level()
@@ -290,8 +291,7 @@ class Dcs5Controller:
         was_listening = self.is_listening
         self.restart_listening()
 
-        if self.devices_specifications.control_box.model == "xt":  # make a function that select what to do for xt vs micro
-            self.c_set_backlighting_level(0)
+        self.c_set_backlighting_level(0)
 
         reading_profile = self.config.reading_profiles[
             self.config.output_modes.mode_reading_profiles[self.output_mode]
@@ -306,8 +306,8 @@ class Dcs5Controller:
         self.c_set_stylus_settling_delay(reading_profile.settling_delay)
         self.c_set_stylus_max_deviation(reading_profile.max_deviation)
         self.c_set_stylus_number_of_reading(reading_profile.number_of_reading)
-        if self.devices_specifications.control_box.model == 'xt':  # make it a function like ... init_light_indication().. which looks for model.
-            self.c_set_backlighting_level(self.config.launch_settings.backlighting_level)
+
+        self.c_set_backlighting_level(self.config.launch_settings.backlighting_level)
 
         self.c_check_calibration_state()
         self.c_get_board_stats()
@@ -467,7 +467,6 @@ class Dcs5Controller:
             "MODE_TOP": self._mode_top,
             "MODE_LENGTH": self._mode_length,
             "MODE_BOTTOM": self._mode_bottom,
-            # XT SPECIFIC
             "BACKLIGHT_UP": self.backlight_up,
             "BACKLIGHT_DOWN": self.backlight_down,
         }
@@ -624,10 +623,11 @@ class Dcs5Controller:
         self.command_handler.queue_command('&u#', 'regex_%u:\d#\r')
 
     def c_set_calibration_points_mm(self, pt: int, pos: int):
-        if self.devices_specifications.control_box.model == "micro":
-            self.command_handler.queue_command(f'&{pt}mm,{pos}#', f'Cal Pt {pt} set to: {pos}\r')
-        else:
-            self.command_handler.queue_command(f'&{pt}mm,{pos}#', f'%{pt}mm,{pos}#\r')
+        #FIXME
+        #if self.devices_specifications.control_box.model == "micro":
+        #   self.command_handler.queue_command(f'&{pt}mm,{pos}#', f'Cal Pt {pt} set to: {pos}\r')
+        #else:
+        self.command_handler.queue_command(f'&{pt}mm,{pos}#', f'%{pt}mm,{pos}#\r')
 
 
 class CommandHandler:
@@ -764,7 +764,7 @@ class CommandHandler:
             if len(match) > 0:
                 self.controller.internal_board_state.__dict__[f'cal_pt_{match[0][0]}'] = int(match[0][1])
 
-        elif 'mm' in received:  # FOR XT
+        elif 'mm' in received:
             logging.debug(received.strip("\r") + " mm")
             match = re.findall(f'%(\d+)mm,(\d+)#\r', received)
             if len(match) > 0:

@@ -356,9 +356,9 @@ def run():
 
 def init_layout(window: sg.Window, controller: Dcs5Controller):
     if controller is not None:
-        if controller.devices_specifications.control_box.model == 'xt':
-            #window['-BACKLIGHT-'].update(range=(0, controller.control_box_parameters.max_backlighting_level, 5))
-            window['-BACKLIGHT-'].update(range=(0, BACKLIGHT_SLIDER_MAX), value=0)
+        #if controller.devices_specifications.control_box.model == 'xt': #todo REMOVE
+        #    #window['-BACKLIGHT-'].update(range=(0, controller.control_box_parameters.max_backlighting_level, 5))
+        window['-BACKLIGHT-'].update(range=(0, BACKLIGHT_SLIDER_MAX), value=0)
     refresh_layout(window, controller)
 
 
@@ -529,13 +529,13 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
 
             window["-ACTIVATED_LED-"].update(**LED_ON)
             window["-ACTIVATE-"].update(disabled=True)
-            if controller.devices_specifications.control_box.model == 'xt':
-                if controller.internal_board_state.backlighting_level is not None:
-                    backlight_level = round(
-                        (controller.internal_board_state.backlighting_level / controller.control_box_parameters.max_backlighting_level) * BACKLIGHT_SLIDER_MAX
-                    )
-                    window['-BACKLIGHT-'].update(disabled=False,
-                                                 value=backlight_level)  # or None ? Removed
+
+            if controller.internal_board_state.backlighting_level is not None:
+                backlight_level = round(
+                    (controller.internal_board_state.backlighting_level / controller.control_box_parameters.max_backlighting_level) * BACKLIGHT_SLIDER_MAX
+                )
+                window['-BACKLIGHT-'].update(disabled=False,
+                                             value=backlight_level)  # or None ? Removed
             if controller.socket_listener.last_key is not None:
                 window['-LAST_KEY-'].update('< ' + str(controller.socket_listener.last_key) + ' >')
                 window['-LAST_COMMAND-'].update('< ' + str(controller.socket_listener.last_command) + ' >')
@@ -976,6 +976,6 @@ def col(cols_layout):
 
 if __name__ == "__main__":
     main()
-#    c = init_dcs5_controller()
+    c = init_dcs5_controller()
 #    c.start_client()
     #c.start_listening()
