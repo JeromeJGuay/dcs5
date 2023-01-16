@@ -2,8 +2,10 @@
 Module that contains the scripts to load the board configurations.
 
 Valid commands :
-    ["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm", "MODE", "MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"]
+    ["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm", "MODE",
+    "CHANGE_OUTPUT_MODE", "MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"]
  - The "MODE" command is not a command per say but a MetaKey for the board.
+ - The "CHANGE_OUTPUT_MODE" command will cycle through MODE_LENGTH, MODE_TOP, MODE_BOTTOM
 Valid keyboard inputs :
      'print <string to print>'
 
@@ -43,7 +45,7 @@ from typing import *
 from dcs5.utils import json2dict
 
 VALID_COMMANDS = ["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm", "MODE",
-                  "MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"]
+                  "CHANGE_OUTPUT_MODE", "MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"]
 VALID_SEGMENTS_MODE = ['length', 'top', 'bottom']
 VALID_KEYBOARD_KEYS = [
     '\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'",

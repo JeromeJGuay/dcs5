@@ -26,12 +26,22 @@ if os.environ.get('EDITOR') == 'EMACS':
 
 # FILENAMES
 CONTROLLER_CONFIGURATION_FILE_NAME = 'controller_configuration.json'
+XT_CONTROLLER_CONFIGURATION_FILE_NAME = 'xt_controller_configuration.json'
+MICRO_CONTROLLER_CONFIGURATION_FILE_NAME = 'micro_controller_configuration.json'
+
+DEVICES_SPECIFICATION_FILE_NAME = 'devices_specification.json'
 XT_DEVICES_SPECIFICATION_FILE_NAME = 'xt_devices_specification.json'
 MICRO_DEVICES_SPECIFICATION_FILE_NAME = 'micro_devices_specification.json'
 # PATHS
 DEFAULT_CONFIG_PATH = "default_configs/"
-DEFAULT_CONTROLLER_CONFIGURATION_FILE = str(
-    resolve_relative_path(DEFAULT_CONFIG_PATH + CONTROLLER_CONFIGURATION_FILE_NAME, __file__))
+# DEFAULT_CONTROLLER_CONFIGURATION_FILE = str(
+#     resolve_relative_path(DEFAULT_CONFIG_PATH + CONTROLLER_CONFIGURATION_FILE_NAME, __file__))
+
+XT_DEFAULT_CONTROLLER_CONFIGURATION_FILE = str(
+    resolve_relative_path(DEFAULT_CONFIG_PATH + XT_CONTROLLER_CONFIGURATION_FILE_NAME, __file__))
+MICRO_DEFAULT_CONTROLLER_CONFIGURATION_FILE = str(
+    resolve_relative_path(DEFAULT_CONFIG_PATH + MICRO_CONTROLLER_CONFIGURATION_FILE_NAME, __file__))
+
 XT_DEFAULT_DEVICES_SPECIFICATION_FILE = str(
     resolve_relative_path(DEFAULT_CONFIG_PATH + XT_DEVICES_SPECIFICATION_FILE_NAME, __file__))
 MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE = str(
@@ -98,7 +108,7 @@ def main():
 
 def init_dcs5_controller():
     controller_config_path = Path(sg.user_settings()['configs_path']).joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)
-    devices_specifications_path = Path(sg.user_settings()['configs_path']).joinpath(XT_DEVICES_SPECIFICATION_FILE_NAME)
+    devices_specifications_path = Path(sg.user_settings()['configs_path']).joinpath(DEVICES_SPECIFICATION_FILE_NAME)
 
     check_config_integrity(
         controller_config_path=controller_config_path,
@@ -129,9 +139,9 @@ def check_config_integrity(
 ):
     if not controller_config_path.exists():
         sg.popup_ok(
-            f'`controller_config.json` was missing from the directory: {controller_config_path.parent}. One was created.',
+            f'`controller_config.json` was missing from the directory: {controller_config_path.parent}. One was created. (default model: xt)',
             title='Missing file', keep_on_top=True)
-        shutil.copyfile(DEFAULT_CONTROLLER_CONFIGURATION_FILE, controller_config_path)
+        shutil.copyfile(XT_DEFAULT_CONTROLLER_CONFIGURATION_FILE, controller_config_path)
     if not devices_specifications_path.exists():
         sg.popup_ok(
             '`devices_specifications.json` was missing from the directory. One was created (default model: xt).',
@@ -808,7 +818,8 @@ def popup_window_select_config(controller: Dcs5Controller = None) -> Dcs5Control
                             case 'Controller Configuration':
                                 click.edit(filename=str(config_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)))
                             case 'Devices Specification':
-                                click.edit(filename=str(config_path.joinpath(XT_DEVICES_SPECIFICATION_FILE_NAME)))
+                                click.edit(filename=str(config_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME)))
+
 
                         if values['-CONFIG-'][0] == current_config:
                             sg.user_settings()['previous_configs_path'] = current_config + '*'
@@ -867,22 +878,16 @@ def create_new_configs():
                         break
                     window.keep_on_top_set()
 
-                if values['-MODEL-'] == 'xt':
-                    default_device_specifications_file = XT_DEFAULT_DEVICES_SPECIFICATION_FILE
-                else:
-                    default_device_specifications_file = MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE
-
                 new_configs_path = CONFIG_FILES_PATH.joinpath(values['-PATH-'])
                 new_configs_path.mkdir(parents=True, exist_ok=True)
 
-                local_files = [
-                    new_configs_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME),
-                    new_configs_path.joinpath(XT_DEVICES_SPECIFICATION_FILE_NAME),
-                ]
-                default_files = [
-                    DEFAULT_CONTROLLER_CONFIGURATION_FILE,
-                    default_device_specifications_file,
-                ]
+                if values['-MODEL-'] == 'xt':
+                    default_files = [XT_DEFAULT_CONTROLLER_CONFIGURATION_FILE, XT_DEFAULT_DEVICES_SPECIFICATION_FILE]
+                else:
+                    default_files = [MICRO_DEFAULT_CONTROLLER_CONFIGURATION_FILE, MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE]
+
+                local_files = [new_configs_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME),
+                               new_configs_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME)]
 
                 for lf, df in zip(local_files, default_files):
                     if not Path(lf).exists():
@@ -918,7 +923,7 @@ def reload_controller_config(controller: Dcs5Controller):
 def update_controller_config_paths(controller: Dcs5Controller):
     configs_path = sg.user_settings()['configs_path'].strip('*')
     controller.config_path = Path(configs_path).joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)
-    controller.devices_specifications_path = Path(configs_path).joinpath(XT_DEVICES_SPECIFICATION_FILE_NAME)
+    controller.devices_specifications_path = Path(configs_path).joinpath(DEVICES_SPECIFICATION_FILE_NAME)
     logging.debug('Config files path updated.')
 
 

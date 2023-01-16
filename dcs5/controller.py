@@ -120,6 +120,7 @@ class Dcs5Controller:
             "CHANGE_STYLUS",
             "UNITS_mm",
             "UNITS_cm",
+            "CHANGE_OUTPUT_MODE",
             "MODE_TOP",
             "MODE_LENGTH",
             "MODE_BOTTOM",
@@ -401,6 +402,9 @@ class Dcs5Controller:
     def cycle_stylus(self):
         self.change_stylus(next(self.stylus_cyclical_list))
 
+    def cycle_output_mode(self):
+        self.change_board_output_mode({'top':'bot', 'bot':'length','length':'top'}[self.output_mode])
+
     def change_board_output_mode(self, value: str):
         """
         value must be one of  [length, bottom, top]
@@ -473,6 +477,7 @@ class Dcs5Controller:
             "CHANGE_STYLUS": self.cycle_stylus,
             "UNITS_mm": self.change_length_units_mm,
             "UNITS_cm": self.change_length_units_cm,
+            "CHANGE_OUTPUT_MODE": self.cycle_output_mode,
             "MODE_TOP": self._mode_top,
             "MODE_LENGTH": self._mode_length,
             "MODE_BOTTOM": self._mode_bottom,

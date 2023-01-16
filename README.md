@@ -19,7 +19,12 @@ See the [user_guide/UserGuide_fr.pdf](doc/UserGuide_fr.pdf). French only.
 ## Configurations
 
 3 json files are used to set different parameters for the application.
-### [dcs5/default_configs/controller_configuration.json](dcs5/default_configs/controller_configuration.json)
+
+for xt:
+### [dcs5/default_configs/xt_controller_configuration.json](dcs5/default_configs/xt_controller_configuration.json)
+
+for micro:
+### [dcs5/default_configs/micro_controller_configuration.json](dcs5/default_configs/micro_controller_configuration.json)
 The controller_configuration.json is used to configure the controller behavior.
 + client : Measuring board bluetooth information.
 + launch_settings : setting used when the app is launch.
@@ -41,7 +46,7 @@ The controller_configuration.json is used to configure the controller behavior.
 + keys_maps: Mapping of the key to either command or keyboard input.
   - Two commands for a key. One default and one for when MODE is activated.
   - The name of the keys are set in [dcs5/default_configs/devices_specification.json](dcs5/default_configs/xt_devices_specification.json).
-  - Valid commands `"BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm", "MODE", "MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM", print <string to print>]`
+  - Valid commands `"BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm", "CHANGE_OUTPUT_MODE", "MODE", "MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM", print <string to print>]`
   - See the [dcs5/controller_configurations.py](dcs5/controller_configurations.py) module for the valid keyboard input.
   - List of commands are accepted and executed one at a time.
 
