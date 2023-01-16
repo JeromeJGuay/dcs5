@@ -13,7 +13,7 @@
     },
     "reading_profiles": {
         "measure": {
-            "settling_delay": 20,
+            "settling_delay": 9,
             "number_of_reading": 50,
             "max_deviation": 50
         },

@@ -113,8 +113,8 @@ class LaunchSettings:
     dynamic_stylus_mode: bool
     reading_profile: str
     backlighting_level: int
-    backlighting_auto_mode: bool
-    backlighting_sensitivity: int
+    #backlighting_auto_mode: bool
+    #backlighting_sensitivity: int
     length_units: str
     stylus: str
 
@@ -123,8 +123,8 @@ class LaunchSettings:
             raise ConfigError(f'Invalid value for `launch_settings/length_units`. Must be one of {VALID_UNITS}')
         if not isinstance(self.dynamic_stylus_mode, bool):
             raise ConfigError('Invalid value for `launch_settings/dynamic_stylus_mode`. Must but in (true/false)')
-        if not isinstance(self.backlighting_auto_mode, bool):
-            raise ConfigError('Invalid value for `launch_settings/back_light_auto_mode`. Must but in (true/false)')
+        #if not isinstance(self.backlighting_auto_mode, bool):
+        #    raise ConfigError('Invalid value for `launch_settings/back_light_auto_mode`. Must but in (true/false)')
 
 
 @dataclass

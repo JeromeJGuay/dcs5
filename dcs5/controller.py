@@ -591,7 +591,6 @@ class Dcs5Controller:
                 f"&lt,{delay},{value},{','.join(color)}#", f"%lt,{delay},{value},{','.join(color)}#\r"
             )
 
-
     def c_set_backlighting_level(self, level: int):
         if level is None:
             level = self.control_box_parameters.max_backlighting_level

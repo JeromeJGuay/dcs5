@@ -19,8 +19,8 @@ class BaseControlBoxParameters:
 @dataclass
 class XtControlBoxParameters(BaseControlBoxParameters):
     backlight_level = 0
-    backlighting_auto_mode = False
-    backlighting_sensitivity = 0
+    #backlighting_auto_mode = False
+    #backlighting_sensitivity = 0
     max_backlighting_level = 95
     max_backlighting_sensitivity = 7
 

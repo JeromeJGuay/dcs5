@@ -466,7 +466,7 @@ def refresh_layout(window: sg.Window, controller: Dcs5Controller):
         _controller_refresh_layout(window, controller)
     else:
         for key in ['-CONNECT-', '-ACTIVATE-',
-                    'DISCONNECT', '-RESTART-',
+                    '-DISCONNECT-', '-RESTART-',
                     '-MUTE-',
                     '-SYNC-', '-CALIBRATE-',
                     '-CALPTS-', '-BACKLIGHT-',
