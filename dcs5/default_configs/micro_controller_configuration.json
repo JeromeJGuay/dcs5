@@ -1,21 +1,21 @@
 {
     "client": {
-        "device_name": "BigFinDCS5-E5FE",
-        "mac_address": "00:06:66:89:E5:FE"
+        "device_name": "BigFinDCS5Micro-3018",
+        "mac_address": "80:1F:12:B2:30:18"
     },
     "launch_settings": {
         "output_mode": "length",
         "reading_profile": "measure",
-        "dynamic_stylus_mode": false,
+        "dynamic_stylus_mode": true,
         "backlighting_level": 255,
         "length_units": "mm",
         "stylus": "pen"
     },
     "reading_profiles": {
         "measure": {
-            "settling_delay": 1,
-            "number_of_reading": 1,
-            "max_deviation": 1
+            "settling_delay": 20,
+            "number_of_reading": 50,
+            "max_deviation": 50
         },
         "key": {
             "settling_delay": 1,
