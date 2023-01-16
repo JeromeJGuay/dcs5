@@ -414,9 +414,9 @@ class Dcs5Controller:
             if self.is_listening:  # and flash is True:
                 if self.devices_specifications.control_box.model == "xt":
                     if self.output_mode == 'bottom':
-                        self.c_set_fuel_gauge(int("11110000", 2))
-                    elif self.output_mode == 'top':
                         self.c_set_fuel_gauge(int("00001111", 2))
+                    elif self.output_mode == 'top':
+                        self.c_set_fuel_gauge(int("11110000", 2))
                     else:
                         self.c_set_fuel_gauge(int("00111100", 2))
                 else:
