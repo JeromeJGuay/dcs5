@@ -28,7 +28,7 @@ class XtControlBoxParameters(BaseControlBoxParameters):
 @dataclass
 class MicroControlBoxParameters(BaseControlBoxParameters):
     backlight_level = 0
-    max_backlighting_level = 95
+    max_backlighting_level = 255
 
 
 #

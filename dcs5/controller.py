@@ -408,12 +408,21 @@ class Dcs5Controller:
         self.output_mode = value
         if self.client.is_connected:
             if self.is_listening:  # and flash is True:
-                if self.output_mode == 'bottom':
-                    self.c_set_fuel_gauge("bot")
-                elif self.output_mode == 'top':
-                    self.c_set_fuel_gauge("top")
+                if self.devices_specifications.control_box.model == "xt":
+                    if self.output_mode == 'bottom':
+                        self.c_set_fuel_gauge(int("11110000", 2))
+                    elif self.output_mode == 'top':
+                        self.c_set_fuel_gauge(int("00001111", 2))
+                    else:
+                        self.c_set_fuel_gauge(int("00111100", 2))
                 else:
-                    self.c_set_fuel_gauge("mid")
+                    r,g,b,w = int('FF', 16), int('FF', 60), int('00', 16), int('00', 16) #  orange
+                    if self.output_mode == 'bottom':
+                        self.c_set_fuel_gauge(int("11000000", 2), r, g, b, w)
+                    elif self.output_mode == 'top':
+                        self.c_set_fuel_gauge(int("00001100", 2), r, g, b, w)
+                    else:
+                        self.c_set_fuel_gauge(int("00000011", 2), r, g, b, w)
 
             if self.dynamic_stylus_settings is True:
                 reading_profile = self.config.reading_profiles[
@@ -543,19 +552,47 @@ class Dcs5Controller:
     def c_flash_fuel_gauge(self):
         self.command_handler.queue_command("&ra#", "%ra#\r")
 
-    def c_set_fuel_gauge(self, value: str):
-        values = ("top", "mid", "bot", "off")
-        if value in values:
-            self.command_handler.queue_command(f"&lf,{value[0]}#", f"%lf,{value[0]}#\r")
+    def c_set_fuel_gauge(self, value: int, color: list = None):
+        """
+        Parameters
+        ----------
+        value :
+            Int (byte) encoding the pattern e.g. int('00110000',2)
+        color : for micro only.
+            (r, g, b, w) Int representing hex value color value.
+        """
+        if self.devices_specifications.control_box.model == 'xt':
+            self.command_handler.queue_command(f"&lf,{value}#", f"%lf,{value}#\r")
         else:
-            logging.warning(f"fuel gauge value must be in {values}")
+            self.command_handler.queue_command(
+                f"&lf,{value},{','.join(color)}#", f"%lf,{value},{','.join(color)}#\r"
+            )
+
+    def c_set_fuel_gauge_tempory(self, delay: int, value: int, color: list = None):
+        """
+        Parameters
+        ----------
+        delay :
+           Duration of the led pattern in second. (0-255)
+        value :
+            Int (byte) encoding the pattern e.g. int('00110000',2)
+        color : for micro only.
+            (r, g, b, w) Int representing hex value color value.
+        """
+        if self.devices_specifications.control_box.model == 'xt':
+            self.command_handler.queue_command(f"&lt,{delay},{value}#", f"%lt,{delay},{value}#\r")
+        else:
+            self.command_handler.queue_command(
+                f"&lt,{delay},{value},{','.join(color)}#", f"%lt,{delay},{value},{','.join(color)}#\r"
+            )
+
 
     def c_set_backlighting_level(self, level: int):
         if level is None:
             level = self.control_box_parameters.max_backlighting_level
         if 0 <= level <= self.control_box_parameters.max_backlighting_level:
-            if self.devices_specifications.control_box.model == "micro":
-                level = int(level * (255/95))
+            # if self.devices_specifications.control_box.model == "micro":
+            #     level = int(level * (255/95))
             self.command_handler.queue_command(f'&la,{level}#', f"%la,{level}#\r")
         else:
             logging.warning(f"Backlighting level range: (0, {self.control_box_parameters.max_backlighting_level})")
@@ -616,10 +653,6 @@ class Dcs5Controller:
         self.command_handler.queue_command('&u#', 'regex_%u:\d#\r')
 
     def c_set_calibration_points_mm(self, pt: int, pos: int):
-        #FIXME
-        #if self.devices_specifications.control_box.model == "micro":
-        #   self.command_handler.queue_command(f'&{pt}mm,{pos}#', f'Cal Pt {pt} set to: {pos}\r')
-        #else:
         self.command_handler.queue_command(f'&{pt}mm,{pos}#', f'%{pt}mm,{pos}#\r')
 
 
