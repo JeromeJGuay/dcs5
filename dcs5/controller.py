@@ -515,7 +515,7 @@ class Dcs5Controller:
                 self.start_listening()
 
     def c_ping(self):
-        self.command_handler.queue_command("p#", "%p#\r")
+        self.command_handler.queue_command("&p#", "%p#\r")
 
     def c_get_board_stats(self):
         self.command_handler.queue_command("b#", "regex_%b.*#\r")
