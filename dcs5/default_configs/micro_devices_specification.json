@@ -6,10 +6,10 @@
             "detection_range": 2,
             "keys_layout": {
                     "top": [
-                        "left_space_1",
-                        "left_space_2",
-                        "left_space_3",
-                        "left_space_4",
+                        "left_arrow",
+                        "right_arrow",
+                        "up_arrow",
+                        "down_arrow",
                         "left_space_5",
                         "left_space_6",
                         "left_space_7",

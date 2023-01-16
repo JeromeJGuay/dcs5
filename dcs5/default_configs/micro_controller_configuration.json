@@ -25,7 +25,7 @@
     },
     "output_modes": {
         "swipe_threshold": 5,
-        "segments_limits": [0, 230, 430, 630, 800],
+        "segments_limits": [0, 210, 330, 460, 600],
         "segments_mode": ["length", "top", "bottom", "length"],
         "mode_reading_profiles": {
             "top": "key",

@@ -403,7 +403,7 @@ class Dcs5Controller:
         self.change_stylus(next(self.stylus_cyclical_list))
 
     def cycle_output_mode(self):
-        self.change_board_output_mode({'top':'bot', 'bot':'length','length':'top'}[self.output_mode])
+        self.change_board_output_mode({'top':'bottom', 'bottom':'length','length':'top'}[self.output_mode])
 
     def change_board_output_mode(self, value: str):
         """
@@ -420,13 +420,13 @@ class Dcs5Controller:
                     else:
                         self.c_set_fuel_gauge(int("00111100", 2))
                 else:
-                    r,g,b,w = int('FF', 16), int('FF', 60), int('00', 16), int('00', 16) #  orange
+                    color = [r,g,b,w] = int('FF', 16), int('60', 16), int('00', 16), int('00', 16) #  orange
                     if self.output_mode == 'bottom':
-                        self.c_set_fuel_gauge(int("11000000", 2), r, g, b, w)
+                        self.c_set_fuel_gauge(int("11000000", 2), color)
                     elif self.output_mode == 'top':
-                        self.c_set_fuel_gauge(int("00001100", 2), r, g, b, w)
+                        self.c_set_fuel_gauge(int("00001100", 2), color)
                     else:
-                        self.c_set_fuel_gauge(int("00000011", 2), r, g, b, w)
+                        self.c_set_fuel_gauge(int("00000011", 2), color)
 
             if self.dynamic_stylus_settings is True:
                 reading_profile = self.config.reading_profiles[
@@ -569,6 +569,7 @@ class Dcs5Controller:
         if self.devices_specifications.control_box.model == 'xt':
             self.command_handler.queue_command(f"&lf,{value}#", f"%lf,{value}#\r")
         else:
+            color = list(map(str, color))
             self.command_handler.queue_command(
                 f"&lf,{value},{','.join(color)}#", f"%lf,{value},{','.join(color)}#\r"
             )
@@ -587,6 +588,7 @@ class Dcs5Controller:
         if self.devices_specifications.control_box.model == 'xt':
             self.command_handler.queue_command(f"&lt,{delay},{value}#", f"%lt,{delay},{value}#\r")
         else:
+            color = list(map(str, color))
             self.command_handler.queue_command(
                 f"&lt,{delay},{value},{','.join(color)}#", f"%lt,{delay},{value},{','.join(color)}#\r"
             )
@@ -706,7 +708,7 @@ class CommandHandler:
 
         self._compared_with_expected(received)
 
-        if "%p#" in received:
+        if "%a#" in received:
             self.controller.ping_event_check.set()
             logging.debug('Ping is set.')
 
@@ -786,8 +788,8 @@ class CommandHandler:
             match = re.findall("%la,(\d+)#", received)
             if len(match) > 0:
                 level = int(match[0])
-                if self.controller.devices_specifications.control_box.model == "micro":
-                    level = int(level * (95 / 255))
+                # if self.controller.devices_specifications.control_box.model == "micro":
+                #     level = int(level * (95 / 255))
                 self.controller.internal_board_state.backlighting_level = level
                 logging.debug(f'Backlight level set to {level}')
 

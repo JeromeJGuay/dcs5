@@ -63,7 +63,7 @@ def scale_font(font_size: int) -> int:
 
 REFRESH_PERIOD = .05
 
-BACKLIGHT_SLIDER_MAX = 95
+BACKLIGHT_SLIDER_MAX = 100
 
 DEVICE_LAYOUT_PADDING = 20
 
