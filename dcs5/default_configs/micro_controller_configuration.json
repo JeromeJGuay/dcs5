@@ -35,14 +35,14 @@
     },
     "key_maps": {
         "control_box": {
-            "a1": "escape",
-            "a2": "f1",
-            "a3": "f2",
+            "a1": "CHANGE_OUTPUT_MODE",
+            "a2": "BACKLIGHT_UP",
+            "a3": "BACKLIGHT_DOWN"
         },
         "control_box_mode": {
-            "a1": "escape",
-            "a2": "BACKLIGHT_DOWN",
-            "a3": "BACKLIGHT_UP",
+            "a1": "",
+            "a2": "",
+            "a3": ""
         },
         "board": {
             "a": "a",
