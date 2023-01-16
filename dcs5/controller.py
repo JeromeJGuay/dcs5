@@ -515,22 +515,12 @@ class Dcs5Controller:
                 self.start_listening()
 
     def c_ping(self):
-        self.command_handler.queue_command("&p#", "%p#\r")
+        self.command_handler.queue_command("&a#", "%a#\r")
 
     def c_get_board_stats(self):
         self.command_handler.queue_command("b#", "regex_%b.*#\r")
 
     def c_get_battery_level(self):
-        """
-        when charging micro sends FIXME
-        (2022-12-19 13:54:36,208) - {listen}   - [DEBUG]    - Raw Buffer: [',Battery charge-voltage-current-ttfull-ttempty:,1,']
-        (2022-12-19 13:54:36,213) - {listen}   - [DEBUG]    - Raw Buffer: [',Battery charge-voltage-current-ttfull-ttempty:,1,3765,']
-        (2022-12-19 13:54:36,219) - {listen}   - [DEBUG]    - Raw Buffer: [',Battery charge-voltage-current-ttfull-ttempty:,1,3765,565,396,']
-        (2022-12-19 13:54:36,224) - {listen}   - [DEBUG]    - Raw Buffer: [',Battery charge-voltage-current-ttfull-ttempty:,1,3765,565,396,65535\r']
-        Returns
-        -------
-
-        """
         self.command_handler.queue_command('&q#', "regex_%q:\d+,\d+#\r")
 
     def c_get_temperature_humidity(self):
@@ -541,10 +531,11 @@ class Dcs5Controller:
         time.sleep(1)
         self.close_client()
 
-
     def c_set_interface(self, value: int):
         """
-        FEED seems to enable box keystrokes.
+        Notes
+        -----
+          Only the DCS5Linkstream Interface is now supported.
         """
         host_app = {0: 'DCSLinkstream', 1: "FEED"}[value]
         self.command_handler.queue_command(f"&pl,{value}#", [f'HostApp={host_app}\r', f"%pl,{value}#\r"])
@@ -886,7 +877,7 @@ class SocketListener:
             "%s,(-?\d+)#",  # swipe
             "%hs,([0-9])#",  # Micro button
             "%k,([0-9]{2})#",  # Xt button v2.0.0+
-            ",Battery charge-voltage-current-ttfull-ttempty:,(\d+),(\d+),(\d+),(\d+),(\d+)" #FIXME REMOVE Semms to be fixed
+            #",Battery charge-voltage-current-ttfull-ttempty:,(\d+),(\d+),(\d+),(\d+),(\d+)" #FIXME REMOVE COMPLETLY IF THE BUG DOESNT COME UP AGAIN
 
         ]
         match = re.findall("|".join(patterns), value)
@@ -899,9 +890,9 @@ class SocketListener:
                 return 'controller_box_key', match[0][3]
             elif match[0][4] != "":
                 return 'controller_box_key', match[0][4]
-            elif match[0][5] != "":  # temporary fix FIXME
-                logging.debug(f"micro unsolicited battery state {value}") #FIXME REMOVE
-                return None, None
+            #elif match[0][5] != "":  # temporary fix FIXME REMOVE COMPLETLY IF THE BUG DOESNT COME UP AGAIN
+            #    logging.debug(f"micro unsolicited battery state {value}") #FIXME REMOVE
+            #    return None, None
         else:
             return 'solicited', value
 
