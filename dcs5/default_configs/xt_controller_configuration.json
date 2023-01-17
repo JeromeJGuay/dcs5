@@ -9,7 +9,8 @@
         "dynamic_stylus_mode": true,
         "backlighting_level": 95,
         "length_units": "mm",
-        "stylus": "pen"
+        "stylus": "pen",
+        "auto_enter": true
     },
     "reading_profiles": {
         "measure": {

@@ -74,6 +74,7 @@ class Dcs5Controller:
     stylus: str
     stylus_offset: int
     stylus_cyclical_list: Generator
+    auto_enter: bool
 
     def __init__(self, config_path: str, devices_specifications_path: str):
         """
@@ -514,10 +515,14 @@ class Dcs5Controller:
             if f"&{pt}r#\r" in msg:
                 pt_value = self.internal_board_state.__dict__[f"cal_pt_{pt}"]
                 logging.debug(f"Calibration for point {pt}. Set stylus down at {pt_value} mm ...")
-                while f'&{pt}c' not in msg:
+                while True:
+                    if f'&{pt}c' in msg:
+                        logging.debug(f'Point {pt} calibrated.')
+                        return 1
+                    if f'&{pt}e' in msg:
+                        logging.debug(f'Point {pt} calibration exited.')
+                        return 0
                     msg += self.client.receive()
-                logging.debug(f'Point {pt} calibrated.')
-                return 1
             else:
                 return 0
         except KeyError:
@@ -795,7 +800,7 @@ class CommandHandler:
                 self.controller.internal_board_state.backlighting_level = level
                 logging.debug(f'Backlight level set to {level}')
 
-        elif 'Cal Pt' in received:  # FOR MICRO #FIXME MAKE IT THE SAME IN THE FIRMWARE
+        elif 'Cal Pt' in received:
             logging.debug(received.strip("\r") + " mm")
             match = re.findall("Cal Pt (\d+) set to: (\d+)", received)  # used to work on firmware v1.07 (I think) of XT.
             if len(match) > 0:
@@ -901,15 +906,19 @@ class SocketListener:
                     self._check_for_stylus_swipe(msg_value)
                 else:
                     output_value = self._map_board_length_measurement(msg_value)
+
             elif msg_type == "solicited":
                 self.controller.command_handler.received_queue.put(msg_value)
 
             if output_value is not None:
                 self.last_command = output_value
                 self._process_output(output_value)
+                if msg_type == 'length' and self.controller.auto_enter is True:
+                    self.controller.to_keyboard('enter')
+
 
     @staticmethod
-    def _decode_board_message(value: str):
+    def _decode_board_message(value: str) -> Tuple[str,str]:
         """
         """
         patterns = [

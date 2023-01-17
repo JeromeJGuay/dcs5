@@ -117,12 +117,15 @@ class LaunchSettings:
     #backlighting_sensitivity: int
     length_units: str
     stylus: str
+    auto_enter: bool
 
     def __post_init__(self):
         if self.length_units not in VALID_UNITS:
             raise ConfigError(f'Invalid value for `launch_settings/length_units`. Must be one of {VALID_UNITS}')
         if not isinstance(self.dynamic_stylus_mode, bool):
             raise ConfigError('Invalid value for `launch_settings/dynamic_stylus_mode`. Must but in (true/false)')
+        if not isinstance(self.auto_enter, bool):
+            raise ConfigError('Invalid value for `launch_settings/auto_enter`. Must but in (true/false)')
         #if not isinstance(self.backlighting_auto_mode, bool):
         #    raise ConfigError('Invalid value for `launch_settings/back_light_auto_mode`. Must but in (true/false)')
 
