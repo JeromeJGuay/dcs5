@@ -301,7 +301,7 @@ class Dcs5Controller:
         # SET DEFAULT VALUES
         self.c_set_interface(0)
 
-        self.c_set_stylus_detection_message(False)
+        self.c_set_stylus_detection_message(False) # could be True and it should/would work fine but the up/down msg are not used.
 
         # SET USER VALUES
         self.c_set_stylus_settling_delay(reading_profile.settling_delay)
@@ -368,8 +368,10 @@ class Dcs5Controller:
         if self.is_listening and flash is True:
             self.c_flash_fuel_gauge()
 
-    def mode_key_backlight_pattern(self, value: bool):
-        if self.is_listening:
+    def set_mode_key_backlight_pattern(self, value: bool):
+        """Only works for XT models.
+        """
+        if self.is_listening and self.devices_specifications.control_box.model == "xt":
             if value is True:
                 key = self.find_command_key('MODE')
                 if key is not None:
@@ -381,7 +383,7 @@ class Dcs5Controller:
                 self.c_set_backlighting_level(self.user_set_backlight_value)
 
     def find_command_key(self, command: str):
-        """Return the controller box internal key value."""
+        """Return the XT controller box internal key value for a given command. (reverse mapping)."""
         _key = None
         for key in self.config.key_maps.control_box:
             for value in (self.config.key_maps.control_box[key], self.config.key_maps.control_box_mode[key]):
@@ -389,7 +391,6 @@ class Dcs5Controller:
                     if command == value:
                         _key = key
                         break
-
                 else:
                     if command in value:
                         _key = key
@@ -406,8 +407,7 @@ class Dcs5Controller:
         self.change_board_output_mode({'top':'bottom', 'bottom':'length','length':'top'}[self.output_mode])
 
     def change_board_output_mode(self, value: str):
-        """
-        value must be one of  [length, bottom, top]
+        """Value must be one of  [length, bottom, top]
         """
         self.output_mode = value
         if self.client.is_connected:
@@ -420,7 +420,7 @@ class Dcs5Controller:
                     else:
                         self.c_set_fuel_gauge(int("00111100", 2))
                 else:
-                    color = [r,g,b,w] = int('FF', 16), int('60', 16), int('00', 16), int('00', 16) #  orange
+                    color = [int('FF', 16), int('60', 16), int('00', 16), int('00', 16)] #  orange
                     if self.output_mode == 'bottom':
                         self.c_set_fuel_gauge(int("11000000", 2), color)
                     elif self.output_mode == 'top':
@@ -555,10 +555,11 @@ class Dcs5Controller:
         self.command_handler.queue_command(f"&pl,{value}#", [f'HostApp={host_app}\r', f"%pl,{value}#\r"])
 
     def c_flash_fuel_gauge(self):
+        """For the Micro the fuel gauge is the led rings."""
         self.command_handler.queue_command("&ra#", "%ra#\r")
 
     def c_set_fuel_gauge(self, value: int, color: list = None):
-        """
+        """For the Micro the fuel gauge is the led rings.
         Parameters
         ----------
         value :
@@ -574,8 +575,9 @@ class Dcs5Controller:
                 f"&lf,{value},{','.join(color)}#", f"%lf,{value},{','.join(color)}#\r"
             )
 
-    def c_set_fuel_gauge_tempory(self, delay: int, value: int, color: list = None):
-        """
+    def c_set_fuel_gauge_temporary(self, delay: int, value: int, color: list = None):
+        """For the Micro the fuel gauge is the led rings.
+
         Parameters
         ----------
         delay :
@@ -952,7 +954,7 @@ class SocketListener:
     def set_with_mode(self, value: bool):
         if value is not self.with_mode:
             self.with_mode = not self.with_mode
-            self.controller.mode_key_backlight_pattern(self.with_mode)
+            self.controller.set_mode_key_backlight_pattern(self.with_mode)
         else:
             pass
 
