@@ -27,7 +27,7 @@ from dcs5.keyboard_emulator import KeyboardEmulator
 
 from dcs5.controller_configurations import load_config, ControllerConfiguration, ConfigError
 from dcs5.devices_specifications import load_devices_specification, DevicesSpecifications
-from control_box_parameters import XtControlBoxParameters, MicroControlBoxParameters
+from dcs5.control_box_parameters import XtControlBoxParameters, MicroControlBoxParameters
 
 BOARD_MESSAGE_DELIMITER = "\r"
 
