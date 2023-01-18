@@ -168,8 +168,10 @@ class Dcs5Controller:
         self.reading_profile = self.config.launch_settings.reading_profile
         self.length_units = self.config.launch_settings.length_units
         self.stylus: str = self.config.launch_settings.stylus
+        self.auto_enter = self.config.launch_settings.auto_enter
         self.stylus_offset = self.devices_specifications.stylus_offset[self.stylus]
         self.stylus_cyclical_list = cycle(list(self.devices_specifications.stylus_offset.keys()))
+
 
     def start_client(self, mac_address: str = None):
         """Create a socket and tries to connect with the board."""
@@ -266,6 +268,8 @@ class Dcs5Controller:
     def monitor_board_state(self):
         while self.is_listening:
             self.c_get_battery_level()
+            if self.devices_specifications.control_box.model == "micro":
+                self.c_get_battery_time_to_empty()
             self.c_get_temperature_humidity()
             time.sleep(BOARD_STATE_MONITORING_SLEEP)
 
@@ -542,6 +546,12 @@ class Dcs5Controller:
     def c_get_battery_level(self):
         self.command_handler.queue_command('&q#', "regex_%q:\d+,\d+#\r")
 
+
+    def c_get_battery_time_to_empty(self):
+        """Micro Only"""
+        self.command_handler.queue_command('&qe#', "regex_%qe:\d+#\r")
+
+
     def c_get_temperature_humidity(self):
         self.command_handler.queue_command('&t#', "regex_%t,\d+,\d+#\r")
 
@@ -719,7 +729,7 @@ class CommandHandler:
             self.controller.ping_event_check.set()
             logging.debug('Ping is set.')
 
-        elif "%pl" in received:
+        elif "%pl," in received:
             match = re.findall(f"%pl,(\d)#\r", received)
             if len(match) > 0:
                 if match[0] == "0":
@@ -729,7 +739,7 @@ class CommandHandler:
                     self.controller.internal_board_state.board_interface = "FEED"
                     logging.debug(f'Interface set to FEED')
 
-        elif "%sn" in received:
+        elif "%sn:" in received:
             match = re.findall(f"%sn:(\d)#\r", received)
             if len(match) > 0:
                 if match[0] == "1":
@@ -739,25 +749,25 @@ class CommandHandler:
                     self.controller.internal_board_state.stylus_status_msg = "disable"
                     logging.debug('Stylus Status Message Disable')
 
-        elif "%di" in received:
+        elif "%di:" in received:
             match = re.findall(f"%di:(\d+)#\r", received)
             if len(match) > 0:
                 self.controller.internal_board_state.stylus_settling_delay = int(match[0])
                 logging.debug(f"Stylus settling delay set to {match[0]}")
 
-        elif "%dm" in received:
+        elif "%dm:" in received:
             match = re.findall(f"%dm:(\d+)#\r", received)
             if len(match) > 0:
                 self.controller.internal_board_state.stylus_max_deviation = int(match[0])
                 logging.debug(f"Stylus max deviation set to {int(match[0])}")
 
-        elif "%dn" in received:
+        elif "%dn:" in received:
             match = re.findall(f"%dn:(\d+)#\r", received)
             if len(match) > 0:
                 self.controller.internal_board_state.number_of_reading = int(match[0])
                 logging.debug(f"Stylus number set to {int(match[0])}")
 
-        elif "%b" in received:
+        elif "%b:" in received:
             match = re.findall("%b:(.*)#", received)
             if len(match) > 0:
                 logging.debug(f'Board State: {match[0]}')
@@ -765,14 +775,24 @@ class CommandHandler:
                 firmware_version = match[0].split(',')[1]
                 self.controller.internal_board_state.firmware = firmware_version[:-2] + '.' + firmware_version[-2:]
 
-        elif "%q" in received:
+        elif "%q:" in received:
             match = re.findall("%q:(\d+),(\d+)#", received)
             if len(match) > 0:
                 logging.debug(f'Battery level: {match[0][0]}')
                 self.controller.internal_board_state.battery_level = int(match[0][0])
-                self.controller.internal_board_state.is_charging = bool(int(match[0][1]))
+                if self.controller.devices_specifications.control_box.model == "xt":
+                    self.controller.internal_board_state.is_charging = bool(int(match[0][1]))
 
-        elif "%t" in received:
+        elif "%qe:" in received:
+            match = re.findall("%qe:(\d+)#", received)
+            if len(match) > 0:
+                logging.debug(f'Battery time to empty: {match[0]}')
+                if int(match[0]) == 65535:
+                    self.controller.internal_board_state.is_charging = True
+                else:
+                    self.controller.internal_board_state.is_charging = False
+
+        elif "%t," in received:
             match = re.findall("%t,(\d+),(\d+)#", received)
             if len(match) > 0:
                 logging.debug(f'temperature: {match[0][0]}, humidity: {match[0][1]}')
@@ -791,7 +811,7 @@ class CommandHandler:
             else:
                 logging.error(f'Calibration state {received}')
 
-        elif "%la" in received:
+        elif "%la," in received:
             match = re.findall("%la,(\d+)#", received)
             if len(match) > 0:
                 level = int(match[0])
@@ -888,6 +908,11 @@ class SocketListener:
         while not self.message_queue.empty():
             message = self.message_queue.get()
             logging.debug(f'Received Message: {message}')
+
+            if "@@@" in message:
+                logging.debug('Usb Cabled plugged in.')
+                continue
+
             output_value = None
             msg_type, msg_value = self._decode_board_message(message)
             logging.debug(f"Message Type: {msg_type}, Message Value: {msg_value}")
@@ -913,7 +938,9 @@ class SocketListener:
             if output_value is not None:
                 self.last_command = output_value
                 self._process_output(output_value)
-                if msg_type == 'length' and self.controller.auto_enter is True:
+                if msg_type == 'length' \
+                        and self.controller.output_mode == 'length' \
+                        and self.controller.auto_enter is True:
                     self.controller.to_keyboard('enter')
 
 
@@ -927,7 +954,6 @@ class SocketListener:
             "%s,(-?\d+)#",  # swipe
             "%hs,([0-9])#",  # Micro button
             "%k,([0-9]{2})#",  # Xt button v2.0.0+
-            #",Battery charge-voltage-current-ttfull-ttempty:,(\d+),(\d+),(\d+),(\d+),(\d+)" #FIXME REMOVE COMPLETLY IF THE BUG DOESNT COME UP AGAIN
 
         ]
         match = re.findall("|".join(patterns), value)
@@ -940,9 +966,6 @@ class SocketListener:
                 return 'controller_box_key', match[0][3]
             elif match[0][4] != "":
                 return 'controller_box_key', match[0][4]
-            #elif match[0][5] != "":  # temporary fix FIXME REMOVE COMPLETLY IF THE BUG DOESNT COME UP AGAIN
-            #    logging.debug(f"micro unsolicited battery state {value}") #FIXME REMOVE
-            #    return None, None
         else:
             return 'solicited', value
 
