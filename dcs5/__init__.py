@@ -4,7 +4,7 @@ from pathlib import Path
 
 from dcs5.utils import resolve_relative_path
 
-VERSION = "2.0.0"
+VERSION = "1.0.0"
 
 ### LOCAL FILE PATH ###
 if platform.system() == 'Windows':
