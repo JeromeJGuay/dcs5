@@ -172,7 +172,6 @@ class Dcs5Controller:
         self.stylus_offset = self.devices_specifications.stylus_offset[self.stylus]
         self.stylus_cyclical_list = cycle(list(self.devices_specifications.stylus_offset.keys()))
 
-
     def start_client(self, mac_address: str = None):
         """Create a socket and tries to connect with the board."""
         if self.client.is_connected:
