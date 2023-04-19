@@ -1,7 +1,8 @@
 {
     "client": {
         "device_name": "BigFinDCS5Micro-3018",
-        "mac_address": "80:1F:12:B2:30:18"
+        "mac_address": "80:1F:12:B2:30:18",
+        "marel_ip_address": "192.168.0.202"
     },
     "launch_settings": {
         "output_mode": "length",
