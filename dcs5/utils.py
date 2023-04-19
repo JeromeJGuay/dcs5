@@ -29,3 +29,14 @@ def json2dict(json_file: Union[str, PurePath]) -> dict:
 def resolve_relative_path(relative_path, current_path):
     """ """
     return PurePath(current_path).parent.joinpath(relative_path)
+
+
+def update_json_value(filename, key_path: List[str], value):
+    data = json2dict(filename)
+
+    tree = data
+    for k in key_path[:-1]:
+        tree = tree[k]
+    tree[key_path[-1]] = value
+
+    dict2json(filename, data)

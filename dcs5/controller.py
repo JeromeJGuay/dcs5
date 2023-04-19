@@ -689,9 +689,9 @@ class Dcs5Controller:
                 self.marel = MarelController(host=self.config.client.marel_ip_address)
             else:
                 pass # fixme maybe
-        else:
-            self.marel_thread = threading.Thread(target=self.marel.start_listening)
-            self.marel_thread.start()
+
+        self.marel_thread = threading.Thread(target=self.marel.start_listening)
+        self.marel_thread.start()
 
     def stop_marel_listening(self):
         if self.marel:
