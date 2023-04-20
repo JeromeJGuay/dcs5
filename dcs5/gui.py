@@ -520,7 +520,7 @@ def refresh_layout(window: sg.Window, controller: Dcs5Controller):
     else:
         for key in [
             '-MAREL_START-', '-MAREL_STOP-',
-            '-MAREL_HOST-', '-MAREL_UNITS', 'MAREL_AUTO_ENTER',
+            '-MAREL_HOST-', '-MAREL_UNITS-', '-MAREL_AUTO_ENTER-',
             '-CONNECT-', '-ACTIVATE-',
             '-DISCONNECT-', '-RESTART-',
             '-MUTE-',
