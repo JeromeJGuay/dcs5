@@ -395,8 +395,6 @@ def run():
 
 def init_layout(window: sg.Window, controller: Dcs5Controller):
     if controller is not None:
-        #if controller.devices_specifications.control_box.model == 'xt': #todo REMOVE
-        #    #window['-BACKLIGHT-'].update(range=(0, controller.control_box_parameters.max_backlighting_level, 5))
         window['-BACKLIGHT-'].update(range=(0, BACKLIGHT_SLIDER_MAX), value=0)
 
         if controller.config.client.marel_ip_address:
