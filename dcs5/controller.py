@@ -697,7 +697,7 @@ class Dcs5Controller:
         if self.marel:
             self.marel.stop_listening()
 
-        while self.marel.is_listening or self.marel.is_connecting:  # -------------------maybe not needed
+        while self.marel.is_listening or self.marel.client.is_connecting:  # -------------------maybe not needed
             time.sleep(.1)
 
     def marel_get_weight(self):

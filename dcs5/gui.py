@@ -65,20 +65,20 @@ REFRESH_PERIOD = .05
 
 BACKLIGHT_SLIDER_MAX = 100
 
-DEVICE_LAYOUT_PADDING = 20
+DEVICE_LAYOUT_PADDING = 16
 
-SMALL_FONT = f'Courier {scale_font(8)}'
+SMALL_FONT = f'Courier {scale_font(5)}'
 
-REG_FONT = f'Courier {scale_font(10)}'
+REG_FONT = f'Courier {scale_font(7)}'
 REG_FONT_BOLD = REG_FONT + ' bold'
 
-TAB_FONT = f'Courier {scale_font(12)}'
+TAB_FONT = f'Courier {scale_font(9)}'
 
-HEADER_FONT = f'Courier {scale_font(20)}'
+HEADER_FONT = f'Courier {scale_font(15)}'
 
 EMPTY_CIRCLE = '\u25CB'
 
-LED_FONT = f'Courier {scale_font(16)}'
+LED_FONT = f'Courier {scale_font(10)}'
 
 LED_ON = {'value': '\u2B24', 'text_color': 'Green', 'font': TAB_FONT}
 LED_WAIT = {'value': '\u25B2', 'text_color': 'Orange', 'font': LED_FONT}
@@ -313,13 +313,17 @@ def make_window():
         col([device_layout]),
         col([marel_layout]),
         col([status_layout]),
-        col([reading_profile_layout, sync_layout]),
-        col([calibration_layout]),
-        col([units_layout, mode_layout]),
-        col([meta_layout]),
-        col([last_command_layout]),
-        col([stylus_layout, backlight_layout]),
-    ]
+        ]
+    controller_tab_layout += [
+        sg.Frame('', [[sg.Col([
+                col([reading_profile_layout, sync_layout]),
+                col([calibration_layout]),
+                col([units_layout, mode_layout]),
+                col([meta_layout]),
+                col([last_command_layout]),
+                col([stylus_layout, backlight_layout])
+        ],pad=(0,0), element_justification='center', scrollable=True, vertical_scroll_only=True, expand_y=True, sbar_width=.5)
+    ]], expand_y=True, pad=(0, 0))]
 
     # --- MENU ---#
 
@@ -347,11 +351,11 @@ def make_window():
         margins=(0, 0),
         finalize=True,
         grab_anywhere=True,
-        resizable=False,
+        resizable=True,
         keep_on_top=False,
         element_justification='center',
     )
-    window.set_min_size(window.size)
+    window.set_min_size(tuple(map(lambda x: int(x/2), window.size)))
     return window
 
 
@@ -360,10 +364,12 @@ def run():
     load_user_settings()
 
     sg.theme('lightgrey')
-    sg.theme_border_width(.2)
+    sg.theme_border_width(.1)
     sg.set_options(
         icon=LOGO_PATH,
-        auto_size_buttons=True,
+        #sbar_width=2,
+        #auto_size_buttons=True,
+        #auto_size_text=True,
         use_ttk_buttons=True,
     )
 
@@ -536,14 +542,15 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
     if controller.marel is not None:
         window["-MAREL_UNITS-"].update(disabled=False)
         window["-MAREL_AUTO_ENTER-"].update(disabled=False)
-        if controller.marel.is_listening:
-            window["-MAREL_LED-"].update(**LED_ON)
+        if controller.marel.client.is_connecting:
+            window["-MAREL_LED-"].update(**LED_WAIT)
+        elif controller.marel.is_listening:
+            if controller.marel.client.is_connected:
+                window["-MAREL_LED-"].update(**LED_ON)
             window["-MAREL_HOST-"].update(disabled=True)
             window["-MAREL_START-"].update(disabled=True)
             window["-MAREL_STOP-"].update(disabled=False)
             window["-MAREL_WEIGHT-"].update(f"{controller.marel.get_weight()} {controller.marel.units}")
-        elif controller.marel.is_connecting:
-            window["-MAREL_LED-"].update(**LED_WAIT)
         else:
             window["-MAREL_HOST-"].update(disabled=False)
             window["-MAREL_START-"].update(disabled=False)
