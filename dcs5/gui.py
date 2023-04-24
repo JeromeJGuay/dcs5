@@ -67,18 +67,18 @@ BACKLIGHT_SLIDER_MAX = 100
 
 DEVICE_LAYOUT_PADDING = 16
 
-SMALL_FONT = f'Courier {scale_font(5)}'
+SMALL_FONT = f'Courier {scale_font(8)}'
 
-REG_FONT = f'Courier {scale_font(7)}'
+REG_FONT = f'Courier {scale_font(10)}'
 REG_FONT_BOLD = REG_FONT + ' bold'
 
-TAB_FONT = f'Courier {scale_font(9)}'
+TAB_FONT = f'Courier {scale_font(12)}'
 
 HEADER_FONT = f'Courier {scale_font(15)}'
 
 EMPTY_CIRCLE = '\u25CB'
 
-LED_FONT = f'Courier {scale_font(10)}'
+LED_FONT = f'Courier {scale_font(12)}'
 
 LED_ON = {'value': '\u2B24', 'text_color': 'Green', 'font': TAB_FONT}
 LED_WAIT = {'value': '\u25B2', 'text_color': 'Orange', 'font': LED_FONT}
@@ -207,7 +207,7 @@ def make_window():
                  ibutton('Start', size=(6, 1), key='-MAREL_START-'),
                  ibutton('Stop', size=(6, 1), key='-MAREL_STOP-', button_color='darkred')],
                 [sg.Text(dotted(" Weight", _pad), pad=(0, 0), font=REG_FONT), #sg.Push(),
-                 sg.Text("N/A", key="-MAREL_WEIGHT-", font=TAB_FONT, size=(10, 1), justification='right', relief='sunken', border_width=1)],
+                 sg.Text("N/A", key="-MAREL_WEIGHT-", font=TAB_FONT, size=(12, 1), justification='right', relief='sunken', border_width=1)],
                 [sg.Text(" Auto-enter:", pad=(0, 0), font=REG_FONT),
                  ibutton('On', size=(3, 1), key='-MAREL_AUTO_ENTER-'), sg.Push(),
                     sg.Text("Units", pad=(0, 0), font=REG_FONT),
@@ -542,6 +542,7 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
         window["-MAREL_AUTO_ENTER-"].update(disabled=False)
         if controller.marel.client.is_connecting:
             window["-MAREL_LED-"].update(**LED_WAIT)
+            window["-MAREL_WEIGHT-"].update("N/A")
         elif controller.marel.is_listening:
             if controller.marel.client.is_connected:
                 window["-MAREL_LED-"].update(**LED_ON)
