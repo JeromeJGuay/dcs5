@@ -1,5 +1,7 @@
 # Dcs5 Controller app
 
+NOT UP TO DATE FOR THE CURRENT RELEASE. CONTACT ME FOR HELP
+
 This python (python 3.10) application provides graphical interface to interact with a BigFin Dcs5 XT measuring board via Bluetooth.
 The application will turn stylus input on the measuring board into keyboard inputs basically turning the dcs5 measuring board into a wireless keyboard.
 
