@@ -28,6 +28,7 @@ from dcs5.keyboard_emulator import KeyboardEmulator
 from dcs5.controller_configurations import load_config, ControllerConfiguration, ConfigError
 from dcs5.devices_specifications import load_devices_specification, DevicesSpecifications
 from dcs5.control_box_parameters import XtControlBoxParameters, MicroControlBoxParameters
+from marel_marine_scale_controller.marel_controller import Controller as MarelController
 
 BOARD_MESSAGE_DELIMITER = "\r"
 
@@ -125,8 +126,12 @@ class Dcs5Controller:
             "MODE_TOP",
             "MODE_LENGTH",
             "MODE_BOTTOM",
-            "MODE", "BACKLIGHT_UP", "BACKLIGHT_DOWN"
-        ]
+            "MODE", "BACKLIGHT_UP", "BACKLIGHT_DOWN",
+            ]
+
+        self.marel: MarelController = None
+        self.marel_thread: threading.Thread = None
+        self.controller_commands.append("WEIGHT")
 
     def _load_configs(self):
         if (devices_spec := load_devices_specification(self.devices_specifications_path)) is None:
@@ -171,7 +176,6 @@ class Dcs5Controller:
         self.auto_enter = self.config.launch_settings.auto_enter
         self.stylus_offset = self.devices_specifications.stylus_offset[self.stylus]
         self.stylus_cyclical_list = cycle(list(self.devices_specifications.stylus_offset.keys()))
-
 
     def start_client(self, mac_address: str = None):
         """Create a socket and tries to connect with the board."""
@@ -488,6 +492,7 @@ class Dcs5Controller:
             "MODE_BOTTOM": self._mode_bottom,
             "BACKLIGHT_UP": self.backlight_up,
             "BACKLIGHT_DOWN": self.backlight_down,
+            "WEIGHT": self.marel_get_weight
         }
         commands[command]()
 
@@ -677,6 +682,33 @@ class Dcs5Controller:
 
     def c_set_calibration_points_mm(self, pt: int, pos: int):
         self.command_handler.queue_command(f'&{pt}mm,{pos}#', f'%{pt}mm,{pos}#\r')
+
+    def start_marel_listening(self):
+        if not self.marel:
+            if self.config.client.marel_ip_address:
+                self.marel = MarelController(host=self.config.client.marel_ip_address)
+            else:
+                pass # fixme maybe
+
+        self.marel_thread = threading.Thread(target=self.marel.start_listening)
+        self.marel_thread.start()
+
+    def stop_marel_listening(self):
+        if self.marel:
+            self.marel.stop_listening()
+
+        while self.marel.is_listening or self.marel.client.is_connecting:  # -------------------maybe not needed
+            time.sleep(.1)
+
+    def marel_get_weight(self):
+        if self.marel is not None:
+            weight = self.marel.get_weight()
+            if self.marel.weight != "":
+                self.to_keyboard(self.marel.weight)
+                if self.auto_enter is True:
+                    self.to_keyboard('enter')
+
+            self.marel.weight = ""
 
 
 class CommandHandler:

@@ -18,7 +18,7 @@ from dcs5 import VERSION, LOCAL_FILE_PATH, CONFIG_FILES_PATH
 from dcs5.controller import Dcs5Controller
 from dcs5.controller_configurations import ConfigError
 from dcs5.logger import init_logging
-from dcs5.utils import resolve_relative_path
+from dcs5.utils import resolve_relative_path, update_json_value
 
 if os.environ.get('EDITOR') == 'EMACS':
     print('Text editor changed.')
@@ -35,7 +35,7 @@ MICRO_DEVICES_SPECIFICATION_FILE_NAME = 'micro_devices_specification.json'
 # PATHS
 DEFAULT_CONFIG_PATH = "default_configs/"
 # DEFAULT_CONTROLLER_CONFIGURATION_FILE = str(
-#     resolve_relative_path(DEFAULT_CONFIG_PATH + CONTROLLER_CONFIGURATION_FILE_NAME, __file__))
+#     resolve_relative_path(DEFAULT_CONFIG_axPATH + CONTROLLER_CONFIGURATION_FILE_NAME, __file__))
 
 XT_DEFAULT_CONTROLLER_CONFIGURATION_FILE = str(
     resolve_relative_path(DEFAULT_CONFIG_PATH + XT_CONTROLLER_CONFIGURATION_FILE_NAME, __file__))
@@ -65,7 +65,7 @@ REFRESH_PERIOD = .05
 
 BACKLIGHT_SLIDER_MAX = 100
 
-DEVICE_LAYOUT_PADDING = 20
+DEVICE_LAYOUT_PADDING = 16
 
 SMALL_FONT = f'Courier {scale_font(8)}'
 
@@ -74,11 +74,11 @@ REG_FONT_BOLD = REG_FONT + ' bold'
 
 TAB_FONT = f'Courier {scale_font(12)}'
 
-HEADER_FONT = f'Courier {scale_font(20)}'
+HEADER_FONT = f'Courier {scale_font(15)}'
 
 EMPTY_CIRCLE = '\u25CB'
 
-LED_FONT = f'Courier {scale_font(16)}'
+LED_FONT = f'Courier {scale_font(12)}'
 
 LED_ON = {'value': '\u2B24', 'text_color': 'Green', 'font': TAB_FONT}
 LED_WAIT = {'value': '\u25B2', 'text_color': 'Orange', 'font': LED_FONT}
@@ -189,7 +189,29 @@ def make_window():
                 [sg.Text("Humidity:", font=REG_FONT), sg.Text("N\A", key="-HUMIDITY-", font=REG_FONT),
                  sg.Push(),
                  sg.Text("Charging:", font=REG_FONT), sg.Text("N\A", key="-CHARGING-", font=REG_FONT)
-                 ]
+                 ],
+            ],
+            font=TAB_FONT
+        )
+    ]]
+
+    _pad = 20
+    marel_layout = [[
+        sg.Frame(
+            'Marel', [
+                [sg.Text(dotted(" Host", _pad), pad=(0, 0), font=REG_FONT),
+                 sg.InputText(size=(14, 1), border_width=1, pad=(0, 0), key='-MAREL_HOST-', justification='right', font=REG_FONT, tooltip="Scale IP address")
+                 ],
+                [sg.Text(" Status", pad=(0, 0), font=REG_FONT), led(key='-MAREL_LED-'),
+                 sg.Push(),
+                 ibutton('Start', size=(6, 1), key='-MAREL_START-'),
+                 ibutton('Stop', size=(6, 1), key='-MAREL_STOP-', button_color='darkred')],
+                [sg.Text(dotted(" Weight", _pad), pad=(0, 0), font=REG_FONT), #sg.Push(),
+                 sg.Text("N/A", key="-MAREL_WEIGHT-", font=TAB_FONT, size=(12, 1), justification='right', relief='sunken', border_width=1)],
+                [sg.Text(" Auto-enter:", pad=(0, 0), font=REG_FONT),
+                 ibutton('On', size=(3, 1), key='-MAREL_AUTO_ENTER-'), sg.Push(),
+                    sg.Text("Units", pad=(0, 0), font=REG_FONT),
+                 sg.Combo(default_value='kg', values=['kg', 'g'], key='-MAREL_UNITS-', enable_events=True, size=(5, 1), pad=(1, 1), font=REG_FONT)],
             ],
             font=TAB_FONT
         )
@@ -289,14 +311,19 @@ def make_window():
 
     controller_tab_layout = [
         col([device_layout]),
+        col([marel_layout]),
         col([status_layout]),
-        col([reading_profile_layout, sync_layout]),
-        col([calibration_layout]),
-        col([units_layout, mode_layout]),
-        col([meta_layout]),
-        col([last_command_layout]),
-        col([stylus_layout, backlight_layout]),
-    ]
+        ]
+    controller_tab_layout += [
+        sg.Frame('', [[sg.Col([
+                col([reading_profile_layout, sync_layout]),
+                col([calibration_layout]),
+                col([units_layout, mode_layout]),
+                col([meta_layout]),
+                col([last_command_layout]),
+                col([stylus_layout, backlight_layout])
+        ],pad=(0,0), element_justification='center', scrollable=True, vertical_scroll_only=True, expand_y=True, sbar_width=.5)
+    ]], expand_y=True, pad=(0, 0))]
 
     # --- MENU ---#
 
@@ -324,11 +351,11 @@ def make_window():
         margins=(0, 0),
         finalize=True,
         grab_anywhere=True,
-        resizable=False,
+        resizable=True,
         keep_on_top=False,
         element_justification='center',
     )
-    window.set_min_size(window.size)
+    window.set_min_size(tuple(map(lambda x: int(x/2), window.size)))
     return window
 
 
@@ -337,10 +364,12 @@ def run():
     load_user_settings()
 
     sg.theme('lightgrey')
-    sg.theme_border_width(.2)
+    sg.theme_border_width(.1)
     sg.set_options(
         icon=LOGO_PATH,
-        auto_size_buttons=True,
+        #sbar_width=2,
+        #auto_size_buttons=True,
+        #auto_size_text=True,
         use_ttk_buttons=True,
     )
 
@@ -366,9 +395,11 @@ def run():
 
 def init_layout(window: sg.Window, controller: Dcs5Controller):
     if controller is not None:
-        #if controller.devices_specifications.control_box.model == 'xt': #todo REMOVE
-        #    #window['-BACKLIGHT-'].update(range=(0, controller.control_box_parameters.max_backlighting_level, 5))
         window['-BACKLIGHT-'].update(range=(0, BACKLIGHT_SLIDER_MAX), value=0)
+
+        if controller.config.client.marel_ip_address:
+            window['-MAREL_HOST-'].update(controller.config.client.marel_ip_address)
+
     refresh_layout(window, controller)
 
 
@@ -387,6 +418,28 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
             sg.SetOptions(window_location=get_new_location(window))
 
         match event:
+            case "-MAREL_START-":
+                controller.config.client.marel_ip_address = values['-MAREL_HOST-']
+                update_json_value(controller.config_path, ['client', 'marel_ip_address'],
+                                  str(controller.config.client.marel_ip_address))
+                window['-MAREL_HOST-'].update(controller.config.client.marel_ip_address)
+
+                controller.start_marel_listening()
+                window['-MAREL_LED-'].update(**LED_WAIT)
+                window['-MAREL_START-'].update(disabled=True)
+                window.refresh()
+            case "-MAREL_STOP-":
+                controller.stop_marel_listening()
+            case "-MAREL_UNITS-":
+                logging.debug(f'UNITS {event}, {values}')
+                controller.marel.set_units(values['-MAREL_UNITS-'])
+            case "-MAREL_AUTO_ENTER-":
+                if controller.marel.auto_enter:
+                    window['-MAREL_AUTO_ENTER-'].update('Off')
+                else:
+                    window['-MAREL_AUTO_ENTER-'].update('On')
+                controller.marel.auto_enter = not controller.marel.auto_enter
+                window.refresh()
             case "-CONNECT-":
                 window.metadata['is_connecting'] = True
                 window.perform_long_operation(controller.start_client, end_key='-END_CONNECT-')
@@ -465,20 +518,53 @@ def refresh_layout(window: sg.Window, controller: Dcs5Controller):
     if controller is not None:
         _controller_refresh_layout(window, controller)
     else:
-        for key in ['-CONNECT-', '-ACTIVATE-',
-                    '-DISCONNECT-', '-RESTART-',
-                    '-MUTE-',
-                    '-SYNC-', '-CALIBRATE-',
-                    '-CALPTS-', '-BACKLIGHT-',
-                    '-UNITS-MM-', '-UNITS-CM-',
-                    '-MODE-TOP-', '-MODE-BOTTOM-',
-                    '-MODE-LENGTH-']:
+        for key in [
+            '-MAREL_START-', '-MAREL_STOP-',
+            '-MAREL_HOST-', '-MAREL_UNITS-', '-MAREL_AUTO_ENTER-',
+            '-CONNECT-', '-ACTIVATE-',
+            '-DISCONNECT-', '-RESTART-',
+            '-MUTE-',
+            '-SYNC-', '-CALIBRATE-',
+            '-CALPTS-', '-BACKLIGHT-',
+            '-UNITS-MM-', '-UNITS-CM-',
+            '-MODE-TOP-', '-MODE-BOTTOM-',
+            '-MODE-LENGTH-'
+        ]:
             window[key].update(disabled=True)
-        for key in ['-CONNECTED_LED-', '-ACTIVATED_LED-', '-SYNC_LED-', '-MUTED_LED-', '-CAL_LED-']:
+        for key in ['-CONNECTED_LED-', '-ACTIVATED_LED-', '-SYNC_LED-', '-MUTED_LED-', '-CAL_LED-', '-MAREL_LED-']:
             window[key].update(**LED_OFF)
 
 
 def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
+    ##### MAREL #####
+    if controller.marel is not None:
+        window["-MAREL_UNITS-"].update(disabled=False)
+        window["-MAREL_AUTO_ENTER-"].update(disabled=False)
+        if controller.marel.client.is_connecting:
+            window["-MAREL_LED-"].update(**LED_WAIT)
+            window["-MAREL_WEIGHT-"].update("N/A")
+        elif controller.marel.is_listening:
+            if controller.marel.client.is_connected:
+                window["-MAREL_LED-"].update(**LED_ON)
+            window["-MAREL_HOST-"].update(disabled=True)
+            window["-MAREL_START-"].update(disabled=True)
+            window["-MAREL_STOP-"].update(disabled=False)
+            window["-MAREL_WEIGHT-"].update(f"{controller.marel.get_weight()} {controller.marel.units}")
+        else:
+            window["-MAREL_HOST-"].update(disabled=False)
+            window["-MAREL_START-"].update(disabled=False)
+            window["-MAREL_STOP-"].update(disabled=True)
+            window["-MAREL_LED-"].update(**LED_OFF)
+            window["-MAREL_WEIGHT-"].update("N/A")
+    else:
+        window["-MAREL_UNITS-"].update(disabled=True)
+        window["-MAREL_AUTO_ENTER-"].update(disabled=True)
+        window["-MAREL_START-"].update(disabled=False)
+        window["-MAREL_STOP-"].update(disabled=True)
+        window["-MAREL_LED-"].update(**LED_OFF)
+        window["-MAREL_WEIGHT-"].update("N/A")
+
+    ##### DCS5 #####
     window['-NAME-'].update(dotted(controller.config.client.device_name + " ", DEVICE_LAYOUT_PADDING, 'right'))
     window['-MODEL-'].update(
         dotted(controller.devices_specifications.control_box.model + " ", DEVICE_LAYOUT_PADDING, 'right'))
@@ -819,7 +905,6 @@ def popup_window_select_config(controller: Dcs5Controller = None) -> Dcs5Control
                                 click.edit(filename=str(config_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)))
                             case 'Devices Specification':
                                 click.edit(filename=str(config_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME)))
-
 
                         if values['-CONFIG-'][0] == current_config:
                             sg.user_settings()['previous_configs_path'] = current_config + '*'
