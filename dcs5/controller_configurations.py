@@ -7,7 +7,7 @@ Valid commands :
  - The "MODE" command is not a command per say but a MetaKey for the board.
  - The "CHANGE_OUTPUT_MODE" command will cycle through MODE_LENGTH, MODE_TOP, MODE_BOTTOM
 Valid keyboard inputs :
-     'print <string to print>'
+     'PRINT <string to print>'
 
      and
 
