@@ -20,9 +20,10 @@ from dcs5.controller_configurations import ConfigError
 from dcs5.logger import init_logging
 from dcs5.utils import resolve_relative_path, update_json_value
 
+# This is a fix for my computer. Should not influence anything.
 if os.environ.get('EDITOR') == 'EMACS':
     print('Text editor changed.')
-    os.environ.update({'EDITOR': 'pluma'})  # This is a fix for my computer. Should not influence anything.
+    os.environ.update({'EDITOR': 'pluma'})
 
 # FILENAMES
 CONTROLLER_CONFIGURATION_FILE_NAME = 'controller_configuration.json'
@@ -975,29 +976,35 @@ def create_new_configs():
                         break
                     window.keep_on_top_set()
 
-                new_configs_path = CONFIG_FILES_PATH.joinpath(values['-PATH-'])
-                new_configs_path.mkdir(parents=True, exist_ok=True)
-
-                if values['-MODEL-'] == 'xt':
-                    default_files = [XT_DEFAULT_CONTROLLER_CONFIGURATION_FILE, XT_DEFAULT_DEVICES_SPECIFICATION_FILE]
-                else:
-                    default_files = [MICRO_DEFAULT_CONTROLLER_CONFIGURATION_FILE,
-                                     MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE]
-
-                local_files = [new_configs_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME),
-                               new_configs_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME)]
-
-                for lf, df in zip(local_files, default_files):
-                    if not Path(lf).exists():
-                        shutil.copyfile(df, lf)
-                    else:
-                        shutil.copyfile(df, lf)
-                        logging.debug(f'Writing file: {lf}')
+                new_config_path = copy_config_files(values['-PATH-'], values['-MODEL-'])
 
                 window.close()
-                return new_configs_path
+                return new_config_path
     window.close()
     return None
+
+
+def copy_config_files(dest_path: str, model: str):
+    new_config_path = CONFIG_FILES_PATH.joinpath(dest_path)
+    new_config_path.mkdir(parents=True, exist_ok=True)
+
+    if model == 'xt':
+        default_files = [XT_DEFAULT_CONTROLLER_CONFIGURATION_FILE, XT_DEFAULT_DEVICES_SPECIFICATION_FILE]
+    else:
+        default_files = [MICRO_DEFAULT_CONTROLLER_CONFIGURATION_FILE,
+                         MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE]
+
+    local_files = [new_config_path.joinpath(fn) for fn in
+                   (CONTROLLER_CONFIGURATION_FILE_NAME, DEVICES_SPECIFICATION_FILE_NAME)]
+
+    for lf, df in zip(local_files, default_files):
+        if not Path(lf).exists():
+            shutil.copyfile(df, lf)
+        else:
+            shutil.copyfile(df, lf)
+            logging.debug(f'Writing file: {lf}')
+
+    return new_config_path
 
 
 def reload_controller_config(controller: Dcs5Controller):
