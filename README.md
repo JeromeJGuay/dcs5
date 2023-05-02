@@ -2,7 +2,7 @@
 
 NOT UP TO DATE FOR THE CURRENT RELEASE. CONTACT ME FOR HELP
 
-This python (python 3.10) application provides graphical interface to interact with a BigFin Dcs5 XT measuring board via Bluetooth.
+This python (python 3.10) application provides graphical interface to interact (GUI) with a BigFin Dcs5 XT measuring board via Bluetooth.
 The application will turn stylus input on the measuring board into keyboard inputs basically turning the dcs5 measuring board into a wireless keyboard.
 A Marel Marine Scale can also be connected to the application. See the project [marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller) for more information.
 
@@ -21,7 +21,8 @@ See the [user_guide/UserGuide_fr.pdf](doc/UserGuide_fr.pdf). French only.
 
 ## Configurations Files
 
-2 json files are used to change the controller and measuring board behavior
+Configurations are created and modified via the application GUI. A configuration is made of 
+2 json files that are used to change the controller and measuring board behavior. 
 - [controller_configuration](#controller-configuration)
 - [device_specification](#device-specification)
 
