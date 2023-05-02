@@ -200,18 +200,21 @@ def make_window():
         sg.Frame(
             'Marel', [
                 [sg.Text(dotted(" Host", _pad), pad=(0, 0), font=REG_FONT),
-                 sg.InputText(size=(14, 1), border_width=1, pad=(0, 0), key='-MAREL_HOST-', justification='right', font=REG_FONT, tooltip="Scale IP address")
+                 sg.InputText(size=(14, 1), border_width=1, pad=(0, 0), key='-MAREL_HOST-', justification='right',
+                              font=REG_FONT, tooltip="Scale IP address")
                  ],
                 [sg.Text(" Status", pad=(0, 0), font=REG_FONT), led(key='-MAREL_LED-'),
                  sg.Push(),
                  ibutton('Start', size=(6, 1), key='-MAREL_START-'),
                  ibutton('Stop', size=(6, 1), key='-MAREL_STOP-', button_color='darkred')],
-                [sg.Text(dotted(" Weight", _pad), pad=(0, 0), font=REG_FONT), #sg.Push(),
-                 sg.Text("N/A", key="-MAREL_WEIGHT-", font=TAB_FONT, size=(12, 1), justification='right', relief='sunken', border_width=1)],
+                [sg.Text(dotted(" Weight", _pad), pad=(0, 0), font=REG_FONT),  # sg.Push(),
+                 sg.Text("N/A", key="-MAREL_WEIGHT-", font=TAB_FONT, size=(12, 1), justification='right',
+                         relief='sunken', border_width=1)],
                 [sg.Text(" Auto-enter:", pad=(0, 0), font=REG_FONT),
                  ibutton('On', size=(3, 1), key='-MAREL_AUTO_ENTER-'), sg.Push(),
-                    sg.Text("Units", pad=(0, 0), font=REG_FONT),
-                 sg.Combo(default_value='kg', values=['kg', 'g'], key='-MAREL_UNITS-', enable_events=True, size=(5, 1), pad=(1, 1), font=REG_FONT)],
+                 sg.Text("Units", pad=(0, 0), font=REG_FONT),
+                 sg.Combo(default_value='kg', values=['kg', 'g'], key='-MAREL_UNITS-', enable_events=True, size=(5, 1),
+                          pad=(1, 1), font=REG_FONT)],
             ],
             font=TAB_FONT
         )
@@ -313,17 +316,18 @@ def make_window():
         col([device_layout]),
         col([marel_layout]),
         col([status_layout]),
-        ]
+    ]
     controller_tab_layout += [
         sg.Frame('', [[sg.Col([
-                col([reading_profile_layout, sync_layout]),
-                col([calibration_layout]),
-                col([units_layout, mode_layout]),
-                col([meta_layout]),
-                col([last_command_layout]),
-                col([stylus_layout, backlight_layout])
-        ],pad=(0,0), element_justification='center', scrollable=True, vertical_scroll_only=True, expand_y=True, sbar_width=.5)
-    ]], expand_y=True, pad=(0, 0))]
+            col([reading_profile_layout, sync_layout]),
+            col([calibration_layout]),
+            col([units_layout, mode_layout]),
+            col([meta_layout]),
+            col([last_command_layout]),
+            col([stylus_layout, backlight_layout])
+        ], pad=(0, 0), element_justification='center', scrollable=True, vertical_scroll_only=True, expand_y=True,
+            sbar_width=.5)
+        ]], expand_y=True, pad=(0, 0))]
 
     # --- MENU ---#
 
@@ -355,7 +359,7 @@ def make_window():
         keep_on_top=False,
         element_justification='center',
     )
-    window.set_min_size(tuple(map(lambda x: int(x/2), window.size)))
+    window.set_min_size(tuple(map(lambda x: int(x / 2), window.size)))
     return window
 
 
@@ -367,9 +371,9 @@ def run():
     sg.theme_border_width(.1)
     sg.set_options(
         icon=LOGO_PATH,
-        #sbar_width=2,
-        #auto_size_buttons=True,
-        #auto_size_text=True,
+        # sbar_width=2,
+        # auto_size_buttons=True,
+        # auto_size_text=True,
         use_ttk_buttons=True,
     )
 
@@ -384,7 +388,7 @@ def run():
     if sg.user_settings()['configs_path'] is not None:
         controller = init_dcs5_controller()
     else:
-        controller = popup_window_select_config()
+        controller = modal(window, popup_window_select_config)
 
     init_layout(window, controller)
 
@@ -448,7 +452,8 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
             case "-END_CONNECT-":
                 window.metadata['is_connecting'] = False
                 if not controller.client.is_connected:
-                    sg.popup_ok(controller.client.error_msg, title='Failed.', keep_on_top=True, font=REG_FONT)
+                    modal(window, sg.popup_ok, controller.client.error_msg, title='Failed.', keep_on_top=True, font=REG_FONT,
+                                modal=True)
             case "-ACTIVATE-":
                 window['-ACTIVATED_LED-'].update(**LED_WAIT)
                 window['-ACTIVATE-'].update(disabled=True)
@@ -465,22 +470,23 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 window.refresh()
                 controller.init_controller_and_board()
             case "-CALPTS-":
-                popup_window_set_calibration_pt(controller)
+                modal(window, popup_window_set_calibration_pt, controller)
             case "-CALIBRATE-":
-                popup_window_calibrate(controller)
+                modal(window, popup_window_calibrate, controller)
             case 'Configuration':
-                controller = popup_window_select_config(controller=controller)
+                controller = modal(window, popup_window_select_config, controller=controller)
             case '-STYLUS-':
                 controller.change_stylus(values['-STYLUS-'], flash=False)
             case '-BACKLIGHT-':
                 controller.c_set_backlighting_level(
                     int(
-                        (values['-BACKLIGHT-'] / BACKLIGHT_SLIDER_MAX) * controller.control_box_parameters.max_backlighting_level
+                        (values[
+                             '-BACKLIGHT-'] / BACKLIGHT_SLIDER_MAX) * controller.control_box_parameters.max_backlighting_level
                     )
                 )
             case '-UNITS-MM-':
                 if controller.is_listening:
-                    controller.change_length_units_mm(flash=False) # QUICK FIX shoud be disabled from the gui
+                    controller.change_length_units_mm(flash=False)  # QUICK FIX shoud be disabled from the gui
             case '-UNITS-CM-':
                 if controller.is_listening:
                     controller.change_length_units_cm(flash=False)
@@ -516,7 +522,8 @@ def refresh_layout(window: sg.Window, controller: Dcs5Controller):
     else:
         window['-CONFIGS-'].update('No Config Selected')
     if controller is not None:
-        _controller_refresh_layout(window, controller)
+        _refresh_marel_layout(window, controller)
+        _refresh_controller_layout(window, controller)
     else:
         for key in [
             '-MAREL_START-', '-MAREL_STOP-',
@@ -535,8 +542,7 @@ def refresh_layout(window: sg.Window, controller: Dcs5Controller):
             window[key].update(**LED_OFF)
 
 
-def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
-    ##### MAREL #####
+def _refresh_marel_layout(window: sg.Window, controller: Dcs5Controller):
     if controller.marel is not None:
         window["-MAREL_UNITS-"].update(disabled=False)
         window["-MAREL_AUTO_ENTER-"].update(disabled=False)
@@ -564,7 +570,8 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
         window["-MAREL_LED-"].update(**LED_OFF)
         window["-MAREL_WEIGHT-"].update("N/A")
 
-    ##### DCS5 #####
+
+def _refresh_controller_layout(window: sg.Window, controller: Dcs5Controller):
     window['-NAME-'].update(dotted(controller.config.client.device_name + " ", DEVICE_LAYOUT_PADDING, 'right'))
     window['-MODEL-'].update(
         dotted(controller.devices_specifications.control_box.model + " ", DEVICE_LAYOUT_PADDING, 'right'))
@@ -628,7 +635,8 @@ def _controller_refresh_layout(window: sg.Window, controller: Dcs5Controller):
 
             if controller.internal_board_state.backlighting_level is not None:
                 backlight_level = round(
-                    (controller.internal_board_state.backlighting_level / controller.control_box_parameters.max_backlighting_level) * BACKLIGHT_SLIDER_MAX
+                    (
+                                controller.internal_board_state.backlighting_level / controller.control_box_parameters.max_backlighting_level) * BACKLIGHT_SLIDER_MAX
                 )
                 window['-BACKLIGHT-'].update(disabled=False,
                                              value=backlight_level)  # or None ? Removed
@@ -832,7 +840,7 @@ def config_window():
                sg.Column(edit_layout, vertical_alignment='top')],
               [button('Close', size=(6, 1), button_color=ENABLED_BUTTON_COLOR)]]
 
-    window = sg.Window('Configurations', layout, element_justification='center')
+    window = sg.Window('Configurations', layout, element_justification='center', modal=True)
 
     return window
 
@@ -854,7 +862,9 @@ def popup_window_select_config(controller: Dcs5Controller = None) -> Dcs5Control
             sg.SetOptions(window_location=get_new_location(window))
 
         if event == 'New':
+            window.DisableClose = True
             _ = create_new_configs()
+            window.DisableClose = False
 
             window['-CONFIG-'].update(values=list_configs(), set_to_index=[])
             window['Load'].update(disabled=True)
@@ -878,18 +888,18 @@ def popup_window_select_config(controller: Dcs5Controller = None) -> Dcs5Control
                         sg.user_settings()['configs_path'] = selected_config_path
 
                         if controller is None:
-                            controller = init_dcs5_controller()
+                            controller = modal(window, init_dcs5_controller)
                         else:
-                            reload_controller_config(controller)
+                            modal(window, reload_controller_config, controller)
 
                         current_config = get_current_config()
 
                     if event == 'Delete':
                         if values['-CONFIG-'][0] == current_config:
-                            sg.popup_ok('Cannot delete the configuration currently in use.',
-                                        title='Deletion error', keep_on_top=True)
-                        elif sg.popup_yes_no(f"Are you sure you want to delete `{values['-CONFIG-'][0]}`",
-                                             keep_on_top=True) == 'Yes':
+                            modal(window, sg.popup_ok, 'Cannot delete the configuration currently in use.',
+                                        title='Deletion error', keep_on_top=True, modal=True)
+                        elif modal(window, sg.popup_yes_no, f"Are you sure you want to delete `{values['-CONFIG-'][0]}`",
+                                             keep_on_top=True, modal=True) == 'Yes':
                             shutil.rmtree(str(Path(CONFIG_FILES_PATH).joinpath(values['-CONFIG-'][0])))
 
                             window['-CONFIG-'].update(list_configs(), set_to_index=[])
@@ -908,8 +918,9 @@ def popup_window_select_config(controller: Dcs5Controller = None) -> Dcs5Control
 
                         if values['-CONFIG-'][0] == current_config:
                             sg.user_settings()['previous_configs_path'] = current_config + '*'
-                            if sg.popup_yes_no('Do you want to reload the configuration ?', keep_on_top=True) == 'Yes':
-                                reload_controller_config(controller)
+                            if modal(window, sg.popup_yes_no, 'Do you want to reload the configuration ?', keep_on_top=True,
+                                               modal=True) == 'Yes':
+                                modal(window, reload_controller_config, controller)
 
                 if (current_config := get_current_config()) is not None:
                     window['-CONFIGURATION-'].update(current_config)
@@ -942,7 +953,7 @@ def new_config_window():
 
     global_layout = [model_layout, path_layout, submit_layout]
 
-    window = sg.Window('Configurations', global_layout, element_justification='center', keep_on_top=True)
+    window = sg.Window('Configurations', global_layout, element_justification='center', keep_on_top=True, modal=True)
 
     return window
 
@@ -958,8 +969,9 @@ def create_new_configs():
             if values['-PATH-']:
                 if Path(values['-PATH-']).name in list_configs():
                     window.keep_on_top_clear()
-                    if sg.popup_yes_no('Configuration name already exists. Do you want to overwrite it ?',
-                                       title='Warning', keep_on_top=True) == 'No':
+                    if modal(window, sg.popup_yes_no,
+                             'Configuration name already exists. Do you want to overwrite it ?',
+                             title='Warning', keep_on_top=True) == 'No':
                         break
                     window.keep_on_top_set()
 
@@ -969,7 +981,8 @@ def create_new_configs():
                 if values['-MODEL-'] == 'xt':
                     default_files = [XT_DEFAULT_CONTROLLER_CONFIGURATION_FILE, XT_DEFAULT_DEVICES_SPECIFICATION_FILE]
                 else:
-                    default_files = [MICRO_DEFAULT_CONTROLLER_CONFIGURATION_FILE, MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE]
+                    default_files = [MICRO_DEFAULT_CONTROLLER_CONFIGURATION_FILE,
+                                     MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE]
 
                 local_files = [new_configs_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME),
                                new_configs_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME)]
@@ -1064,8 +1077,29 @@ def col(cols_layout):
     return [sg.Col(c, p=0) for c in cols_layout]
 
 
+def modal(window: sg.Window, func: callable, *args, **kwargs) -> Any:
+    """Disable the current window `Close` action while `func` is running.
+
+    Used for popup window.
+
+    Parameters
+    ----------
+    window:
+        current window.
+
+    func:
+        Function to execute while the current window `Close` action is disabled.
+
+
+    """
+    window.DisableClose = True
+    out = func(*args, **kwargs)
+    window.DisableClose = False
+    return out
+
+
 if __name__ == "__main__":
     main()
     c = init_dcs5_controller()
 #    c.start_client()
-    #c.start_listening()
+# c.start_listening()

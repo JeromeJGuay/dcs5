@@ -1,10 +1,5 @@
 from dataclasses import dataclass
 
-from dcs5.utils import json2dict
-
-from json.decoder import JSONDecodeError
-
-
 
 @dataclass
 class BaseControlBoxParameters:

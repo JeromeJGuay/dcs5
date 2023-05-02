@@ -8,6 +8,7 @@ MONITORING_DELAY = 2  # WINDOWS ONLY
 BOARD_MSG_ENCODING = 'UTF-8'
 BUFFER_SIZE = 1024
 
+
 class BluetoothClient:
     """RFCOMM ports goes from 1 to 30."""
     min_port = 1

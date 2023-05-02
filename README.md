@@ -28,24 +28,37 @@ for xt:
 for micro:
 ### [dcs5/default_configs/micro_controller_configuration.json](dcs5/default_configs/micro_controller_configuration.json)
 The controller_configuration.json is used to configure the controller behavior.
-+ client : Measuring board bluetooth information.
-+ launch_settings : setting used when the app is launch.
++ client: Measuring board bluetooth information.
+  - device_name: TODO
+  - mac_address: TODO
+  - marel_ip_address: TODO
++ launch_settings: setting used when the app is launch.
+  - output_mode: TODO
+  - reading_profile: TODO
   - dynamic_stylus_mode: (true/false) If true, reading profiles will change for each output mode as defined in the next section.
-  - backlight_level: (0-95) Backlight intensity 
-  - backlighting_auto_mode: (true/false) Automatic backlighting adjustment.
-  - backlighting_sensitivity: (0-7) Auto mode sensitivity.
-  - Notes: The reading profiles are defined in the next section.
-+ reading_profiles : 
+  - backlight_level: (0-95) Backlight intensity
+  - length_units: TODO
+  - stylus: TODO
+  - auto_enter: TODO
+  Notes: The reading profiles are defined in the next section.
++ reading_profiles:
   - settling_delay: (0-20) Delays after the stylus is first detected. (not seconds)
   - number_of_reading: Number of reading needed for a good measurements.
   - max_deviation: (1-100) Amount of deviation allowed between each reading.
-  - Notes: For more information : [user_guide/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf)
-+ output_modes :
+  
+  *Notes: For more information : [user_guide/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf)*
++ output_modes:
   - swipe_threshold: Minimal distance (mm) for a stylus swipe to be valid.
   - segments_limits: Define the limit of the different swipe segment.
   - segments_mode: The corresponding output_mode for each swipe segment.
   - mode_reading_profiles: The corresponding reading_profiles for each output modes.
 + keys_maps: Mapping of the key to either command or keyboard input.
+  - control_box:
+  - control_box_mode:
+  - board:
+  - board_mode:
+
+  
   - Two commands for a key. One default and one for when MODE is activated.
   - The name of the keys are set in [dcs5/default_configs/devices_specification.json](dcs5/default_configs/xt_devices_specification.json).
   - Valid commands `"BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm", "CHANGE_OUTPUT_MODE", "MODE", "MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM", print <string to print>]`
@@ -59,14 +72,19 @@ The controller_configuration.json is used to configure the controller behavior.
   - zero: The distance (mm) that would be the key 0 given that the first key on the board is key 1.
   - detection_range: Offset on the left in mm for stylus detection. 
   - keys_layout: Ordered lists for the name of the top keys and the for the bottom keys. These names are used to map command.
-    - Notes: The two list (top and bottom) should not contain identical names.  
+    * Top:
+    * Bottom
+  
+  *Notes: The two list (top and bottom) should not contain identical names.*
 + control_box:
+  - model: TODO
   - keys_layout: Mapping of the controller box key builtin id to meaningful name. These names are used to map command. 
 + stylus_offset: Offset in mm that is added ot the value measured by the board. 
   - Notes: These values will depend on the calibration.
 
-### [dcs5/default_configs/control_box_parameters.json](dcs5/default_configs/control_box_parameters.json)
-Values of the builtin parameters of the control box. From BigFin documentation [user_guide/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf).
+### [control_box_parameters.json](dcs5/control_box_parameters.py)
+Values of the builtin parameters of the control box.  Json file is written when a new config is created.
+From BigFin documentation [user_guide/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf).
 
 
 

@@ -28,7 +28,7 @@ from dcs5.keyboard_emulator import KeyboardEmulator
 from dcs5.controller_configurations import load_config, ControllerConfiguration, ConfigError
 from dcs5.devices_specifications import load_devices_specification, DevicesSpecifications
 from dcs5.control_box_parameters import XtControlBoxParameters, MicroControlBoxParameters
-from marel_marine_scale_controller.marel_controller import Controller as MarelController
+from marel_marine_scale_controller.marel_controller import MarelController
 
 BOARD_MESSAGE_DELIMITER = "\r"
 
