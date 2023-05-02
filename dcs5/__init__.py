@@ -22,3 +22,5 @@ CONFIG_FILES_PATH = Path(LOCAL_FILE_PATH).joinpath("configs/")
 Path(LOCAL_FILE_PATH).mkdir(parents=True, exist_ok=True)
 LOG_FILES_PATH.mkdir(parents=True, exist_ok=True)
 CONFIG_FILES_PATH.mkdir(parents=True, exist_ok=True)
+
+PRINT_COMMAND = "PRINT "

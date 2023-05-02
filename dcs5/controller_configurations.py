@@ -42,6 +42,7 @@ from json.decoder import JSONDecodeError
 from dataclasses import dataclass
 from typing import *
 
+from dcs5 import PRINT_COMMAND
 from dcs5.utils import json2dict
 
 VALID_COMMANDS = ["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm", "MODE",
@@ -88,7 +89,7 @@ def validate_command(key, value):
         for _value in value:
             validate_command(key, _value)
     elif value not in [None, ""]:
-        if value.startswith('print '):
+        if value.startswith(PRINT_COMMAND):
             pass
         else:
             if value not in VALID_KEYBOARD_KEYS + VALID_COMMANDS:

@@ -22,6 +22,7 @@ from typing import *
 
 import pyautogui as pag
 
+from dcs5 import PRINT_COMMAND
 from dcs5.bluetooth_client import BluetoothClient
 from dcs5.keyboard_emulator import KeyboardEmulator
 
@@ -131,7 +132,7 @@ class Dcs5Controller:
 
         self.marel: MarelController = None
         self.marel_thread: threading.Thread = None
-        self.controller_commands.append("WEIGHT")
+        self.controller_commands += ["WEIGHT"]
 
     def _load_configs(self):
         if (devices_spec := load_devices_specification(self.devices_specifications_path)) is None:
@@ -413,7 +414,7 @@ class Dcs5Controller:
         self.change_stylus(next(self.stylus_cyclical_list))
 
     def cycle_output_mode(self):
-        self.change_board_output_mode({'top':'bottom', 'bottom':'length','length':'top'}[self.output_mode])
+        self.change_board_output_mode({'top': 'bottom', 'bottom': 'length','length': 'top'}[self.output_mode])
 
     def change_board_output_mode(self, value: str):
         """Value must be one of  [length, bottom, top]
@@ -458,9 +459,6 @@ class Dcs5Controller:
     def to_keyboard(self, value: Union[int, float, str]):
         if not self.is_muted:
             logging.debug(f"Shouted value {value}")
-            if isinstance(value, str):
-                if value.startswith('print '):  # could be its own function
-                    value = value[6:].strip(' ')
             self.shouter.shout(value)
 
     def backlight_up(self):
@@ -551,11 +549,9 @@ class Dcs5Controller:
     def c_get_battery_level(self):
         self.command_handler.queue_command('&q#', "regex_%q:\d+,\d+#\r")
 
-
     def c_get_battery_time_to_empty(self):
         """Micro Only"""
         self.command_handler.queue_command('&qe#', "regex_%qe:\d+#\r")
-
 
     def c_get_temperature_humidity(self):
         self.command_handler.queue_command('&t#', "regex_%t,\d+,\d+#\r")
@@ -945,7 +941,7 @@ class SocketListener:
                 logging.debug('Usb Cabled plugged in.')
                 continue
 
-            output_value = None
+            output_value: str = None
             msg_type, msg_value = self._decode_board_message(message)
             logging.debug(f"Message Type: {msg_type}, Message Value: {msg_value}")
 
@@ -975,7 +971,6 @@ class SocketListener:
                         and self.controller.auto_enter is True:
                     self.controller.to_keyboard('enter')
 
-
     @staticmethod
     def _decode_board_message(value: str) -> Tuple[str,str]:
         """
@@ -1001,11 +996,11 @@ class SocketListener:
         else:
             return 'solicited', value
 
-    def _process_output(self, value):
+    def _process_output(self, value: Tuple[List[str], str]):
         if isinstance(value, list):
             for _value in value:
                 self._process_output(_value)
-        else:
+        elif isinstance(value, str):
             if value == "MODE":
                 self.set_with_mode(not self.with_mode)
             else:
@@ -1013,7 +1008,11 @@ class SocketListener:
                 if value in self.controller.controller_commands:
                     self.controller.mapped_controller_commands(value)
                 else:
+                    if value.startswith(PRINT_COMMAND):
+                        value = value[6:].strip(' ')
                     self.controller.to_keyboard(value)
+        else:
+            raise ValueError(f'CRITICAL error in _process_output.')
 
     def set_with_mode(self, value: bool):
         if value is not self.with_mode:
@@ -1022,7 +1021,7 @@ class SocketListener:
         else:
             pass
 
-    def _map_control_box_output(self, value):
+    def _map_control_box_output(self, value) -> str:
         key = self.controller.devices_specifications.control_box.keys_layout[value]
         self.last_key = key
         if self.with_mode:
@@ -1030,13 +1029,13 @@ class SocketListener:
         else:
             return self.controller.config.key_maps.control_box[key]
 
-    def _map_board_length_measurement(self, value: int):
+    def _map_board_length_measurement(self, value: int) -> str:
         if self.controller.output_mode == 'length':
             out_value = value - self.controller.stylus_offset
             self.last_key = out_value
             if self.controller.length_units == 'cm':
                 out_value /= 10
-            return out_value
+            return str(out_value)
         else:
             index = int(
                 (value - self.controller.devices_specifications.board.relative_zero)
@@ -1046,9 +1045,9 @@ class SocketListener:
                 key = self.controller.devices_specifications.board.keys_layout[self.controller.output_mode][index]
                 self.last_key = key
                 if self.with_mode:
-                    return self.controller.config.key_maps.board_mode[key]
+                    return str(self.controller.config.key_maps.board_mode[key])
                 else:
-                    return self.controller.config.key_maps.board[key]
+                    return str(self.controller.config.key_maps.board[key])
 
     def _check_for_stylus_swipe(self, value: str):
         self.swipe_triggered = False

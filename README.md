@@ -20,7 +20,7 @@ See the [user_guide/UserGuide_fr.pdf](doc/UserGuide_fr.pdf). French only.
 
 ## Configurations
 
-3 json files are used to set different parameters for the application.
+2 json files are used to set different parameters for the application.
 
 for xt:
 ### [dcs5/default_configs/xt_controller_configuration.json](dcs5/default_configs/xt_controller_configuration.json)
@@ -61,7 +61,7 @@ The controller_configuration.json is used to configure the controller behavior.
   
   - Two commands for a key. One default and one for when MODE is activated.
   - The name of the keys are set in [dcs5/default_configs/devices_specification.json](dcs5/default_configs/xt_devices_specification.json).
-  - Valid commands `"BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm", "CHANGE_OUTPUT_MODE", "MODE", "MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM", print <string to print>]`
+  - Valid commands `"BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm", "CHANGE_OUTPUT_MODE", "MODE", "MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM", "WEIGHT", "PRINT <string to print>"]`
   - See the [dcs5/controller_configurations.py](dcs5/controller_configurations.py) module for the valid keyboard input.
   - List of commands are accepted and executed one at a time.
 
@@ -81,11 +81,4 @@ The controller_configuration.json is used to configure the controller behavior.
   - keys_layout: Mapping of the controller box key builtin id to meaningful name. These names are used to map command. 
 + stylus_offset: Offset in mm that is added ot the value measured by the board. 
   - Notes: These values will depend on the calibration.
-
-### [control_box_parameters.json](dcs5/control_box_parameters.py)
-Values of the builtin parameters of the control box.  Json file is written when a new config is created.
-From BigFin documentation [user_guide/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf).
-
-
-
 
