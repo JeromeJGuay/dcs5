@@ -16,8 +16,99 @@ Downloading the Dcs5 Controller App from the latest release.
 ## Requirements to install the python package. (not required to use the app as a standalone.)
 - python 3.10
 
-## User Guide
-See the [user_guide/UserGuide_fr.pdf](doc/UserGuide_fr.pdf). French only.
+# Usage
+### Guide d'utilisation en français: [UserGuide_fr.pdf](doc/UserGuide_fr.pdf).
+
+## Measuring Board
+
+#### Stylus detection zone
+<p align='center'>
+<img src='doc/images/planche_zone.jpg' width='4032' alt="Board Detection Zone"/>
+</p>
+
+#### Swiping zone
+Swiping from left to right in the zone defined in the configuration will change the output mode: *Top*, *Length* and *Bottom* (See section [Device Specification](#device-specification)). 
+
+<p align='center'>
+<img src='doc/images/planche_swipe.jpg' width='4032' alt="Board Swiping Zone"/>
+</p>
+
+In the figure above are the default swiping zone for the *xt* models.
+From left to right they are map to outputs mode *Length*, *Bottom*, *Top* and *Length*.
+
+#### Measurement example
+<p align='center'>
+<img src='doc/images/measure_example.jpg' width='4032' alt="Board Measurement Example"/>
+</p>
+
+
+## GUI
+
+### Configurations
+
+To load and manage configuration click on **Dcs5 > Configuration** in the top bar. 
+<p align='center'>
+<img src='doc/images/dcs5_gui_menu.png' width='203' alt="gui menu zoom"/>
+</p>
+
+From the *Configuration* window, you can create **New**, **Load**, **Delete** and **Edit** configurations.
+See section [Configuration files](#configurations-files) for more information on the different configurations parameters.
+<p align='center'>
+<img src='doc/images/dcs5_gui_config_menu.png' width='536' alt="gui config window"/>
+</p>
+
+#### New configuration
+Select the Control Box model (xt or micro) and enter name for the new configuration.
+<p align='center'>
+<img src='doc/images/dcs5_gui_new_config.png' width='331' alt="gui new config window"/>
+</p>
+
+### Connect the board via Bluetooth
+
+To connect to the Dcs5 measuring board, the Board Mac (bluetooth) address needs to be specified in the *Controller Configuration* file. You can edit the file via the configuration menu (see sections [Configurations](#configurations) and [Controller Configuration](#controller-configuration)) 
+
+
+Then you need to connect and activate the board by presssing the **Connect** and **Activate** button. 
+
+<p align='center'>
+<img src='doc/images/dcs5_gui_connect.png' width='365' alt="gui connect"/>
+</p>
+
+The red circle will turn into a yellow triangle while the App is attempting to connect to the board and then green when connected.
+
+<p align='center'>
+<img src='doc/images/dcs5_gui_activate.png' width='371' alt="gui activate"/>
+</p>
+
+The activated red circles will also turn green when the application and board are ready to use.
+When activating the board, the application will synchronize with the board control box. (See the section [Additionnal GUI features](#additional-gui-features)). 
+The application and board are synchronize when the application successfully changed the board control box settings to those specified in the configuration.
+
+
+### Calibration
+
+Click on *Set Cal. Pts.* 
+
+<p align='center'>
+<img src='doc/images/dcs5_gui_calibration_frame.png' width='359' alt="gui calibration display"/>
+</p>
+
+In the calibration points window set the two calibrations points in mm.
+After the calibration is done, you can add offset if you use different stylus .
+This is done in the [Device Specification](#device-specification) file (see section [Configurations](#configurations)).
+
+<p align='center'>
+<img src='doc/images/dcs5_gui_set_calibration_pts.png' width='239' alt="gui set cal pts window"/>
+</p>
+
+
+
+### Additional GUI features.
+
+<p align='center'>
+<img src='doc/images/dcs5_gui_annotated.png' width='700' alt="gui main display"/>
+</p>
+
 
 ## Configurations Files
 
@@ -34,17 +125,17 @@ Default `micro` file:  [micro_controller_configuration.json](dcs5/default_config
 
 Usage:
 + client: Measuring board bluetooth information.
-  - device_name: **TODO**
-  - mac_address: **TODO**
-  - marel_ip_address: **TODO**
+  - device_name: Name of the device. (Only use to display in the app.)
+  - mac_address: Bluetooth (mac) address of the board i.e. **00:06:66:89:E5:FE**.
+  - marel_ip_address: Ip address of the Marel Scale (see [marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller)).
 + launch_settings: setting used when the app is launch.
   - output_mode: **TODO**
   - reading_profile: **TODO**
   - dynamic_stylus_mode: (true/false) If true, reading profiles will change for each output mode as defined in the next section.
   - backlight_level: (0-95) Backlight intensity
-  - length_units: **TODO**
-  - stylus: **TODO**
-  - auto_enter: **TODO**
+  - length_units: Units of the measurements values either **cm** or **mm**
+  - stylus: Name of the stylus in use. Must be defined in the [devices_specifications](#device-specification) file. 
+  - auto_enter: Automatically press the *enter* key after a length or weight value is printed.
   Notes: The reading profiles are defined in the next section.
 + reading_profiles:
   - settling_delay: (0-20) Delays after the stylus is first detected. (not seconds)
@@ -122,7 +213,7 @@ Usage:
   
   *Notes: The two list (top and bottom) should not contain identical names.*
 + control_box:
-  - model: **TODO**
+  - model: Model of the control box. Either **xt** or **micro**.
   - keys_layout: Mapping of the controller box key builtin id to meaningful name. These names are used to map command. 
 + stylus_offset: Offset in mm that is added ot the value measured by the board. 
   - Notes: These values will depend on the calibration.
