@@ -26,10 +26,11 @@ class BluetoothClient:
             0: 'Socket timeout',
             1: 'No available ports',
             2: 'Device not found',
-            3: 'Bluetooth not on',
+            3: 'Bluetooth turned off',
             4: 'Connection broken',
             5: 'Device Unavailable',
-            6: 'Unknown Error'
+            6: 'Client closed',
+            99: 'Unknown Error',
         }
 
         self._socket_spam_thread: threading.Thread = None
