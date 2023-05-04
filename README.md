@@ -34,7 +34,7 @@ Swiping from left to right in the zone defined in the configuration will change 
 </p>
 
 In the figure above are the default swiping zone for the *xt* models.
-From left to right they are map to outputs mode *Length*, *Bottom*, *Top* and *Length*.
+From left to right they are map to outputs mode *Length*, *Top*, *Bottom* and *Length*.
 
 #### Measurement example
 <p align='center'>
@@ -68,7 +68,7 @@ Select the Control Box model (xt or micro) and enter name for the new configurat
 To connect to the Dcs5 measuring board, the Board Mac (bluetooth) address needs to be specified in the *Controller Configuration* file. You can edit the file via the configuration menu (see sections [Configurations](#configurations) and [Controller Configuration](#controller-configuration)) 
 
 
-Then you need to connect and activate the board by presssing the **Connect** and **Activate** button. 
+Then you need to connect and activate the board by pressing the **Connect** and **Activate** button. 
 
 <p align='center'>
 <img src='doc/images/dcs5_gui_connect.png' width='365' alt="gui connect"/>

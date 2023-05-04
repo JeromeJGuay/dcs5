@@ -974,6 +974,7 @@ class SocketListener:
             if output_value is not None:
                 self.last_command = output_value
                 self._process_output(output_value)
+
                 if msg_type == 'length' \
                         and self.controller.output_mode == 'length' \
                         and self.controller.auto_enter is True:
@@ -1044,6 +1045,7 @@ class SocketListener:
             if self.controller.length_units == 'cm':
                 out_value /= 10
             return str(out_value)
+
         else:
             index = int(
                 (value - self.controller.devices_specifications.board.relative_zero)
@@ -1053,9 +1055,9 @@ class SocketListener:
                 key = self.controller.devices_specifications.board.keys_layout[self.controller.output_mode][index]
                 self.last_key = key
                 if self.with_mode:
-                    return str(self.controller.config.key_maps.board_mode[key])
+                    return self.controller.config.key_maps.board_mode[key]
                 else:
-                    return str(self.controller.config.key_maps.board[key])
+                    return self.controller.config.key_maps.board[key]
 
     def _check_for_stylus_swipe(self, value: str):
         self.swipe_triggered = False
