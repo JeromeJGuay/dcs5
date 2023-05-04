@@ -1,6 +1,7 @@
 """
 """
 import logging
+
 import os
 import shutil
 import sys
@@ -19,6 +20,8 @@ from dcs5.controller import Dcs5Controller
 from dcs5.controller_configurations import ConfigError
 from dcs5.logger import init_logging
 from dcs5.utils import resolve_relative_path, update_json_value
+
+logging.getLogger('MarelController').setLevel('ERROR')
 
 # This is a fix for my computer. Should not influence anything.
 if os.environ.get('EDITOR') == 'EMACS':

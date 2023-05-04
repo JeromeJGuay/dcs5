@@ -46,7 +46,7 @@ from dcs5 import PRINT_COMMAND
 from dcs5.utils import json2dict
 
 VALID_COMMANDS = ["BACKLIGHT_UP", "BACKLIGHT_DOWN", "CHANGE_STYLUS", "UNITS_mm", "UNITS_cm", "MODE",
-                  "CHANGE_OUTPUT_MODE", "MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM", "WEIGHT"]
+                  "CHANGE_OUTPUT_MODE", "MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM", "WEIGHT", "DELETE_LAST"]
 VALID_SEGMENTS_MODE = ['length', 'top', 'bottom']
 VALID_KEYBOARD_KEYS = [
     '\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'",

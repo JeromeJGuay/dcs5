@@ -8,6 +8,7 @@ class KeyboardEmulator:
     valid_meta_keys = ['ctrl', 'alt', 'shift']
 
     def __init__(self):
+        self.last_msg_length = 1
         self.meta_key_combo = []
 
     def shout(self, value: str):
@@ -28,5 +29,10 @@ class KeyboardEmulator:
             logging.debug(f"Keyboard out: {'+'.join(self.meta_key_combo)} {value}")
             if pag.isValidKey(value):
                 pag.press(value)
+                self.last_msg_length = 1
             else:
                 pag.write(str(value))
+                self.last_msg_length = len(str(value))
+
+    def delete_last(self):
+        pag.press('backspace', self.last_msg_length)

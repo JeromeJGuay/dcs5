@@ -128,6 +128,7 @@ class Dcs5Controller:
             "MODE_LENGTH",
             "MODE_BOTTOM",
             "MODE", "BACKLIGHT_UP", "BACKLIGHT_DOWN",
+            "DELETE_LAST"
             ]
 
         self.marel: MarelController = None
@@ -496,7 +497,8 @@ class Dcs5Controller:
             "MODE_BOTTOM": self._mode_bottom,
             "BACKLIGHT_UP": self.backlight_up,
             "BACKLIGHT_DOWN": self.backlight_down,
-            "WEIGHT": self.marel_get_weight
+            "WEIGHT": self.marel_get_weight,
+            "DELETE_LAST": self.shouter.delete_last
         }
         commands[command]()
 
