@@ -73,7 +73,7 @@ SMALL_FONT = f'Courier {scale_font(8)}'
 REG_FONT = f'Courier {scale_font(10)}'
 REG_FONT_BOLD = REG_FONT + ' bold'
 
-TAB_FONT = f'Courier {scale_font(12)}'
+FRAME_FONT = f'Courier {scale_font(12)}'
 
 HEADER_FONT = f'Courier {scale_font(15)}'
 
@@ -81,7 +81,7 @@ EMPTY_CIRCLE = '\u25CB'
 
 LED_FONT = f'Courier {scale_font(12)}'
 
-LED_ON = {'value': '\u2B24', 'text_color': 'Green', 'font': TAB_FONT}
+LED_ON = {'value': '\u2B24', 'text_color': 'Green', 'font': FRAME_FONT}
 LED_WAIT = {'value': '\u25B2', 'text_color': 'Orange', 'font': LED_FONT}
 LED_OFF = {'value': '\u25CB', 'text_color': 'Red', 'font': LED_FONT + ' bold'}
 
@@ -191,8 +191,11 @@ def make_window():
                  sg.Push(),
                  sg.Text("Charging:", font=REG_FONT), sg.Text("N\A", key="-CHARGING-", font=REG_FONT)
                  ],
+                [sg.HSeparator()],
+                [sg.Text("Marel Weight:", font=REG_FONT),
+                 sg.Text("N/A", key="-MAREL_WEIGHT_DEVICE-", font=REG_FONT)]
             ],
-            font=TAB_FONT
+            font=FRAME_FONT
         )
     ]]
 
@@ -209,15 +212,16 @@ def make_window():
                  ibutton('Start', size=(6, 1), key='-MAREL_START-'),
                  ibutton('Stop', size=(6, 1), key='-MAREL_STOP-', button_color='darkred')],
                 [sg.Text(dotted(" Weight", _pad), pad=(0, 0), font=REG_FONT),  # sg.Push(),
-                 sg.Text("N/A", key="-MAREL_WEIGHT-", font=TAB_FONT, size=(12, 1), justification='right',
+                 sg.Text("N/A", key="-MAREL_WEIGHT-", font=FRAME_FONT, size=(12, 1), justification='right',
                          relief='sunken', border_width=1)],
-                [sg.Text(" Auto-enter:", pad=(0, 0), font=REG_FONT),
-                 ibutton('On', size=(3, 1), key='-MAREL_AUTO_ENTER-'), sg.Push(),
-                 sg.Text("Units", pad=(0, 0), font=REG_FONT),
-                 sg.Combo(default_value='kg', values=['kg', 'g'], key='-MAREL_UNITS-', enable_events=True, size=(5, 1),
-                          pad=(1, 1), font=REG_FONT)],
+                [
+                    sg.Push(),
+                    sg.Text("Units", pad=(0, 0), font=REG_FONT),
+                    sg.Combo(default_value='kg', values=['kg', 'g'], key='-MAREL_UNITS-', enable_events=True, size=(5, 1),
+                     pad=(1, 1), font=REG_FONT)
+                ],
             ],
-            font=TAB_FONT
+            font=FRAME_FONT
         )
     ]]
 
@@ -243,20 +247,20 @@ def make_window():
                                 key='-RESTART-',
                                 )]
     _status_layout = col([connection_layout, activate_layout, mute_layout])
-    status_layout = [[sg.Frame('Status', [_status_layout, restart_layout], font=TAB_FONT, expand_x=True)]]
+    status_layout = [[sg.Frame('Status', [_status_layout, restart_layout], font=FRAME_FONT, expand_x=True)]]
 
     ### SYNC
     _sync_layout = [
         [sg.Text('Synchronized', font=REG_FONT), led(key='-SYNC_LED-')],
         [ibutton('Synchronize', size=(15, 1), key='-SYNC-'), ]]
-    sync_layout = [[sg.Frame('Synchronize', _sync_layout, font=TAB_FONT)]]
+    sync_layout = [[sg.Frame('Synchronize', _sync_layout, font=FRAME_FONT)]]
 
     ### CALIBRATION
     _calibration_layout = [
         [sg.Text('Calibrated', font=REG_FONT), led(key='-CAL_LED-')],
         [ibutton('Calibrate', size=(15, 1), key='-CALIBRATE-'),
          ibutton('Set Cal. Pts.', size=(15, 1), key='-CALPTS-')]]  # TODO
-    calibration_layout = [[sg.Frame('Calibration', _calibration_layout, font=TAB_FONT)]]
+    calibration_layout = [[sg.Frame('Calibration', _calibration_layout, font=FRAME_FONT)]]
 
     ### READING PROFILE
     _reading_profile_layout = [[sg.Text(dotted('Settling delay', 19), font=REG_FONT),
@@ -268,7 +272,7 @@ def make_window():
                                [sg.Text(dotted('Max deviation', 19), font=REG_FONT),
                                 sg.Text("---", font=REG_FONT_BOLD, background_color='white',
                                         size=(3, 1), p=(1, 0), justification='c', key='-MAX-DEVIATION-')]]
-    reading_profile_layout = [[sg.Frame('Reading Profile', _reading_profile_layout, font=TAB_FONT)]]
+    reading_profile_layout = [[sg.Frame('Reading Profile', _reading_profile_layout, font=FRAME_FONT)]]
 
     ### LAST COMMAND
     _last_command_layout = [[sg.Text('Key'), sg.Text("", font=REG_FONT_BOLD, size=(10, 1), p=(1, 1), relief='solid',
@@ -277,7 +281,7 @@ def make_window():
                              sg.Text('Command'), sg.Text("", font=REG_FONT_BOLD, size=(20, 1), p=(1, 1), relief='solid',
                                                          border_width=2, justification='c', background_color='white',
                                                          key="-LAST_COMMAND-")]]
-    last_command_layout = [[sg.Frame('Last Inputs', _last_command_layout, font=TAB_FONT)]]
+    last_command_layout = [[sg.Frame('Last Inputs', _last_command_layout, font=FRAME_FONT)]]
 
     ### BACKLIGHT
     _backlight_layout = [sg.Slider(orientation='h', key='-BACKLIGHT-', font=SMALL_FONT, enable_events=True)]
@@ -286,7 +290,7 @@ def make_window():
     ### UNITS
     _units_layout = [[ibutton('mm', size=(5, 1), key='-UNITS-MM-', disabled_button_color=SELECTED_BUTTON_COLOR),
                       ibutton('cm', size=(5, 1), key='-UNITS-CM-', disabled_button_color=SELECTED_BUTTON_COLOR)]]
-    units_layout = [[sg.Frame('Units', _units_layout, font=TAB_FONT)]]
+    units_layout = [[sg.Frame('Units', _units_layout, font=FRAME_FONT)]]
 
     ### STYLUS
     _stylus_layout = [
@@ -295,14 +299,23 @@ def make_window():
          sg.Text("-", font=REG_FONT_BOLD, background_color='white',
                  size=(3, 1), p=(1, 0), justification='c', key='-STYLUS_OFFSET-')
          ]]
-    stylus_layout = [[sg.Frame('Stylus', _stylus_layout, font=TAB_FONT)]]
+    stylus_layout = [[sg.Frame('Stylus', _stylus_layout, font=FRAME_FONT)]]
 
     ### MODE
     _mode_layout = [[ibutton('Top', size=(8, 1), key='-MODE-TOP-', disabled_button_color=SELECTED_BUTTON_COLOR),
                      ibutton('Length', size=(8, 1), key='-MODE-LENGTH-', disabled_button_color=SELECTED_BUTTON_COLOR),
                      ibutton('Bottom', size=(8, 1), key='-MODE-BOTTOM-', disabled_button_color=SELECTED_BUTTON_COLOR)]]
-    mode_layout = [[sg.Frame('Mode', _mode_layout, font=TAB_FONT)]]
-    ###
+    mode_layout = [[sg.Frame('Mode', _mode_layout, font=FRAME_FONT)]]
+    ### Auto_enter
+
+    _auto_enter_layout = [[
+        sg.Text(" Auto-enter:", pad=(0, 0), font=REG_FONT),
+        ibutton('On', size=(3, 1), key='-AUTO_ENTER-')
+    ]]
+
+    auto_enter_layout = [[sg.Frame('Misc', _auto_enter_layout, font=FRAME_FONT)]]
+
+    ### META key
     _meta_layout = [[sg.Text('Mode', font=REG_FONT_BOLD, border_width=2, relief='solid', **META_OFF, size=(6, 1),
                              justification='center', pad=(1, 1), key='-META-'),
                      sg.Text('Shift', font=REG_FONT_BOLD, border_width=2, relief='solid', **META_OFF, size=(6, 1),
@@ -311,26 +324,26 @@ def make_window():
                              justification='center', pad=(1, 1), key='-CTRL-'),
                      sg.Text('Alt', font=REG_FONT_BOLD, border_width=2, relief='solid', **META_OFF, size=(6, 1),
                              justification='center', pad=(1, 1), key='-ALT-')]]
-    meta_layout = [[sg.Frame('Meta Key', _meta_layout, font=TAB_FONT)]]
+    meta_layout = [[sg.Frame('Meta Key', _meta_layout, font=FRAME_FONT)]]
+
+    ### TABS LAYOUTS ###
+
+    marel_tab_layout = [
+        col([marel_layout])
+    ]
 
     controller_tab_layout = [
         col([device_layout]),
-        col([marel_layout]),
         col([status_layout]),
+        col([reading_profile_layout, sync_layout]),
+        col([calibration_layout]),
+        col([units_layout, mode_layout]),
+        col([auto_enter_layout, meta_layout]),
+        col([last_command_layout]),
+        col([stylus_layout, backlight_layout])
     ]
-    controller_tab_layout += [
-        sg.Frame('', [[sg.Col([
-            col([reading_profile_layout, sync_layout]),
-            col([calibration_layout]),
-            col([units_layout, mode_layout]),
-            col([meta_layout]),
-            col([last_command_layout]),
-            col([stylus_layout, backlight_layout])
-        ], pad=(0, 0), element_justification='center', scrollable=True, vertical_scroll_only=True, expand_y=True,
-            sbar_width=.5)
-        ]], expand_y=True, pad=(0, 0))]
 
-    # --- MENU ---#
+    # MENU #
 
     _menu_layout = [
         ['&Dcs5', [
@@ -342,13 +355,21 @@ def make_window():
 
     menu_layout = [sg.Menu(_menu_layout, k='-MENU-', p=0, font=REG_FONT, disabled_text_color='grey'), ]
 
-    # --- GLOBAL ---#
-    global_layout = [menu_layout]
+    # FOOTNOTE #
+    footnote_layout = [[
+        sg.Text(f'version: v{VERSION}', font=SMALL_FONT), sg.Push(), sg.Text('Config:', font=SMALL_FONT),
+        sg.Text('No Configuration Selected', font=SMALL_FONT + ' bold', key='-CONFIGS-')
+    ]]
 
-    global_layout += [[controller_tab_layout]]
-
-    global_layout += [[sg.Text(f'version: v{VERSION}', font=SMALL_FONT), sg.Push(), sg.Text('Config:', font=SMALL_FONT),
-                       sg.Text('No Configuration Selected', font=SMALL_FONT + ' bold', key='-CONFIGS-')]]
+    # GLOBAL #
+    global_layout = [
+        [menu_layout],
+        [sg.TabGroup([
+            [sg.Tab('Dcs5', controller_tab_layout,  element_justification='center')],
+            [sg.Tab('Marel', marel_tab_layout, element_justification='center')]
+        ])],
+        [footnote_layout]
+    ]
 
     window = sg.Window(
         f'Dcs5 Controller',
@@ -438,12 +459,20 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
             case "-MAREL_UNITS-":
                 logging.debug(f'UNITS {event}, {values}')
                 controller.marel.set_units(values['-MAREL_UNITS-'])
-            case "-MAREL_AUTO_ENTER-":
-                if controller.marel.auto_enter:
-                    window['-MAREL_AUTO_ENTER-'].update('Off')
+            # case "-MAREL_AUTO_ENTER-":
+            #     if controller.marel.auto_enter:
+            #         window['-MAREL_AUTO_ENTER-'].update('Off')
+            #     else:
+            #         window['-MAREL_AUTO_ENTER-'].update('On')
+            #     controller.marel.auto_enter = not controller.marel.auto_enter
+            #     window.refresh()
+            case "-AUTO_ENTER-":
+                if controller.auto_enter:
+                    window['-AUTO_ENTER-'].update('Off')
                 else:
-                    window['-MAREL_AUTO_ENTER-'].update('On')
-                controller.marel.auto_enter = not controller.marel.auto_enter
+                    window['-AUTO_ENTER-'].update('On')
+
+                controller.set_auto_enter(not controller.auto_enter)
                 window.refresh()
             case "-CONNECT-":
                 window.metadata['is_connecting'] = True
@@ -487,7 +516,7 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 )
             case '-UNITS-MM-':
                 if controller.is_listening:
-                    controller.change_length_units_mm(flash=False)  # QUICK FIX shoud be disabled from the gui
+                    controller.change_length_units_mm(flash=False)  # QUICK FIX should be disabled from the gui
             case '-UNITS-CM-':
                 if controller.is_listening:
                     controller.change_length_units_cm(flash=False)
@@ -528,14 +557,14 @@ def refresh_layout(window: sg.Window, controller: Dcs5Controller):
     else:
         for key in [
             '-MAREL_START-', '-MAREL_STOP-',
-            '-MAREL_HOST-', '-MAREL_UNITS-', '-MAREL_AUTO_ENTER-',
+            '-MAREL_HOST-', '-MAREL_UNITS-', #'-MAREL_AUTO_ENTER-',
             '-CONNECT-', '-ACTIVATE-',
             '-DISCONNECT-', '-RESTART-',
             '-MUTE-',
             '-SYNC-', '-CALIBRATE-',
             '-CALPTS-', '-BACKLIGHT-',
             '-UNITS-MM-', '-UNITS-CM-',
-            '-MODE-TOP-', '-MODE-BOTTOM-',
+            '-MODE-TOP-', '-MODE-BOTTOM-', '-AUTO_ENTER-',
             '-MODE-LENGTH-'
         ]:
             window[key].update(disabled=True)
@@ -546,10 +575,11 @@ def refresh_layout(window: sg.Window, controller: Dcs5Controller):
 def _refresh_marel_layout(window: sg.Window, controller: Dcs5Controller):
     if controller.marel is not None:
         window["-MAREL_UNITS-"].update(disabled=False)
-        window["-MAREL_AUTO_ENTER-"].update(disabled=False)
+        #window["-MAREL_AUTO_ENTER-"].update(disabled=False)
         if controller.marel.client.is_connecting:
             window["-MAREL_LED-"].update(**LED_WAIT)
             window["-MAREL_WEIGHT-"].update("N/A")
+            window["-MAREL_WEIGHT_DEVICE-"].update("N/A")
         elif controller.marel.is_listening:
             if controller.marel.client.is_connected:
                 window["-MAREL_LED-"].update(**LED_ON)
@@ -557,19 +587,22 @@ def _refresh_marel_layout(window: sg.Window, controller: Dcs5Controller):
             window["-MAREL_START-"].update(disabled=True)
             window["-MAREL_STOP-"].update(disabled=False)
             window["-MAREL_WEIGHT-"].update(f"{controller.marel.get_weight()} {controller.marel.units}")
+            window["-MAREL_WEIGHT_DEVICE-"].update(f"{controller.marel.get_weight()} {controller.marel.units}")
         else:
             window["-MAREL_HOST-"].update(disabled=False)
             window["-MAREL_START-"].update(disabled=False)
             window["-MAREL_STOP-"].update(disabled=True)
             window["-MAREL_LED-"].update(**LED_OFF)
             window["-MAREL_WEIGHT-"].update("N/A")
+            window["-MAREL_WEIGHT_DEVICE-"].update("N/A")
     else:
         window["-MAREL_UNITS-"].update(disabled=True)
-        window["-MAREL_AUTO_ENTER-"].update(disabled=True)
+        #window["-MAREL_AUTO_ENTER-"].update(disabled=True)
         window["-MAREL_START-"].update(disabled=False)
         window["-MAREL_STOP-"].update(disabled=True)
         window["-MAREL_LED-"].update(**LED_OFF)
         window["-MAREL_WEIGHT-"].update("N/A")
+        window["-MAREL_WEIGHT_DEVICE-"].update("N/A")
 
 
 def _refresh_controller_layout(window: sg.Window, controller: Dcs5Controller):
@@ -582,12 +615,7 @@ def _refresh_controller_layout(window: sg.Window, controller: Dcs5Controller):
     window['-NUMBER-READING-'].update(controller.internal_board_state.number_of_reading)
     window['-MAX-DEVIATION-'].update(controller.internal_board_state.stylus_max_deviation)
 
-    window['-MODE-TOP-'].update(disabled=not controller.output_mode != 'top')
-    window['-MODE-LENGTH-'].update(disabled=not controller.output_mode != 'length')
-    window['-MODE-BOTTOM-'].update(disabled=not controller.output_mode != 'bottom')
-
-    window['-UNITS-MM-'].update(disabled=controller.length_units == 'mm')
-    window['-UNITS-CM-'].update(disabled=controller.length_units == 'cm')
+    window["-AUTO_ENTER-"].update(disabled=False)
 
     window['-STYLUS-'].update(value=controller.stylus,
                               values=list(controller.devices_specifications.stylus_offset.keys()))
@@ -634,6 +662,13 @@ def _refresh_controller_layout(window: sg.Window, controller: Dcs5Controller):
             window["-ACTIVATED_LED-"].update(**LED_ON)
             window["-ACTIVATE-"].update(disabled=True)
 
+            window['-MODE-TOP-'].update(disabled=not controller.output_mode != 'top', disabled_button_color=SELECTED_BUTTON_COLOR)
+            window['-MODE-LENGTH-'].update(disabled=not controller.output_mode != 'length', disabled_button_color=SELECTED_BUTTON_COLOR)
+            window['-MODE-BOTTOM-'].update(disabled=not controller.output_mode != 'bottom', disabled_button_color=SELECTED_BUTTON_COLOR)
+
+            window['-UNITS-MM-'].update(disabled=controller.length_units == 'mm', disabled_button_color=SELECTED_BUTTON_COLOR)
+            window['-UNITS-CM-'].update(disabled=controller.length_units == 'cm', disabled_button_color=SELECTED_BUTTON_COLOR)
+
             if controller.internal_board_state.backlighting_level is not None:
                 backlight_level = round(
                     (
@@ -653,6 +688,12 @@ def _refresh_controller_layout(window: sg.Window, controller: Dcs5Controller):
             window["-ACTIVATE-"].update(disabled=False)
 
             window['-BACKLIGHT-'].update(disabled=True, value=None)
+
+            window['-MODE-TOP-'].update(disabled=True)
+            window['-MODE-LENGTH-'].update(disabled=True)
+            window['-MODE-BOTTOM-'].update(disabled=True)
+            window['-UNITS-MM-'].update(disabled=True)
+            window['-UNITS-CM-'].update(disabled=True)
 
         if controller.is_sync:
             window["-SYNC_LED-"].update(**LED_ON)
@@ -682,6 +723,13 @@ def _refresh_controller_layout(window: sg.Window, controller: Dcs5Controller):
             window["-META-"].update(**META_OFF)
 
     else:
+        window['-MODE-TOP-'].update(disabled=True, disabled_button_color=DISABLED_BUTTON_COLOR)
+        window['-MODE-LENGTH-'].update(disabled=True, disabled_button_color=DISABLED_BUTTON_COLOR)
+        window['-MODE-BOTTOM-'].update(disabled=True, disabled_button_color=DISABLED_BUTTON_COLOR)
+
+        window['-UNITS-MM-'].update(disabled=True, disabled_button_color=DISABLED_BUTTON_COLOR)
+        window['-UNITS-CM-'].update(disabled=True, disabled_button_color=DISABLED_BUTTON_COLOR)
+
         window["-DISCONNECT-"].update(disabled=True)
         window['-BACKLIGHT-'].update(disabled=True, value=None)
 
@@ -715,14 +763,14 @@ def _refresh_controller_layout(window: sg.Window, controller: Dcs5Controller):
 def popup_window_set_calibration_pt(controller: Dcs5Controller):
     layout = [
         [sg.Text('Enter calibration point values in mm')],
-        [sg.Text('Point 1: ', size=(7, 1), font=TAB_FONT),
+        [sg.Text('Point 1: ', size=(7, 1), font=FRAME_FONT),
          sg.InputText(default_text=controller.internal_board_state.cal_pt_1, key='cal_pt_1', size=(4, 1),
-                      justification='c', font=TAB_FONT, enable_events=True),
-         sg.Text('mm', size=(3, 1), font=TAB_FONT)],
-        [sg.Text('Point 2: ', size=(7, 1), font=TAB_FONT),
+                      justification='c', font=FRAME_FONT, enable_events=True),
+         sg.Text('mm', size=(3, 1), font=FRAME_FONT)],
+        [sg.Text('Point 2: ', size=(7, 1), font=FRAME_FONT),
          sg.InputText(default_text=controller.internal_board_state.cal_pt_2, key='cal_pt_2', size=(4, 1),
-                      justification='c', font=TAB_FONT),
-         sg.Text('mm', size=(3, 1), font=TAB_FONT)],
+                      justification='c', font=FRAME_FONT),
+         sg.Text('mm', size=(3, 1), font=FRAME_FONT)],
         [sg.Submit(), sg.Cancel()]
     ]
 
@@ -768,7 +816,7 @@ def popup_window_calibrate(controller: Dcs5Controller):
     cal_pt_values = {1: controller.internal_board_state.cal_pt_1, 2: {controller.internal_board_state.cal_pt_2}}
     for i in [1, 2]:
         layout = [
-            [sg.Text(f'Set Stylus down for calibration point {i}: {cal_pt_values[i]} mm', pad=(5, 5), font=TAB_FONT)],
+            [sg.Text(f'Set Stylus down for calibration point {i}: {cal_pt_values[i]} mm', pad=(5, 5), font=FRAME_FONT)],
         ]
         window = sg.Window(f'Calibrate point {i}', layout, finalize=True, element_justification='center',
                            keep_on_top=True)

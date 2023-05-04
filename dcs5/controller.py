@@ -290,6 +290,12 @@ class Dcs5Controller:
             self.is_muted = True
             logging.debug('Board muted')
 
+    def set_auto_enter(self, value=True):
+        """Set the dcs5 and marel controller auto_enter"""
+        self.auto_enter = value
+        if self.marel is not None:
+            self.marel.auto_enter = value
+
     def init_controller_and_board(self):
         """Init measuring board.
         """
