@@ -208,7 +208,7 @@ def make_window():
             'Marel', [
                 [sg.Text(dotted(" Host", _pad), pad=(0, 0), font=REG_FONT),
                  sg.InputText(size=(14, 1), border_width=1, pad=(0, 0), key='-MAREL_HOST-', justification='right',
-                              font=REG_FONT, tooltip="Scale IP address")
+                              font=REG_FONT, tooltip="Scale IP address", enable_events=True)
                  ],
                 [sg.Text(" Status", pad=(0, 0), font=REG_FONT), led(key='-MAREL_LED-'),
                  sg.Push(),
@@ -220,7 +220,7 @@ def make_window():
                 [
                     sg.Push(),
                     sg.Text("Units", pad=(0, 0), font=REG_FONT),
-                    sg.Combo(default_value='kg', values=['kg', 'g'], key='-MAREL_UNITS-', enable_events=True, size=(5, 1),
+                    sg.Combo(default_value='kg', values=['kg', 'g', 'lb', 'oz'], key='-MAREL_UNITS-', enable_events=True, size=(5, 1),
                      pad=(1, 1), font=REG_FONT)
                 ],
             ],
@@ -385,6 +385,9 @@ def make_window():
         element_justification='center',
     )
     window.set_min_size(tuple(map(lambda x: int(x / 2), window.size)))
+
+    window['-MAREL_HOST-'].bind("<Return>", "ENTER-")
+
     return window
 
 
@@ -447,11 +450,16 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
             sg.SetOptions(window_location=get_new_location(window))
 
         match event:
-            case "-MAREL_START-":
+            case "-MAREL_HOST-ENTER-":
                 controller.config.client.marel_ip_address = values['-MAREL_HOST-']
                 update_json_value(controller.config_path, ['client', 'marel_ip_address'],
                                   str(controller.config.client.marel_ip_address))
-                window['-MAREL_HOST-'].update(controller.config.client.marel_ip_address)
+                logging.debug('Marel Host address updated')
+
+            case "-MAREL_START-":
+                #controller.config.client.marel_ip_address = values['-MAREL_HOST-']
+                #update_json_value(controller.config_path, ['client', 'marel_ip_address'],
+                #                  str(controller.config.client.marel_ip_address))
 
                 controller.start_marel_listening()
                 window['-MAREL_LED-'].update(**LED_WAIT)
@@ -462,13 +470,7 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
             case "-MAREL_UNITS-":
                 logging.debug(f'UNITS {event}, {values}')
                 controller.marel.set_units(values['-MAREL_UNITS-'])
-            # case "-MAREL_AUTO_ENTER-":
-            #     if controller.marel.auto_enter:
-            #         window['-MAREL_AUTO_ENTER-'].update('Off')
-            #     else:
-            #         window['-MAREL_AUTO_ENTER-'].update('On')
-            #     controller.marel.auto_enter = not controller.marel.auto_enter
-            #     window.refresh()
+
             case "-AUTO_ENTER-":
                 if controller.auto_enter:
                     window['-AUTO_ENTER-'].update('Off')
