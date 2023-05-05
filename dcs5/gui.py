@@ -21,8 +21,6 @@ from dcs5.controller_configurations import ConfigError
 from dcs5.logger import init_logging
 from dcs5.utils import resolve_relative_path, update_json_value
 
-logging.getLogger('MarelController').setLevel('ERROR')
-
 # This is a fix for my computer. Should not influence anything.
 if os.environ.get('EDITOR') == 'EMACS':
     print('Text editor changed.')
@@ -62,27 +60,27 @@ elif sys.platform == "win32":
 
 def scale_font(font_size: int) -> int:
     monitor_width, monitor_height = pag.size()
-    return int(font_size * monitor_height / 1080)
+    return int(font_size * monitor_height / 1080) - 1
 
 
 REFRESH_PERIOD = .05
 
 BACKLIGHT_SLIDER_MAX = 100
 
-DEVICE_LAYOUT_PADDING = 16
+DEVICE_LAYOUT_PADDING = 18
 
-SMALL_FONT = f'Courier {scale_font(8)}'
+SMALL_FONT = f'Courier {scale_font(8)}' # 10
 
-REG_FONT = f'Courier {scale_font(10)}'
+REG_FONT = f'Courier {scale_font(9)}' # 10
 REG_FONT_BOLD = REG_FONT + ' bold'
 
-FRAME_FONT = f'Courier {scale_font(12)}'
+FRAME_FONT = f'Courier {scale_font(10)}' # 12
 
-HEADER_FONT = f'Courier {scale_font(15)}'
+HEADER_FONT = f'Courier {scale_font(12)}' #15
 
 EMPTY_CIRCLE = '\u25CB'
 
-LED_FONT = f'Courier {scale_font(12)}'
+LED_FONT = f'Courier {scale_font(12)}' # 12
 
 LED_ON = {'value': '\u2B24', 'text_color': 'Green', 'font': FRAME_FONT}
 LED_WAIT = {'value': '\u25B2', 'text_color': 'Orange', 'font': LED_FONT}
@@ -380,11 +378,13 @@ def make_window():
         margins=(0, 0),
         finalize=True,
         grab_anywhere=True,
-        resizable=True,
+     #   resizable=True,
         keep_on_top=False,
         element_justification='center',
     )
-    window.set_min_size(tuple(map(lambda x: int(x / 2), window.size)))
+    #window.set_min_size(tuple(map(lambda x: int(x / 2), window.size)))
+    #window.set_min_size((window.size[0], int(window.size[1]/2)))
+
 
     window['-MAREL_HOST-'].bind("<Return>", "ENTER-")
 
