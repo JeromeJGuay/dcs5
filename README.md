@@ -1,10 +1,9 @@
 # Dcs5 Controller app
 
-NOT UP TO DATE FOR THE CURRENT RELEASE. CONTACT ME FOR HELP
-
-This python (python 3.10) application provides graphical interface to interact (GUI) with a BigFin Dcs5 XT measuring board via Bluetooth.
-The application will turn stylus input on the measuring board into keyboard inputs basically turning the dcs5 measuring board into a wireless keyboard.
-A Marel Marine Scale can also be connected to the application. See the project [marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller) for more information.
+This python (python 3.10) application provides graphical interface to interact (GUI) with a BigFin Dcs5 XT or MICRO measuring board via Bluetooth.
+The application turn stylus inputs on the measuring board into keyboard entry, essentially turning the dcs5 measuring board into a wireless keyboard.
+A Marel Marine Scale can also be connected to the application. 
+See the project [marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller) for more information and how to set up the scale.
 
 # Download from releases
 Downloading the Dcs5 Controller App from the latest release.
@@ -17,17 +16,31 @@ Downloading the Dcs5 Controller App from the latest release.
 - python 3.10
 
 # Usage
-### Guide d'utilisation en français: [UserGuide_fr.pdf](doc/UserGuide_fr.pdf).
+### Guide d'utilisation en français pour le modèle XT : [UserGuide_fr.pdf](doc/UserGuide_fr.pdf).
 
 ## Measuring Board
 
+The only difference between the `xt` and `micro` control box models are the number of keys (xt: 32, micro: 3) and the lights 
+display and flash sequence.
+
 #### Stylus detection zone
+The stylus needs to be place within the detection zone.
+The detection delay can be adjusted in the configuration (See section [Configuration files](#configurations-files)).
+The control box lights will flash when a measurement is made.
+
 <p align='center'>
 <img src='doc/images/planche_zone.png' width='4032' alt="Board Detection Zone"/>
 </p>
 
 #### Swiping zone
-Swiping from left to right in the zone defined in the configuration will change the output mode: *Top*, *Length* and *Bottom* (See section [Device Specification](#device-specification)). 
+
+The measurement board has 3 different output mode; length, top keys and bottom keys.
+When in top or bottom keys mode, the stylus needs to be place on the circle within the detection zone of the board.
+There is 2 ways to change the detection zone; by mapping commands to the control box keys or by defining swiping region on the board.
+The control box will display a different lights pattern for each outputs modes.
+See section [Configuration files](#configurations-files) for the output mode commands.
+Swiping from left to right in the swiping zone defined in the configuration will change the output mode: *Top*, *Length* and *Bottom*.
+See section [Device Specification](#device-specification) for information on how to define the swiping region. 
 
 <p align='center'>
 <img src='doc/images/planche_swipe.png' width='4032' alt="Board Swiping Zone"/>
@@ -132,28 +145,64 @@ Default `micro` file:  [micro_controller_configuration.json](dcs5/default_config
 
 Usage:
 + client: Measuring board bluetooth information.
+  ```json
+    "client": {
+        "device_name": "BigFinDCS5-E5FE",
+        "mac_address": "00:06:66:89:E5:FE",
+        "marel_ip_address": "192.168.0.202"
+    },
+  ``` 
   - device_name: Name of the device. (Only use to display in the app.)
   - mac_address: Bluetooth (mac) address of the board i.e. **00:06:66:89:E5:FE**.
   - marel_ip_address: Ip address of the Marel Scale (see [marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller)).
 + launch_settings: setting used when the app is launch.
-  - output_mode: **TODO**
-  - reading_profile: **TODO**
+  ```json
+        "launch_settings": {
+        "output_mode": "length",
+        "reading_profile": "measure",
+        "dynamic_stylus_mode": true,
+        "backlighting_level": 95,
+        "length_units": "mm",
+        "stylus": "pen",
+        "auto_enter": true
+    }
+  ```
+  - output_mode: top, length or bottom.
+  - reading_profile: Name (key) of the profile. The reading profiles are defined below.
   - dynamic_stylus_mode: (true/false) If true, reading profiles will change for each output mode as defined in the next section.
   - backlight_level: (0-95) Backlight intensity
   - length_units: Units of the measurements values either **cm** or **mm**
   - stylus: Name of the stylus in use. Must be defined in the [devices_specifications](#device-specification) file. 
   - auto_enter: Automatically press the *enter* key after a length or weight value is printed.
   
-  Notes: The reading profiles are defined in the next section.
 + reading_profiles:
+  ```json
+    "reading_profiles": {
+        "measure": {
+            "settling_delay": 9,
+            "number_of_reading": 50,
+            "max_deviation": 50
+        }
+  ```
   - settling_delay: (0-20) Delays after the stylus is first detected. (not seconds)
   - number_of_reading: Number of reading needed for a good measurements.
   - max_deviation: (1-100) Amount of deviation allowed between each reading.
-  
   *Notes: For more information : [user_guide/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf)*
 + output_modes:
+  ```json
+    "output_modes": {
+        "swipe_threshold": 5,
+        "segments_limits": [0, 230, 430, 630, 800],
+        "segments_mode": ["length", "top", "bottom", "length"],
+        "mode_reading_profiles": {
+            "top": "key",
+            "length": "measure",
+            "bottom": "key"
+        }
+  }
+  ```
   - swipe_threshold: Minimal distance (mm) for a stylus swipe to be valid.
-  - segments_limits: Define the limit of the different swipe segment.
+  - segments_limits: Define the boundaries (mm) of the different swipe segments.
   - segments_mode: The corresponding output_mode for each swipe segment.
   - mode_reading_profiles: The corresponding reading_profiles for each output modes.
 + keys_maps (See [Key Mapping](#key-mapping-) section): 
@@ -212,6 +261,13 @@ Default file: [devices_specification.json](dcs5/default_configs/xt_devices_speci
 
 Usage:
 + board:
+  ```json
+   "board": {
+            "number_of_keys": 49,
+            "key_to_mm_ratio": 15.385,
+            "zero": -3.695,
+            "detection_range": 2,
+  ```
   - number_of_keys: The keys correspond to the grey circle on the board.
   - key_to_mm_ratio: The distance in mm from one edge of a circle (larger one) to the next.
   - zero: The distance (mm) that would be the key 0 given that the first key on the board is key 1.
@@ -227,3 +283,7 @@ Usage:
 + stylus_offset: Offset in mm that is added ot the value measured by the board. 
   - Notes: These values will depend on the calibration.
 
+#### Mircro Control Box Keys:
+<p align='center'>
+<img src='doc/images/dcs5_micro_control_box_annotated.png' width='350' alt="gui marel display"/>
+</p>
