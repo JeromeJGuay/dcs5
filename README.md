@@ -23,14 +23,14 @@ Downloading the Dcs5 Controller App from the latest release.
 
 #### Stylus detection zone
 <p align='center'>
-<img src='doc/images/planche_zone.jpg' width='4032' alt="Board Detection Zone"/>
+<img src='doc/images/planche_zone.png' width='4032' alt="Board Detection Zone"/>
 </p>
 
 #### Swiping zone
 Swiping from left to right in the zone defined in the configuration will change the output mode: *Top*, *Length* and *Bottom* (See section [Device Specification](#device-specification)). 
 
 <p align='center'>
-<img src='doc/images/planche_swipe.jpg' width='4032' alt="Board Swiping Zone"/>
+<img src='doc/images/planche_swipe.png' width='4032' alt="Board Swiping Zone"/>
 </p>
 
 In the figure above are the default swiping zone for the *xt* models.
@@ -38,7 +38,7 @@ From left to right they are map to outputs mode *Length*, *Top*, *Bottom* and *L
 
 #### Measurement example
 <p align='center'>
-<img src='doc/images/measure_example.jpg' width='4032' alt="Board Measurement Example"/>
+<img src='doc/images/measure_example.png' width='4032' alt="Board Measurement Example"/>
 </p>
 
 
@@ -103,11 +103,18 @@ This is done in the [Device Specification](#device-specification) file (see sect
 
 
 
-### Additional GUI features.
+### Additional informations.
 
+#### Dcs5 Tab
 <p align='center'>
-<img src='doc/images/dcs5_gui_annotated.png' width='700' alt="gui main display"/>
+<img src='doc/images/dcs5_gui_main_annotated.png' width='700' alt="gui main display"/>
 </p>
+
+#### Marel Scale Tab
+<p align='center'>
+<img src='doc/images/dcs5_gui_marel_annotated.png' width='700' alt="gui marel display"/>
+</p>
+
 
 
 ## Configurations Files
@@ -136,6 +143,7 @@ Usage:
   - length_units: Units of the measurements values either **cm** or **mm**
   - stylus: Name of the stylus in use. Must be defined in the [devices_specifications](#device-specification) file. 
   - auto_enter: Automatically press the *enter* key after a length or weight value is printed.
+  
   Notes: The reading profiles are defined in the next section.
 + reading_profiles:
   - settling_delay: (0-20) Delays after the stylus is first detected. (not seconds)

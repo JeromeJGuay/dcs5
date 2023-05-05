@@ -1,3 +1,4 @@
+import logging
 import os
 import platform
 from pathlib import Path
@@ -5,6 +6,8 @@ from pathlib import Path
 from dcs5.utils import resolve_relative_path
 
 VERSION = "1.0.0"
+
+logging.getLogger(__name__)
 
 ### LOCAL FILE PATH ###
 if platform.system() == 'Windows':
