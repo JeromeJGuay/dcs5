@@ -21,6 +21,8 @@ from dcs5.controller_configurations import ConfigError
 from dcs5.logger import init_logging
 from dcs5.utils import resolve_relative_path, update_json_value
 
+logging.getLogger('MarelController').setLevel('ERROR')
+
 # This is a fix for my computer. Should not influence anything.
 if os.environ.get('EDITOR') == 'EMACS':
     print('Text editor changed.')
@@ -60,27 +62,27 @@ elif sys.platform == "win32":
 
 def scale_font(font_size: int) -> int:
     monitor_width, monitor_height = pag.size()
-    return int(font_size * monitor_height / 1080) - 1
+    return int(font_size * monitor_height / 1080)
 
 
 REFRESH_PERIOD = .05
 
 BACKLIGHT_SLIDER_MAX = 100
 
-DEVICE_LAYOUT_PADDING = 18
+DEVICE_LAYOUT_PADDING = 16
 
-SMALL_FONT = f'Courier {scale_font(8)}' # 10
+SMALL_FONT = f'Courier {scale_font(8)}'
 
-REG_FONT = f'Courier {scale_font(9)}' # 10
+REG_FONT = f'Courier {scale_font(10)}'
 REG_FONT_BOLD = REG_FONT + ' bold'
 
-FRAME_FONT = f'Courier {scale_font(10)}' # 12
+FRAME_FONT = f'Courier {scale_font(12)}'
 
-HEADER_FONT = f'Courier {scale_font(12)}' #15
+HEADER_FONT = f'Courier {scale_font(15)}'
 
 EMPTY_CIRCLE = '\u25CB'
 
-LED_FONT = f'Courier {scale_font(12)}' # 12
+LED_FONT = f'Courier {scale_font(12)}'
 
 LED_ON = {'value': '\u2B24', 'text_color': 'Green', 'font': FRAME_FONT}
 LED_WAIT = {'value': '\u25B2', 'text_color': 'Orange', 'font': LED_FONT}
@@ -218,7 +220,7 @@ def make_window():
                 [
                     sg.Push(),
                     sg.Text("Units", pad=(0, 0), font=REG_FONT),
-                    sg.Combo(default_value='kg', values=['kg', 'g'], key='-MAREL_UNITS-', enable_events=True, size=(5, 1),
+                    sg.Combo(default_value='kg', values=['kg', 'g', 'lb', 'oz'], key='-MAREL_UNITS-', enable_events=True, size=(5, 1),
                      pad=(1, 1), font=REG_FONT)
                 ],
             ],
@@ -456,7 +458,7 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                                   str(controller.config.client.marel_ip_address))
                 logging.debug('Marel Host address updated')
 
-            case "-MAREL_START-":
+            case "-MAREL_HOST-ENTER-":
                 controller.config.client.marel_ip_address = values['-MAREL_HOST-']
                 update_json_value(controller.config_path, ['client', 'marel_ip_address'],
                                   str(controller.config.client.marel_ip_address))
