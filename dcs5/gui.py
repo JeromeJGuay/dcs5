@@ -462,6 +462,7 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 controller.config.client.marel_ip_address = values['-MAREL_HOST-']
                 update_json_value(controller.config_path, ['client', 'marel_ip_address'],
                                   str(controller.config.client.marel_ip_address))
+                logging.debug('Marel Host address updated')
 
                 controller.start_marel_listening()
                 window['-MAREL_LED-'].update(**LED_WAIT)
