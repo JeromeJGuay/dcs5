@@ -220,7 +220,7 @@ def make_window():
                 [
                     sg.Push(),
                     sg.Text("Units", pad=(0, 0), font=REG_FONT),
-                    sg.Combo(default_value='kg', values=['kg', 'g', 'lb', 'oz'], key='-MAREL_UNITS-', enable_events=True, size=(5, 1),
+                    sg.Combo(default_value='kg', values=['kg', 'g', 'lb', 'oz'], key='-MAREL_UNITS-', enable_events=True, size=(5, 1), readonly=True,
                      pad=(1, 1), font=REG_FONT)
                 ],
             ],
@@ -297,7 +297,7 @@ def make_window():
 
     ### STYLUS
     _stylus_layout = [
-        [sg.Combo(values=[''], key='-STYLUS-', enable_events=True, size=(10, 1), pad=(1, 1), font=REG_FONT),
+        [sg.Combo(values=[''], key='-STYLUS-', enable_events=True, size=(10, 1), pad=(1, 1), font=REG_FONT, readonly=True),
          sg.Text('Offset:', font=REG_FONT),
          sg.Text("-", font=REG_FONT_BOLD, background_color='white',
                  size=(3, 1), p=(1, 0), justification='c', key='-STYLUS_OFFSET-')
@@ -418,7 +418,10 @@ def run():
     if sg.user_settings()['configs_path'] is not None:
         controller = init_dcs5_controller()
     else:
-        controller = modal(window, popup_window_select_config)
+        while sg.user_settings()['configs_path'] is None:
+            controller = modal(window, popup_window_select_config)
+
+
 
     init_layout(window, controller)
 
@@ -464,6 +467,7 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                                   str(controller.config.client.marel_ip_address))
                 logging.debug('Marel Host address updated')
 
+            case "-MAREL_START-":
                 controller.start_marel_listening()
                 window['-MAREL_LED-'].update(**LED_WAIT)
                 window['-MAREL_START-'].update(disabled=True)
@@ -513,6 +517,8 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 modal(window, popup_window_calibrate, controller)
             case 'Configuration':
                 controller = modal(window, popup_window_select_config, controller=controller)
+                # MAREL HOST IS UPDATED HERE SINCE THE FIELD IS ALSO AN INPUT
+                window['-MAREL_HOST-'].update(controller.config.client.marel_ip_address)
             case '-STYLUS-':
                 controller.change_stylus(values['-STYLUS-'], flash=False)
             case '-BACKLIGHT-':
@@ -585,6 +591,7 @@ def _refresh_marel_layout(window: sg.Window, controller: Dcs5Controller):
         window["-MAREL_UNITS-"].update(disabled=False)
         #window["-MAREL_AUTO_ENTER-"].update(disabled=False)
         if controller.marel.client.is_connecting:
+            window["-MAREL_STOP-"].update(disabled=False)
             window["-MAREL_LED-"].update(**LED_WAIT)
             window["-MAREL_WEIGHT-"].update("N/A")
             window["-MAREL_WEIGHT_DEVICE-"].update("N/A")
@@ -999,8 +1006,8 @@ def list_configs():
 
 def new_config_window():
     model_layout = [[sg.Text('Model: ', font=REG_FONT),
-                     sg.DropDown(['xt', 'micro'], default_value='xt', size=(20, 4), enable_events=False, font=REG_FONT,
-                                 key='-MODEL-')]]
+                     sg.DropDown(['xt', 'micro'], default_value='xt', size=(20, 4), enable_events=False, font=REG_FONT, readonly=True,
+                                  key='-MODEL-')]]
     path_layout = [
         [sg.Text('Name:  ', font=REG_FONT), sg.InputText(key='-PATH-', font=REG_FONT, size=[20, 1], default_text=None)]]
     submit_layout = [[

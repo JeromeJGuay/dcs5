@@ -688,6 +688,7 @@ class Dcs5Controller:
         self.command_handler.queue_command(f'&{pt}mm,{pos}#', f'%{pt}mm,{pos}#\r')
 
     def start_marel_listening(self):
+        logging.debug('starting Marel')
         if not self.marel:
             if self.config.client.marel_ip_address:
                 self.marel = MarelController(host=self.config.client.marel_ip_address)
@@ -698,6 +699,7 @@ class Dcs5Controller:
         self.marel_thread.start()
 
     def stop_marel_listening(self):
+        logging.debug('stopping Marel')
         if self.marel:
             self.marel.stop_listening()
 
