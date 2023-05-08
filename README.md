@@ -55,6 +55,40 @@ From left to right they are map to outputs mode *Length*, *Top*, *Bottom* and *L
 </p>
 
 
+### LEDs Displays
+Different LEDs patterns are displayed on the control box to give user feedback.
+* xt: FUEL GAUGE / ACTION led bar
+* micro: Led Ring
+
+#### Output mode
+The default pattern displays the current output mode.
+<p align='center'>
+<img src='doc/images/dcs5_led_output_mode.png' width='300' alt="Board Swiping Zone"/>
+</p>
+
+* Yellow: Top 
+* Red: Length
+* Blue: Bottom
+
+#### Stylus detection
+<p align='center'>
+<img src='doc/images/dcs5_led_detection.png' width='300' alt="Board Swiping Zone"/>
+</p>
+ 
+#### Measurements
+All the leds flash rapidly when a measurement is made.
+The default pattern displays the current output mode.
+<p align='center'>
+<img src='doc/images/dcs5_led_measurments.png' width='300' alt="Board Swiping Zone"/>
+</p>
+
+#### Calibration
+When calibrating a point, the leds will slowly light up in the following sequences. When calibration is over all the leds will flash.
+<p align='center'>
+<img src='doc/images/dcs5_led_calibration.png' width='300' alt="Board Swiping Zone"/>
+</p>
+
+
 ## GUI
 
 ### Configurations
@@ -100,7 +134,7 @@ The application and board are synchronize when the application successfully chan
 
 ### Calibration
 
-Click on *Set Cal. Pts.* 
+Click on *Set Cal. Pts.*
 
 <p align='center'>
 <img src='doc/images/dcs5_gui_calibration_frame.png' width='359' alt="gui calibration display"/>
@@ -115,8 +149,13 @@ This is done in the [Device Specification](#device-specification) file (see sect
 </p>
 
 
+Press the *Calibrate* button to calibrate the measuring board. 
+When calibrating  
 
-### Additional informations.
+
+
+
+### Additional information.
 
 #### Dcs5 Tab
 <p align='center'>
