@@ -101,7 +101,7 @@ La seule différence entre le`xt`et`micro`Les modèles de boîtier de commande s
 
 ### Modèle:`miro`
 
--   3 keys
+-   3 clés
 
 <p style="text-align: center;">
 <img src='doc/images/dcs5_micro_control_box_annotated.png' width='350' alt="gui marel display"/>
@@ -176,7 +176,7 @@ Pour charger et gérer la configuration, cliquez sur**Dcs5 > Paramétrage**dans 
 <img src='doc/images/dcs5_gui_menu.png' width='203' alt="gui menu zoom"/>
 </p>
 
-Du_Configuration_fenêtre, vous pouvez créer**Nouveau**,**Load**,**Supprimer**et**Modifier**configurations.
+Du_Configuration_fenêtre, vous pouvez créer**Nouveau**,**Charger**,**Supprimer**et**Modifier**configurations.
 
 <p style="text-align: center;">
 <img src='doc/images/dcs5_gui_config_menu.png' width='536' alt="gui config window"/>
