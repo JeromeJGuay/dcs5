@@ -296,7 +296,7 @@ Usage:
     ```
     -   device_name : nom de l'appareil. (Seulement utilisé pour afficher dans l'application.)
     -   mac_address : adresse Bluetooth (mac) de la carte de mesure, c'est-à-dire**00:06 : I : coupe : frère : dans**.
-    -   marel_ip_address : adresse IP de la balance Marel (voir[marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller)).
+    -   marel_ip_address: Ip address of the Marel Scale (see [marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller)).
 -   launch_settings : paramètre utilisé au lancement de l'application.
     ```json
           {"launch_settings": {
@@ -347,7 +347,7 @@ Usage:
     -   mode_reading_profiles : les profils de lecture correspondants pour chaque mode de sortie.
 -   keys_maps (voir[Mappage des clés](#key-mapping)section):
     Des champs:`control_box`,`control_box_mode`,`board`,`board_mode`
-    -   Une touche peut être associée à des commandes ou à des entrées au clavier.
+    -   A key can be mapped to commands or keyboard inputs.
     -   Une carte peut être une liste de commandes ou d'entrées au clavier qui sont exécutées une par une.
     -   Une touche peut avoir deux mappages : un par défaut et un mappage alternatif (mode).
 
