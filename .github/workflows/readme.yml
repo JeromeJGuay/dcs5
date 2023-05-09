@@ -38,7 +38,7 @@ jobs:
 
   convert_to_pdf_EN:
     name: Build PDF
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - uses: docker://pandoc/core:2.9
@@ -55,7 +55,7 @@ jobs:
   convert_to_pdf_FR:
     name: Build PDF
     needs: Translate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - uses: docker://pandoc/core:2.9
