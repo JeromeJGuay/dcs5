@@ -22,10 +22,6 @@ Downloading the Dcs5 Controller App from the latest release.
 
 ## Measuring Board
 
-The only difference between the `xt` and `micro` control box models are the number of keys
-(xt: 32, micro: 3) and the light 
-display and flash sequence.
-
 #### Stylus detection zone
 The stylus needs to be placed within the detection zone.
 The detection delay can be adjusted in the configuration (See section [Configuration files](#configurations-files)).
@@ -84,6 +80,28 @@ You can change the measurement/detection settings in the [controller_configurati
 </p>
 
 
+## Control Box
+
+
+The only difference between the `xt` and `micro` control box models are the number of keys and the LED display and flash sequence.
+
+### Model: `xt`
+* 32 keys
+
+<p style="text-align: center;">
+<img src='doc/images/dcs5_xt_control_box_annotated.png' width='350' alt="gui marel display"/>
+</p>
+
+
+### Model: `miro`
+
+* 3 keys
+
+<p style="text-align: center;">
+<img src='doc/images/dcs5_micro_control_box_annotated.png' width='350' alt="gui marel display"/>
+</p>
+
+
 ### LEDs Displays
 Different LEDs patterns are displayed on the control box to give feedback to the users.
 * xt: FUEL GAUGE / ACTION led bar
@@ -95,9 +113,9 @@ The default pattern displays the current output mode.
 <img src='doc/images/dcs5_led_output_mode.png' width='300' alt="led output mode"/>
 </p>
 
-* Yellow: Top 
-* Red: Length
-* Blue: Bottom
+* T: Top 
+* L: Length
+* B: Bottom
 
 #### Stylus detection
 The follow led pattern is displayed when the board detects the stylus.
@@ -112,9 +130,24 @@ The default pattern displays the current output mode.
 <img src='doc/images/dcs5_led_measurements.png' width='300' alt="led measurements"/>
 </p>
 
+#### Swipe
+
+<p style="text-align: center;">
+<img src='doc/images/dcs5_led_slide.png' width='300' alt="Led swipe"/>
+</p>
+
+* L: Right to Left swipe
+* R: Left to Right swipe
+
 #### Calibration
-When calibrating a point, the leds will slowly light up in the following sequences.
-When the calibration is over, all the leds will rapidly flash.
+In calibration mode, the default display changes to
+<p style="text-align: center;">
+<img src='doc/images/dcs5_led_calibration_mode.png' width='300' alt="led calibration"/>
+</p>
+
+Then, once the stylus is placed down, the leds will slowly light up in the following sequences.
+When the point is successfully calibrated is over, all the leds will rapidly flash.
+
 <p style="text-align: center;">
 <img src='doc/images/dcs5_led_calibration.png' width='300' alt="led calibration"/>
 </p>
@@ -203,7 +236,8 @@ In the calibration points window set the two calibration points in mm.
 </p>
 
 
-Press the **Calibrate** button to start the calibration the measuring board.
+Press the **Calibrate** button to enter the calibration mode,
+from there follow the instruction given by the application.
 Note that a right to left swipe will exit the calibration mode.
 For each calibration point,
 the calibration progress will be shown by the following LEDs [display](#calibration) once the stylus is placed down. 
@@ -377,8 +411,3 @@ Usage:
   - keys_layout: Mapping of the controller box key builtin id to meaningful name. These names are used to map command. 
 + stylus_offset: Offset in mm that is added to the value measured by the board. 
   - Note: These values will depend on the calibration.
-
-#### Micro Control Box Keys:
-<p style="text-align: center;">
-<img src='doc/images/dcs5_micro_control_box_annotated.png' width='350' alt="gui marel display"/>
-</p>

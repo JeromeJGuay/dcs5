@@ -424,7 +424,7 @@ class Dcs5Controller:
         self.change_board_output_mode({'top': 'bottom', 'bottom': 'length','length': 'top'}[self.output_mode])
 
     def change_board_output_mode(self, value: str):
-        """Value must be one of  [length, bottom, top]
+        """Value must be one of [length, bottom, top]
         """
         self.output_mode = value
         if self.client.is_connected:
