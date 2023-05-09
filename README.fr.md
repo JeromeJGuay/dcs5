@@ -11,11 +11,11 @@ Voir le projet[marel_marine_scale_controller](https://github.com/iml-gddaiss/mar
 
 Téléchargement de l'application Dcs5 Controller à partir de la dernière version.
 
-1.  Télécharger`dcs5.zip`de la dernière version ici:<https://github.com/iml-gddaiss/dcs5/releases>.
+1.  Télécharger`dcs5.zip`depuis la dernière version[ici](https://github.com/iml-gddaiss/dcs5/releases).
 2.  Décompresser`dcs5.zip`
 3.  Courir`dcs5.exe`
 
-## Configuration requise pour installer le package python. (Non requis pour utiliser l'application en tant qu'application autonome.)
+## Configuration requise pour installer le package python. (Pas nécessaire pour utiliser l'application en tant qu'application autonome.)
 
 -   Python 3.10
 
@@ -31,9 +31,10 @@ Le stylet doit être placé dans la zone de détection.
 Le délai de détection est réglable dans la configuration (Voir section[Fichiers de configuration](#configurations-files)).
 Les voyants du boîtier de commande clignotent lorsqu'une mesure est effectuée.
 
-<p style="text-align: center;">
-<img src='doc/images/planche_zone.png' width='742' alt="Board Detection Zone"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/planche_zone.png' width='742' alt="Board Detection Zone" style="background-color:gray;"/>
+<figcaption>Board Detection Zone </figcaption>
+</figure>
 
 #### Modes de sortie
 
@@ -52,15 +53,16 @@ De plus, l'affichage LED par défaut du boîtier de commande change en fonction 
 
 -   Voir section[Affichages LED](#leds-displays).
 
-##### Balayer la région
+#### Balayer la région
 
 Commencer de gauche à droite dans une zone de balayage changera le mode de sortie.
 Les régions de balayage sont définies dans les fichiers de configuration.
 Par exemple, voici les régions de balayage par défaut pour le`xt`boîtier de commande.
 
-<p style="text-align: center;">
+<figure style="text-align: center;">
 <img src='doc/images/planche_swipe.png' width='741' alt="Board Swiping Zone"/>
-</p>
+<figcaption>Default XT Swipe Zone </figcaption>
+</figure>
 The corresponding output modes are:
 
 -   Gauche droite :**Longueur**
@@ -83,9 +85,9 @@ La définition de la carte dans le fichier de configuration est :
 Les mesures sont effectuées en plaçant la tête du stylet à plat sur la carte dans la zone de détection.
 Vous pouvez modifier les paramètres de mesure/détection dans[configuration du contrôleur](#controller-configuration).
 
-<p style="text-align: center;">
+<div style="text-align: center;">
 <img src='doc/images/measure_example.png' width='740' alt="Board Measurement Example"/>
-</p>
+</div>
 
 ## Boîtier de commande
 
@@ -95,17 +97,19 @@ La seule différence entre le`xt`et`micro`Les modèles de boîtier de commande s
 
 -   32 touches
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_xt_control_box_annotated.png' width='350' alt="gui marel display"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_xt_control_box_annotated.png' width='350' alt="Xt Control Box"/>
+<figcaption>Xt Control Box</figcaption>
+</figure>
 
 ### Modèle:`miro`
 
 -   3 clés
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_micro_control_box_annotated.png' width='350' alt="gui marel display"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_micro_control_box_annotated.png' width='350' alt="Micro Control Box"/>
+<figcaption>Micro Control Box</figcaption>
+</figure>
 
 ### Affichages LED
 
@@ -118,9 +122,10 @@ Différents modèles de LED sont affichés sur le boîtier de commande pour donn
 
 Le modèle par défaut affiche le mode de sortie actuel.
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_led_output_mode.png' width='300' alt="led output mode"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_led_output_mode.png' width='300' alt="Output Mode LED Display" style="background-color:gray;"/>
+<figcaption>Output Mode LED Display</figcaption>
+</figure>
 
 -   T : Haut
 -   L : Longueur
@@ -130,22 +135,25 @@ Le modèle par défaut affiche le mode de sortie actuel.
 
 Le motif de led de suivi s'affiche lorsque la carte détecte le stylet.
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_led_detection.png' width='300' alt="led stylus detection"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_led_detection.png' width='300' alt="Stylus Detection LED Display" style="background-color:gray;"/>
+<figcaption>Stylus Detection LED Display</figcaption>
+</figure>
  
 #### Measurements
 All the leds flash rapidly when a measurement is made.
 The default pattern displays the current output mode.
-<p style="text-align: center;">
-<img src='doc/images/dcs5_led_measurements.png' width='300' alt="led measurements"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_led_measurements.png' width='300' alt="Measurement LED Display" style="background-color:gray;"/>
+<figcaption>Measurement LED Display</figcaption>
+</figure>
 
 #### Glisser
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_led_slide.png' width='300' alt="Led swipe"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_led_slide.png' width='300' alt="Swipe LED Display" style="background-color:gray;"/>
+<figcaption>Swipe LED Display</figcaption>
+</figure>
 
 -   L : balayage de droite à gauche
 -   R : Balayage de gauche à droite
@@ -154,16 +162,18 @@ The default pattern displays the current output mode.
 
 En mode d'étalonnage, l'affichage par défaut passe à
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_led_calibration_mode.png' width='300' alt="led calibration"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_led_calibration_mode.png' width='300' alt="Calibration Mode LED Display" style="background-color:gray;"/>
+<figcaption>Calibration Mode LED Display</figcaption>
+</figure>
 
 Ensuite, une fois le stylet posé, les leds s'allumeront lentement dans les séquences suivantes.
 Lorsque le point est calibré avec succès, toutes les leds clignotent rapidement.
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_led_calibration.png' width='300' alt="led calibration"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_led_calibration.png' width='300' alt="Calibration LED Display" style="background-color:gray;"/>
+<figcaption>Calibration LED Display</figcaption>
+</figure>
 
 ## Application
 
@@ -172,24 +182,27 @@ Lorsque le point est calibré avec succès, toutes les leds clignotent rapidemen
 L'application nécessite une configuration pour fonctionner.
 Pour charger et gérer la configuration, cliquez sur**Dcs5 > Paramétrage**dans la barre supérieure.
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_gui_menu.png' width='203' alt="gui menu zoom"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_gui_menu.png' width='203' alt="Application Menu Widget"/>
+<figcaption>Application Menu Widget</figcaption>
+</figure>
 
 Du_Configuration_fenêtre, vous pouvez créer**Nouveau**,**Charger**,**Supprimer**et**Modifier**configurations.
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_gui_config_menu.png' width='536' alt="gui config window"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_gui_config_menu.png' width='536' alt="Config Window"/>
+<figcaption>Config Window</figcaption>
+</figure>
 
 #### Nouvelle configuration
 
 Des configurations par défaut sont fournies pour le`xt`et`micro`des modèles.
-Sélectionnez le modèle de boîtier de commande (xt ou micro) et entrez un nom pour la nouvelle configuration.
+Sélectionnez le modèle de boîtier de commande (xt ou micro) et saisissez un nom pour la nouvelle configuration.
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_gui_new_config.png' width='331' alt="gui new config window"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_gui_new_config.png' width='331' alt="New Config Window"/>
+<figcaption>New Config Window</figcaption>
+</figure>
 
 L'adresse Bluetooth du contrôleur (adresse MAC) devra être changée une fois qu'une nouvelle configuration est créée.
 Sélectionnez la configuration et le`Controller Configuration`déposer et appuyer**Modifier**.
@@ -205,16 +218,18 @@ Pour se connecter à la carte de mesure Dcs5, l'adresse Board Mac (bluetooth) do
 
 Ensuite, vous devez vous connecter puis activer la carte en appuyant sur le**Connecter**et**Activer**bouton.
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_gui_connect.png' width='365' alt="gui connect"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_gui_connect.png' width='365' alt="Connect Widget"/>
+<figcaption>Connect Widget</figcaption>
+</figure>
 
 Le cercle rouge à côté du**Connecter**le bouton se transformera en triangle jaune
 pendant que l'application tente de se connecter à la carte, puis dans un vert lorsqu'elle est connectée.
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_gui_activate.png' width='371' alt="gui activate"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_gui_activate.png' width='371' alt="Activate Widget"/>
+<figcaption>Activate Widget</figcaption>
+</figure>
 
 Les cercles rouges à côté du**Activer**Le bouton deviendra également vert lorsque l'application et la carte seront prêtes à être utilisées.
 Lors de l'activation de la carte, l'application se synchronisera avec le boîtier de commande de la carte.
@@ -239,15 +254,17 @@ puis ajouter`offset`dans les fichiers d'étalonnage de chaque stylet.
 
 Pour calibrer la carte, cliquez sur**Réglez Cal. Pts.**
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_gui_calibration_frame.png' width='359' alt="gui calibration display"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_gui_calibration_frame.png' width='359' alt="Calibration Widget"/>
+<figcaption>Calibration Widget</figcaption>
+</figure>
 
 Dans la fenêtre des points d'étalonnage, définissez les deux points d'étalonnage en mm.
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_gui_set_calibration_pts.png' width='239' alt="gui set cal pts window"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_gui_set_calibration_pts.png' width='239' alt="Calibration Set. Cal. Pts. Window"/>
+<figcaption>Calibration Set. Cal. Pts. Window</figcaption>
+</figure>
 
 appuie sur le**Étalonner**bouton pour entrer dans le mode de calibrage,
 à partir de là, suivez les instructions données par l'application.
@@ -260,15 +277,17 @@ Si le stylet est trop levé ou déplacé avant que le calibrage ne soit terminé
 
 #### Onglet DCS5
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_gui_main_annotated.png' width='700' alt="gui main display"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_gui_main_annotated.png' width='700' alt="Application Window"/>
+<figcaption>Application Window</figcaption>
+</figure>
 
 #### Onglet Échelle Marel
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_gui_marel_annotated.png' width='700' alt="gui marel display"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_gui_marel_annotated.png' width='700' alt="Applicaiton Marel Widget"/>
+<figcaption>Application Marel Widget</figcaption>
+</figure>
 
 ## Fichiers de configuration
 
@@ -287,6 +306,7 @@ Défaut`micro`déposer:[micro_controller_configuration.json](dcs5/default_config
 Usage:
 
 -   client : Informations Bluetooth sur la carte de mesure.
+
     ```json
       {"client": {
           "device_name": "BigFinDCS5-E5FE",
@@ -294,10 +314,13 @@ Usage:
           "marel_ip_address": "192.168.0.202"
       }}
     ```
+
     -   device_name : nom de l'appareil. (Seulement utilisé pour afficher dans l'application.)
     -   mac_address : adresse Bluetooth (mac) de la carte de mesure, c'est-à-dire**00:06 : I : coupe : frère : dans**.
     -   marel_ip_address : adresse IP de la balance Marel (voir[marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller)).
+
 -   launch_settings : paramètre utilisé au lancement de l'application.
+
     ```json
           {"launch_settings": {
           "output_mode": "length",
@@ -309,6 +332,7 @@ Usage:
           "auto_enter": true
           }}
     ```
+
     -   output_mode : haut, longueur ou bas.
     -   reading_profile : Nom (clé) du profil. Les profils de lecture sont définis ci-dessous.
     -   dynamic_stylus_mode : (vrai/faux) Si vrai, les profils de lecture changeront pour chaque mode de sortie, comme défini dans la section suivante.
@@ -316,7 +340,9 @@ Usage:
     -   length_units : unités des valeurs de mesure soit**cm**ou**millimètre**
     -   stylet : nom du stylet utilisé. Doit être défini dans le[spécifications_appareils](#device-specification)déposer.
     -   auto_enter : appuyez automatiquement sur la touche_entrer_après l'impression d'une valeur de longueur ou de poids.
+
 -   lecture_profils :
+
     ```json
       {"reading_profiles": {
           "measure": {
@@ -325,10 +351,13 @@ Usage:
               "max_deviation": 50
           }}}
     ```
+
     -   settling_delay : (0-20) Délai après la première détection du stylet. (pas des secondes)
     -   number_of_reading : nombre de lectures nécessaires pour une bonne mesure.
     -   max_deviation : (1-100) Quantité d'écart autorisée entre chaque lecture._Remarques : Pour plus d'informations :[guide_utilisateur/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf)_
+
 -   modes_sortie :
+
     ```json
       {"output_modes": {
           "swipe_threshold": 5,
@@ -341,12 +370,16 @@ Usage:
           }
     }}
     ```
+
     -   Seuil de balayage : distance minimale (mm) pour qu'un balayage de stylet soit valide.
     -   segments_limits : définit les limites (mm) des différents segments de balayage.
     -   segments_mode : Le output_mode correspondant pour chaque segment de balayage.
     -   mode_reading_profiles : les profils de lecture correspondants pour chaque mode de sortie.
+
 -   keys_maps (voir[Mappage des clés](#key-mapping)section):
+
     Des champs:`control_box`,`control_box_mode`,`board`,`board_mode`
+
     -   Une touche peut être associée à des commandes ou à des entrées au clavier.
     -   Une carte peut être une liste de commandes ou d'entrées au clavier qui sont exécutées une par une.
     -   Une touche peut avoir deux mappages : un par défaut et un mappage alternatif (mode).
@@ -366,34 +399,34 @@ Commandes :
 -   `"WEIGHT"`: Imprime le poids mesuré par la balance Marel (si connectée).
 -   `"DELETE_LAST`: Supprimer la dernière valeur imprimée.
 -   `"PRINT <string to print>"]`: Imprime le`<string to print>`valeur.
-
-    Saisie valide au clavier (Source :[Pya Uto Manger](https://pyautogui.readthedocs.io/en/latest/)):
-
-        ['\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'",
-        '(', ')', '*', '+', ',', '-', '.', '/', '{', '|', '}', '~',
-        ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`',
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
-        'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
-        'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
-        'accept', 'add', 'alt', 'altleft', 'altright', 'apps', 'backspace',
-        'browserback', 'browserfavorites', 'browserforward', 'browserhome',
-        'browserrefresh', 'browsersearch', 'browserstop', 'capslock', 'clear',
-        'convert', 'ctrl', 'ctrlleft', 'ctrlright', 'decimal', 'del', 'delete',
-        'divide', 'down', 'end', 'enter', 'esc', 'escape', 'execute', 'f1', 'f10',
-        'f11', 'f12', 'f13', 'f14', 'f15', 'f16', 'f17', 'f18', 'f19', 'f2', 'f20',
-        'f21', 'f22', 'f23', 'f24', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9',
-        'final', 'fn', 'hanguel', 'hangul', 'hanja', 'help', 'home', 'insert', 'junja',
-        'kana', 'kanji', 'launchapp1', 'launchapp2', 'launchmail',
-        'launchmediaselect', 'left', 'modechange', 'multiply', 'nexttrack',
-        'nonconvert', 'num0', 'num1', 'num2', 'num3', 'num4', 'num5', 'num6',
-        'num7', 'num8', 'num9', 'numlock', 'pagedown', 'pageup', 'pause', 'pgdn',
-        'pgup', 'playpause', 'prevtrack', 'print', 'printscreen', 'prntscrn',
-        'prtsc', 'prtscr', 'return', 'right', 'scrolllock', 'select', 'separator',
-        'shift', 'shiftleft', 'shiftright', 'sleep', 'space', 'stop', 'subtract', 'tab',
-        'up', 'volumedown', 'volumemute', 'volumeup', 'win', 'winleft', 'winright', 'yen',
-        'command', 'option', 'optionleft', 'optionright']
+    Saisie valide au clavier (Source :[Pya Uto manger](https://pyautogui.readthedocs.io/en/latest/)):
+    ```python
+    ['\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'",
+    '(', ')', '*', '+', ',', '-', '.', '/', '{', '|', '}', '~',
+    ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`',
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
+    'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
+    'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+    'accept', 'add', 'alt', 'altleft', 'altright', 'apps', 'backspace',
+    'browserback', 'browserfavorites', 'browserforward', 'browserhome',
+    'browserrefresh', 'browsersearch', 'browserstop', 'capslock', 'clear',
+    'convert', 'ctrl', 'ctrlleft', 'ctrlright', 'decimal', 'del', 'delete',
+    'divide', 'down', 'end', 'enter', 'esc', 'escape', 'execute', 'f1', 'f10',
+    'f11', 'f12', 'f13', 'f14', 'f15', 'f16', 'f17', 'f18', 'f19', 'f2', 'f20',
+    'f21', 'f22', 'f23', 'f24', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9',
+    'final', 'fn', 'hanguel', 'hangul', 'hanja', 'help', 'home', 'insert', 'junja',
+    'kana', 'kanji', 'launchapp1', 'launchapp2', 'launchmail',
+    'launchmediaselect', 'left', 'modechange', 'multiply', 'nexttrack',
+    'nonconvert', 'num0', 'num1', 'num2', 'num3', 'num4', 'num5', 'num6',
+    'num7', 'num8', 'num9', 'numlock', 'pagedown', 'pageup', 'pause', 'pgdn',
+    'pgup', 'playpause', 'prevtrack', 'print', 'printscreen', 'prntscrn',
+    'prtsc', 'prtscr', 'return', 'right', 'scrolllock', 'select', 'separator',
+    'shift', 'shiftleft', 'shiftright', 'sleep', 'space', 'stop', 'subtract', 'tab',
+    'up', 'volumedown', 'volumemute', 'volumeup', 'win', 'winleft', 'winright', 'yen',
+    'command', 'option', 'optionleft', 'optionright']
+    ```
 
 ### Spécification de l'appareil
 

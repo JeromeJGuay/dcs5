@@ -8,8 +8,11 @@ a = Analysis(
     ['dcs5/gui.py'],
     pathex=[],
     binaries=[],
-    datas=[('dcs5/static', 'static'),
-    ('dcs5/default_configs', 'default_configs')],
+    datas=[('./*.html', '.'),
+    ('doc/images', 'doc/images'),
+    ('dcs5/static', 'static'),
+    ('dcs5/default_configs', 'default_configs')
+    ],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

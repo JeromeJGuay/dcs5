@@ -894,7 +894,7 @@ class CommandHandler:
 
 
 class SocketListener:
-    """The socket listener also do the command interpretation."""
+    """The socket listener also does the command interpretation."""
     def __init__(self, controller: Dcs5Controller):
         self.controller = controller
         self.message_queue = Queue()
@@ -1020,7 +1020,7 @@ class SocketListener:
                     self.controller.mapped_controller_commands(value)
                 else:
                     if value.startswith(PRINT_COMMAND):
-                        value = value[6:].strip(' ')
+                        value = value[len(PRINT_COMMAND):]
                     self.controller.to_keyboard(value)
         else:
             raise ValueError(f'CRITICAL error in _process_output.')

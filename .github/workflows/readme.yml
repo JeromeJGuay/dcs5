@@ -1,10 +1,11 @@
-name: Translate README and convert to PDF
+name: Translate README
 
-on: push
-#  push:
-#    branches:
-#      - main
-#      - 'v*'
+#on: push
+on:
+  push:
+    branches:
+      - not_a_branch
+
 jobs:
   Translate:
     runs-on: ubuntu-latest
@@ -14,57 +15,8 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 12.x
-      # ISO Langusge Codes: https://cloud.google.com/translate/docs/languages
-#      - name: Adding README - Chinese Simplified
-#        uses: dephraiim/translate-readme@main
-#        with:
-#          LANG: zh-CN
-#      - name: Adding README - Chinese Traditional
-#        uses: dephraiim/translate-readme@main
-#        with:
-#          LANG: zh-TW
-#      - name: Adding README - Hindi
-#        uses: dephraiim/translate-readme@main
-#        with:
-#          LANG: hi
-#      - name: Adding README - Arabic
-#        uses: dephraiim/translate-readme@main
-#        with:
-#          LANG: ar
       - name: Adding README - French
         uses: dephraiim/translate-readme@main
         with:
           LANG: fr
 
-  convert_to_pdf_EN:
-    name: Build PDF
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - uses: docker://pandoc/core:2.9
-        with:
-          args: >-  # allows you to break string into multiple lines 
-            -o README.pdf
-            "-fmarkdown-implicit_figures -o" 
-            --from=markdown 
-            -V geometry:margin=.4in 
-            --toc 
-            --highlight-style=espresso
-            README.md
-
-  convert_to_pdf_FR:
-    name: Build PDF
-    needs: Translate
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - uses: docker://pandoc/core:2.9
-        with:
-          args: >-  # allows you to break string into multiple lines 
-            -o README.fr.pdf
-            "-fmarkdown-implicit_figures -o" 
-            --from=markdown 
-            -V geometry:margin=.4in 
-            --toc 
-            --highlight-style=espresso
-            README.fr.md

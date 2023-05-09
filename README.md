@@ -1,4 +1,4 @@
-# Dcs5 Controller app
+# Dcs5 Controller Application
 
 This python (python 3.10) application provides a graphical interface to interact
 (GUI) with a BigFin Dcs5 XT or MICRO measuring board via Bluetooth.
@@ -9,7 +9,8 @@ See the project [marel_marine_scale_controller](https://github.com/iml-gddaiss/m
 
 # Download from releases
 Downloading the Dcs5 Controller App from the latest release.
-1. Download `dcs5.zip` from the last version here: https://github.com/iml-gddaiss/dcs5/releases.
+
+1. Download `dcs5.zip` from the last version [here](https://github.com/iml-gddaiss/dcs5/releases).
 2. Unzip `dcs5.zip`
 3. Run `dcs5.exe`
 
@@ -27,9 +28,10 @@ The stylus needs to be placed within the detection zone.
 The detection delay can be adjusted in the configuration (See section [Configuration files](#configurations-files)).
 The control box lights will flash when a measurement is made.
 
-<p style="text-align: center;">
-<img src='doc/images/planche_zone.png' width='742' alt="Board Detection Zone"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/planche_zone.png' width='742' alt="Board Detection Zone" style="background-color:gray;"/>
+<figcaption>Board Detection Zone </figcaption>
+</figure>
 
 #### Output modes
 
@@ -48,14 +50,15 @@ The map command to change to a specific output mode or to cycle through the outp
 Furthermore, the default LED display of the control box changes depending on the output modes.
 * See section [LEDs Displays](#leds-displays).
 
-##### Swiping Region
+#### Swiping Region
 
 Starting left to right in a swiping zone will change the output mode.
 The swiping regions are defined in the configuration files.
 For example, here are the defaults swiping regions for the `xt` control box.
-<p style="text-align: center;">
+<figure style="text-align: center;">
 <img src='doc/images/planche_swipe.png' width='741' alt="Board Swiping Zone"/>
-</p>
+<figcaption>Default XT Swipe Zone </figcaption>
+</figure>
 The corresponding output modes are:
 
 * Left, Right : **Length**
@@ -63,21 +66,23 @@ The corresponding output modes are:
 * Green: **Bottom**
 
 The map definition in the configuration file is:
+
   ```json
     {"output_modes": {
         "segments_limits": [0, 230, 430, 630, 800],
         "segments_mode": ["length", "top", "bottom", "length"]
         }}
   ```
+
 * See section [Device Specification](#device-specification) for information on how to define the swiping region. 
 
 
 #### Measurement example
 Measurements are made by placing the stylus head flat on the board within the detection zone.
 You can change the measurement/detection settings in the [controller_configuration](#controller-configuration).
-<p style="text-align: center;">
+<div style="text-align: center;">
 <img src='doc/images/measure_example.png' width='740' alt="Board Measurement Example"/>
-</p>
+</div>
 
 
 ## Control Box
@@ -88,30 +93,34 @@ The only difference between the `xt` and `micro` control box models are the numb
 ### Model: `xt`
 * 32 keys
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_xt_control_box_annotated.png' width='350' alt="gui marel display"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_xt_control_box_annotated.png' width='350' alt="Xt Control Box"/>
+<figcaption>Xt Control Box</figcaption>
+</figure>
 
 
 ### Model: `miro`
 
 * 3 keys
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_micro_control_box_annotated.png' width='350' alt="gui marel display"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_micro_control_box_annotated.png' width='350' alt="Micro Control Box"/>
+<figcaption>Micro Control Box</figcaption>
+</figure>
 
 
 ### LEDs Displays
 Different LEDs patterns are displayed on the control box to give feedback to the users.
+
 * xt: FUEL GAUGE / ACTION led bar
 * micro: Led Ring
 
 #### Output mode
 The default pattern displays the current output mode.
-<p style="text-align: center;">
-<img src='doc/images/dcs5_led_output_mode.png' width='300' alt="led output mode"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_led_output_mode.png' width='300' alt="Output Mode LED Display" style="background-color:gray;"/>
+<figcaption>Output Mode LED Display</figcaption>
+</figure>
 
 * T: Top 
 * L: Length
@@ -119,38 +128,43 @@ The default pattern displays the current output mode.
 
 #### Stylus detection
 The follow led pattern is displayed when the board detects the stylus.
-<p style="text-align: center;">
-<img src='doc/images/dcs5_led_detection.png' width='300' alt="led stylus detection"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_led_detection.png' width='300' alt="Stylus Detection LED Display" style="background-color:gray;"/>
+<figcaption>Stylus Detection LED Display</figcaption>
+</figure>
  
 #### Measurements
 All the leds flash rapidly when a measurement is made.
 The default pattern displays the current output mode.
-<p style="text-align: center;">
-<img src='doc/images/dcs5_led_measurements.png' width='300' alt="led measurements"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_led_measurements.png' width='300' alt="Measurement LED Display" style="background-color:gray;"/>
+<figcaption>Measurement LED Display</figcaption>
+</figure>
 
 #### Swipe
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_led_slide.png' width='300' alt="Led swipe"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_led_slide.png' width='300' alt="Swipe LED Display" style="background-color:gray;"/>
+<figcaption>Swipe LED Display</figcaption>
+</figure>
 
 * L: Right to Left swipe
 * R: Left to Right swipe
 
 #### Calibration
 In calibration mode, the default display changes to
-<p style="text-align: center;">
-<img src='doc/images/dcs5_led_calibration_mode.png' width='300' alt="led calibration"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_led_calibration_mode.png' width='300' alt="Calibration Mode LED Display" style="background-color:gray;"/>
+<figcaption>Calibration Mode LED Display</figcaption>
+</figure>
 
 Then, once the stylus is placed down, the leds will slowly light up in the following sequences.
 When the point is successfully calibrated is over, all the leds will rapidly flash.
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_led_calibration.png' width='300' alt="led calibration"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_led_calibration.png' width='300' alt="Calibration LED Display" style="background-color:gray;"/>
+<figcaption>Calibration LED Display</figcaption>
+</figure>
 
 
 ## Application
@@ -159,21 +173,25 @@ When the point is successfully calibrated is over, all the leds will rapidly fla
 
 The application requires a configuration to work.
 To load and manage configuration, click on **Dcs5 > Configuration** in the top bar. 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_gui_menu.png' width='203' alt="gui menu zoom"/>
-</p>
+
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_gui_menu.png' width='203' alt="Application Menu Widget"/>
+<figcaption>Application Menu Widget</figcaption>
+</figure>
 
 From the *Configuration* window, you can create **New**, **Load**, **Delete** and **Edit** configurations.
-<p style="text-align: center;">
-<img src='doc/images/dcs5_gui_config_menu.png' width='536' alt="gui config window"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_gui_config_menu.png' width='536' alt="Config Window"/>
+<figcaption>Config Window</figcaption>
+</figure>
 
 #### New configuration
 Default configurations are provided for the `xt` and `micro` models.
 Select the Control Box model (xt or micro) and enter a name for the new configuration.
-<p style="text-align: center;">
-<img src='doc/images/dcs5_gui_new_config.png' width='331' alt="gui new config window"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_gui_new_config.png' width='331' alt="New Config Window"/>
+<figcaption>New Config Window</figcaption>
+</figure>
 
 The bluetooth address of the controller (mac address) will need to be changed once a new configuration is created.
 Select the configuration and the `Controller Configuration` file and press **Edit**.
@@ -191,16 +209,18 @@ To connect to the Dcs5 measuring board, the Board Mac (bluetooth) address needs 
 
 Then you need to connect and then activate the board by pressing the **Connect** and **Activate** button. 
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_gui_connect.png' width='365' alt="gui connect"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_gui_connect.png' width='365' alt="Connect Widget"/>
+<figcaption>Connect Widget</figcaption>
+</figure>
 
 The red circle next to the **Connect** button will turn into a yellow triangle
 while the application is attempting to connect to the board and then into a green when connected.
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_gui_activate.png' width='371' alt="gui activate"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_gui_activate.png' width='371' alt="Activate Widget"/>
+<figcaption>Activate Widget</figcaption>
+</figure>
 
 The red circles next to the **Activate** button will also turn green when the application and board are ready to use.
 When activating the board, the application will synchronize with the board control box.
@@ -226,14 +246,16 @@ and then add `offset` in the calibration files for each stylus.
 
 To calibrate the board, click on **Set Cal. Pts.**
 
-<p style="text-align: center;">
-<img src='doc/images/dcs5_gui_calibration_frame.png' width='359' alt="gui calibration display"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_gui_calibration_frame.png' width='359' alt="Calibration Widget"/>
+<figcaption>Calibration Widget</figcaption>
+</figure>
 
 In the calibration points window set the two calibration points in mm.
-<p style="text-align: center;">
-<img src='doc/images/dcs5_gui_set_calibration_pts.png' width='239' alt="gui set cal pts window"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_gui_set_calibration_pts.png' width='239' alt="Calibration Set. Cal. Pts. Window"/>
+<figcaption>Calibration Set. Cal. Pts. Window</figcaption>
+</figure>
 
 
 Press the **Calibrate** button to enter the calibration mode,
@@ -247,14 +269,16 @@ If the stylus is lifted or moved too much before the calibration is done, the ca
 ### Additional information.
 
 #### Dcs5 Tab
-<p style="text-align: center;">
-<img src='doc/images/dcs5_gui_main_annotated.png' width='700' alt="gui main display"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_gui_main_annotated.png' width='700' alt="Application Window"/>
+<figcaption>Application Window</figcaption>
+</figure>
 
 #### Marel Scale Tab
-<p style="text-align: center;">
-<img src='doc/images/dcs5_gui_marel_annotated.png' width='700' alt="gui marel display"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_gui_marel_annotated.png' width='700' alt="Applicaiton Marel Widget"/>
+<figcaption>Application Marel Widget</figcaption>
+</figure>
 
 
 
@@ -272,7 +296,9 @@ Default `micro` file:  [micro_controller_configuration.json](dcs5/default_config
 
 
 Usage:
+
 + client: Measuring board bluetooth information.
+
   ```json
     {"client": {
         "device_name": "BigFinDCS5-E5FE",
@@ -280,10 +306,12 @@ Usage:
         "marel_ip_address": "192.168.0.202"
     }}
   ``` 
+  
   - device_name: Name of the device. (Only used to display in the app.)
   - mac_address: Bluetooth (mac) address of the measuring board i.e. **00:06:66:89:E5:FE**.
   - marel_ip_address: Ip address of the Marel Scale (see [marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller)).
 + launch_settings: setting used when the app is launched.
+
   ```json
         {"launch_settings": {
         "output_mode": "length",
@@ -295,6 +323,7 @@ Usage:
         "auto_enter": true
         }}
   ```
+  
   - output_mode: top, length or bottom.
   - reading_profile: Name (key) of the profile. The reading profiles are defined below.
   - dynamic_stylus_mode: (true/false) If true, reading profiles will change for each output mode as defined in the next section.
@@ -304,6 +333,7 @@ Usage:
   - auto_enter: Automatically press the *enter* key after a length or weight value is printed.
   
 + reading_profiles:
+
   ```json
     {"reading_profiles": {
         "measure": {
@@ -312,11 +342,14 @@ Usage:
             "max_deviation": 50
         }}}
   ```
+  
   - settling_delay: (0-20) Delays after the stylus is first detected. (not seconds)
   - number_of_reading: Number of readings needed for a good measurements.
   - max_deviation: (1-100) Amount of deviation allowed between each reading.
   *Notes: For more information : [user_guide/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf)*
+
 + output_modes:
+
   ```json
     {"output_modes": {
         "swipe_threshold": 5,
@@ -329,12 +362,15 @@ Usage:
         }
   }}
   ```
+  
   - swipe_threshold: Minimal distance (mm) for a stylus swipe to be valid.
   - segments_limits: Define the boundaries (mm) of the different swipe segments.
   - segments_mode: The corresponding output_mode for each swipe segment.
   - mode_reading_profiles: The corresponding reading_profiles for each output mode.
 + keys_maps (See [Key Mapping](#key-mapping) section): 
+
   Fields: `control_box`, `control_box_mode`, `board`, `board_mode`
+
   - A key can be mapped to commands or keyboard inputs.
   - A map can be a list of commands or keyboard inputs which are executed one at a time.
   - A key can have two mappings: One default and when the alternative (mode) mapping. 
@@ -344,6 +380,7 @@ Usage:
   The names of the keys are set in [devices_specification.json](dcs5/default_configs/xt_devices_specification.json).
   
   Commands:
+
   + `"BACKLIGHT_UP", "BACKLIGHT_DOWN"`: Change the control box backlight level.
   + `"CHANGE_STYLUS"`: Cycle through the list of stylus defined in the [devices_specifications](#device-specification) file. 
   + `"UNITS_mm", "UNITS_cm"`: Change output units.
@@ -356,8 +393,8 @@ Usage:
   
   Valid keyboard input (Source: [PyAutoGui](https://pyautogui.readthedocs.io/en/latest/)):
     
-  ```
-  ['\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'",
+  ```python
+['\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'",
   '(', ')', '*', '+', ',', '-', '.', '/', '{', '|', '}', '~',
   ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`',
   '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
@@ -388,7 +425,9 @@ Usage:
 Default file: [devices_specification.json](dcs5/default_configs/xt_devices_specification.json)
 
 Usage:
+
 + board:
+
   ```json
    {"board": {
             "number_of_keys": 49,
@@ -397,6 +436,7 @@ Usage:
             "detection_range": 2}
   }
   ```
+  
   - number_of_keys: The keys correspond to the grey circle on the board.
   - key_to_mm_ratio: The distance in mm from one edge of a circle (larger one) to the next.
   - zero: The distance (mm) that would be the key 0 given that the first key on the board is key 1.
