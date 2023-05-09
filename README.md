@@ -281,7 +281,7 @@ Usage:
     }}
   ``` 
   - device_name: Name of the device. (Only used to display in the app.)
-  - mac_address: Bluetooth (mac) address of the board i.e. **00:06:66:89:E5:FE**.
+  - mac_address: Bluetooth (mac) address of the measuring board i.e. **00:06:66:89:E5:FE**.
   - marel_ip_address: Ip address of the Marel Scale (see [marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller)).
 + launch_settings: setting used when the app is launched.
   ```json
@@ -344,7 +344,7 @@ Usage:
   The names of the keys are set in [devices_specification.json](dcs5/default_configs/xt_devices_specification.json).
   
   Commands:
-  + `"BACKLIGHT_UP", "BACKLIGHT_DOWN"`: Change the board backlight level.
+  + `"BACKLIGHT_UP", "BACKLIGHT_DOWN"`: Change the control box backlight level.
   + `"CHANGE_STYLUS"`: Cycle through the list of stylus defined in the [devices_specifications](#device-specification) file. 
   + `"UNITS_mm", "UNITS_cm"`: Change output units.
   + `"MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"`: Change the output mode.

@@ -36,7 +36,7 @@ jobs:
         with:
           LANG: fr
 
-  convert_to_pdf:
+  convert_to_pdf_EN:
     name: Build PDF
     runs-on: ubuntu-latest
     steps:
@@ -44,7 +44,23 @@ jobs:
         with:
           args: >-  # allows you to break string into multiple lines
             README.md 
-            -O README.pdf
+            -o README.pdf
+            "-fmarkdown-implicit_figures -o" 
+            --from=markdown 
+            -V geometry:margin=.4in 
+            --toc 
+            --highlight-style=espresso
+
+  convert_to_pdf_FR:
+    name: Build PDF
+    needs: Translate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker://pandoc/core:2.9
+        with:
+          args: >-  # allows you to break string into multiple lines
+            README.fr.md 
+            -o README.fr.pdf
             "-fmarkdown-implicit_figures -o" 
             --from=markdown 
             -V geometry:margin=.4in 
