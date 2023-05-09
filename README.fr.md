@@ -15,7 +15,7 @@ Téléchargement de l'application Dcs5 Controller à partir de la dernière vers
 2.  Décompresser`dcs5.zip`
 3.  Courir`dcs5.exe`
 
-## Configuration requise pour installer le package python. (Non requis pour utiliser l'application en tant qu'application autonome.)
+## Configuration requise pour installer le package python. (Pas nécessaire pour utiliser l'application en tant qu'application autonome.)
 
 -   Python 3.10
 
@@ -40,7 +40,7 @@ Les voyants du boîtier de commande clignotent lorsqu'une mesure est effectuée.
 La carte de mesure dispose de 3 modes de sortie différents ;**longueur**,**haut**et**bas**.
 Le**haut**et**bas**mode sont utilisés
 pour accéder aux touches du haut et du bas
-en plaçant le stylet sur le cercle correspondant à l'intérieur de la zone de détection de la carte.
+en plaçant le stylet sur le cercle correspondant dans la zone de détection de la carte.
 Il y a 2 manières de changer la zone de détection ;
 en mappant les commandes sur les touches du boîtier de commande ou en définissant des régions de balayage sur le tableau.
 
@@ -64,7 +64,7 @@ Par exemple, voici les régions de balayage par défaut pour le`xt`boîtier de c
 The corresponding output modes are:
 
 -   Gauche droite :**Longueur**
--   Bleu :**Haut**
+-   Bleu :**Top**
 -   Vert:**Bas**
 
 La définition de la carte dans le fichier de configuration est :
@@ -343,9 +343,9 @@ Usage:
     ```
     -   Seuil de balayage : distance minimale (mm) pour qu'un balayage de stylet soit valide.
     -   segments_limits : définit les limites (mm) des différents segments de balayage.
-    -   segments_mode : Le output_mode correspondant pour chaque segment de balayage.
+    -   segments_mode : Le output_mode correspondant pour chaque segment de balayage.
     -   mode_reading_profiles : les profils de lecture correspondants pour chaque mode de sortie.
--   keys_maps (voir[Mappage des clés](#key-mapping)section):
+-   keys_maps (Voir[Mappage des clés](#key-mapping)section):
     Des champs:`control_box`,`control_box_mode`,`board`,`board_mode`
     -   Une touche peut être associée à des commandes ou à des entrées au clavier.
     -   Une carte peut être une liste de commandes ou d'entrées au clavier qui sont exécutées une par une.
@@ -353,11 +353,11 @@ Usage:
 
 #### Mappage des clés
 
-Les noms des clés sont définis dans[devices_specification.json](dcs5/default_configs/xt_devices_specification.json).
+Les noms des touches sont définis dans[devices_specification.json](dcs5/default_configs/xt_devices_specification.json).
 
 Commandes :
 
--   `"BACKLIGHT_UP", "BACKLIGHT_DOWN"`: Change the control box backlight level.
+-   `"BACKLIGHT_UP", "BACKLIGHT_DOWN"`: Modifier le niveau de rétroéclairage du boîtier de commande.
 -   `"CHANGE_STYLUS"`: Parcourir la liste des stylets définis dans le[spécifications_appareils](#device-specification)déposer.
 -   `"UNITS_mm", "UNITS_cm"`: Modifier les unités de sortie.
 -   `"MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"`: Changez le mode de sortie.
@@ -367,7 +367,7 @@ Commandes :
 -   `"DELETE_LAST`: Supprimer la dernière valeur imprimée.
 -   `"PRINT <string to print>"]`: Imprime le`<string to print>`valeur.
 
-    Saisie valide au clavier (Source :[Pya Uto Manger](https://pyautogui.readthedocs.io/en/latest/)):
+    Saisie valide au clavier (Source :[Pya Uto manger](https://pyautogui.readthedocs.io/en/latest/)):
 
         ['\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'",
         '(', ')', '*', '+', ',', '-', '.', '/', '{', '|', '}', '~',
@@ -395,7 +395,7 @@ Commandes :
         'up', 'volumedown', 'volumemute', 'volumeup', 'win', 'winleft', 'winright', 'yen',
         'command', 'option', 'optionleft', 'optionright']
 
-### Spécification de l'appareil
+### Device Specification
 
 Fichier par défaut :[devices_specification.json](dcs5/default_configs/xt_devices_specification.json)
 
