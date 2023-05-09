@@ -15,7 +15,7 @@ Téléchargement de l'application Dcs5 Controller à partir de la dernière vers
 2.  Décompresser`dcs5.zip`
 3.  Courir`dcs5.exe`
 
-## Configuration requise pour installer le package python. (Non requis pour utiliser l'application en tant qu'application autonome.)
+## Configuration requise pour installer le package python. (Pas nécessaire pour utiliser l'application en tant qu'application autonome.)
 
 -   Python 3.10
 
@@ -67,7 +67,7 @@ The corresponding output modes are:
 -   Bleu :**Haut**
 -   Vert:**Bas**
 
-La définition de la carte dans le fichier de configuration est :
+La définition de carte dans le fichier de configuration est :
 
 ```json
   {"output_modes": {
@@ -101,7 +101,7 @@ La seule différence entre le`xt`et`micro`Les modèles de boîtier de commande s
 
 ### Modèle:`miro`
 
--   3 clés
+-   3 keys
 
 <p style="text-align: center;">
 <img src='doc/images/dcs5_micro_control_box_annotated.png' width='350' alt="gui marel display"/>
@@ -176,7 +176,7 @@ Pour charger et gérer la configuration, cliquez sur**Dcs5 > Paramétrage**dans 
 <img src='doc/images/dcs5_gui_menu.png' width='203' alt="gui menu zoom"/>
 </p>
 
-Du_Configuration_fenêtre, vous pouvez créer**Nouveau**,**Charger**,**Supprimer**et**Modifier**configurations.
+Du_Configuration_fenêtre, vous pouvez créer**Nouveau**,**Load**,**Supprimer**et**Modifier**configurations.
 
 <p style="text-align: center;">
 <img src='doc/images/dcs5_gui_config_menu.png' width='536' alt="gui config window"/>
@@ -185,7 +185,7 @@ Du_Configuration_fenêtre, vous pouvez créer**Nouveau**,**Charger**,**Supprimer
 #### Nouvelle configuration
 
 Des configurations par défaut sont fournies pour le`xt`et`micro`des modèles.
-Sélectionnez le modèle de boîtier de commande (xt ou micro) et entrez un nom pour la nouvelle configuration.
+Sélectionnez le modèle de boîtier de commande (xt ou micro) et saisissez un nom pour la nouvelle configuration.
 
 <p style="text-align: center;">
 <img src='doc/images/dcs5_gui_new_config.png' width='331' alt="gui new config window"/>
@@ -296,7 +296,7 @@ Usage:
     ```
     -   device_name : nom de l'appareil. (Seulement utilisé pour afficher dans l'application.)
     -   mac_address : adresse Bluetooth (mac) de la carte de mesure, c'est-à-dire**00:06 : I : coupe : frère : dans**.
-    -   marel_ip_address: Ip address of the Marel Scale (see [marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller)).
+    -   marel_ip_address : adresse IP de la balance Marel (voir[marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller)).
 -   launch_settings : paramètre utilisé au lancement de l'application.
     ```json
           {"launch_settings": {
@@ -343,17 +343,17 @@ Usage:
     ```
     -   Seuil de balayage : distance minimale (mm) pour qu'un balayage de stylet soit valide.
     -   segments_limits : définit les limites (mm) des différents segments de balayage.
-    -   segments_mode : Le output_mode correspondant pour chaque segment de balayage.
+    -   segments_mode : Le output_mode correspondant pour chaque segment de balayage.
     -   mode_reading_profiles : les profils de lecture correspondants pour chaque mode de sortie.
--   keys_maps (voir[Mappage des clés](#key-mapping)section):
+-   keys_maps (Voir[Mappage des clés](#key-mapping)section):
     Des champs:`control_box`,`control_box_mode`,`board`,`board_mode`
-    -   A key can be mapped to commands or keyboard inputs.
+    -   Une touche peut être associée à des commandes ou à des entrées au clavier.
     -   Une carte peut être une liste de commandes ou d'entrées au clavier qui sont exécutées une par une.
     -   Une touche peut avoir deux mappages : un par défaut et un mappage alternatif (mode).
 
 #### Mappage des clés
 
-Les noms des clés sont définis dans[devices_specification.json](dcs5/default_configs/xt_devices_specification.json).
+Les noms des touches sont définis dans[devices_specification.json](dcs5/default_configs/xt_devices_specification.json).
 
 Commandes :
 
@@ -361,7 +361,7 @@ Commandes :
 -   `"CHANGE_STYLUS"`: Parcourir la liste des stylets définis dans le[spécifications_appareils](#device-specification)déposer.
 -   `"UNITS_mm", "UNITS_cm"`: Modifier les unités de sortie.
 -   `"MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"`: Changez le mode de sortie.
--   `"CHANGE_OUTPUT_MODE"`: Faire défiler le mode de sortie (TOP, LENGTH, BOTTOM).
+-   `"CHANGE_OUTPUT_MODE"`: Parcourir le mode de sortie (TOP, LENGTH, BOTTOM).
 -   `"MODE"`: Accéder au mappage (mode) alternatif (`control_box_mode`,`board_mode`).
 -   `"WEIGHT"`: Imprime le poids mesuré par la balance Marel (si connectée).
 -   `"DELETE_LAST`: Supprimer la dernière valeur imprimée.
@@ -423,6 +423,6 @@ Usage:
     _Remarques : Les deux listes (haut et bas) ne doivent pas contenir de noms identiques._
 -   boîtier de commande:
     -   modèle : Modèle du boîtier de commande. Soit**XT**ou**micro**.
-    -   keys_layout : Mappage de l'identifiant intégré de la clé de la boîte de contrôleur sur un nom significatif. Ces noms sont utilisés pour mapper la commande.
+    -   keys_layout : mappage de l'identifiant intégré de la clé de la boîte de contrôleur sur un nom significatif. Ces noms sont utilisés pour mapper la commande.
 -   stylus_offset : décalage en mm qui s'ajoute à la valeur mesurée par la carte.
     -   Remarque : Ces valeurs dépendent de l'étalonnage.
