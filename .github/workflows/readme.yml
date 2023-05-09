@@ -41,15 +41,16 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - uses: docker://pandoc/core:2.9
+      - uses: docker://pandoc/latex:2.9
+#      - uses: docker://pandoc/core:2.9
         with:
           args: >-  # allows you to break string into multiple lines 
             -o README.pdf
-            "-fmarkdown-implicit_figures -o" 
-            --from=markdown 
-            -V geometry:margin=.4in 
-            --toc 
-            --highlight-style=espresso
+          #  "-fmarkdown-implicit_figures -o"
+          #  --from=markdown
+          #  -V geometry:margin=.4in
+          #  --toc
+          #  --highlight-style=espresso
             README.md
 
   convert_to_pdf_FR:
@@ -62,9 +63,9 @@ jobs:
         with:
           args: >-  # allows you to break string into multiple lines 
             -o README.fr.pdf
-            "-fmarkdown-implicit_figures -o" 
-            --from=markdown 
-            -V geometry:margin=.4in 
-            --toc 
-            --highlight-style=espresso
+          #  "-fmarkdown-implicit_figures -o"
+          #  --from=markdown
+          #  -V geometry:margin=.4in
+          #  --toc
+          #  --highlight-style=espresso
             README.fr.md
