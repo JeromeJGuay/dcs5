@@ -12,14 +12,14 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3  # Go to branch repository
-      - uses: docker://pandoc/latex:2.9
+      - uses: docker://pandoc/latex:latest
         with:
           args: >-  # allows you to break string into multiple lines
             "-fmarkdown-implicit_figures -o"
             --from=markdown
-#            -V geometry:margin=.4in
-#            --toc
-#            --highlight-style=espresso
+            -V geometry:margin=.4in
+            --toc
+            --highlight-style=espresso
             --output=dcs5/static/user_guide_en.pdf
             README.md
 
