@@ -3,7 +3,7 @@ name: Translate README
 on:
   push:
     branches:
-      -
+      - not_a_branch
 
 jobs:
   Translate:
