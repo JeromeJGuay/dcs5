@@ -152,7 +152,7 @@ The default pattern displays the current output mode.
 
 #### Étalonnage
 
-In calibration mode, the default display changes to
+En mode d'étalonnage, l'affichage par défaut passe à
 
 <p style="text-align: center;">
 <img src='doc/images/dcs5_led_calibration_mode.png' width='300' alt="led calibration"/>
@@ -176,7 +176,7 @@ Pour charger et gérer la configuration, cliquez sur**Dcs5 > Paramétrage**dans 
 <img src='doc/images/dcs5_gui_menu.png' width='203' alt="gui menu zoom"/>
 </p>
 
-Du_Configuration_fenêtre, vous pouvez créer**Nouveau**,**Charger**,**Supprimer**et**Modifier**configurations.
+From the _Configuration_fenêtre, vous pouvez créer**Nouveau**,**Charger**,**Supprimer**et**Modifier**configurations.
 
 <p style="text-align: center;">
 <img src='doc/images/dcs5_gui_config_menu.png' width='536' alt="gui config window"/>
@@ -201,9 +201,9 @@ Voir section[Fichiers de configuration](#configurations-files)pour plus d'inform
 
 ### Connectez la carte via Bluetooth
 
-Pour se connecter à la carte de mesure Dcs5, l'adresse Board Mac (bluetooth) doit être spécifiée dans le_Configuration du contrôleur_déposer. Vous pouvez modifier le fichier via le menu de configuration (voir les sections[Configurations](#configurations)et[Configuration du contrôleur](#controller-configuration))
+To connect to the Dcs5 measuring board, the Board Mac (bluetooth) address needs to be specified in the _Configuration du contrôleur_déposer. Vous pouvez modifier le fichier via le menu de configuration (voir les sections[Configurations](#configurations)et[Configuration du contrôleur](#controller-configuration))
 
-Ensuite, vous devez vous connecter puis activer la carte en appuyant sur le**Connecter** and **Activer**bouton.
+Ensuite, vous devez vous connecter puis activer la carte en appuyant sur le**Connecter**et**Activer**bouton.
 
 <p style="text-align: center;">
 <img src='doc/images/dcs5_gui_connect.png' width='365' alt="gui connect"/>
@@ -280,9 +280,9 @@ Une configuration est composée de deux fichiers json qui sont utilisés pour mo
 
 ### Configuration du contrôleur
 
-Défaut`xt` file: [xt_controller_configuration.json](dcs5/default_configs/xt_controller_configuration.json)
+Défaut`xt`déposer:[xt_controller_configuration.json](dcs5/default_configs/xt_controller_configuration.json)
 
-Default `micro`déposer:[micro_controller_configuration.json](dcs5/default_configs/micro_controller_configuration.json)
+Défaut`micro`déposer:[micro_controller_configuration.json](dcs5/default_configs/micro_controller_configuration.json)
 
 Usage:
 
@@ -360,14 +360,14 @@ Commandes :
 -   `"BACKLIGHT_UP", "BACKLIGHT_DOWN"`: Modifier le niveau de rétroéclairage du boîtier de commande.
 -   `"CHANGE_STYLUS"`: Parcourir la liste des stylets définis dans le[spécifications_appareils](#device-specification)déposer.
 -   `"UNITS_mm", "UNITS_cm"`: Modifier les unités de sortie.
--   `"MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"`: Change the output mode.
+-   `"MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"`: Changez le mode de sortie.
 -   `"CHANGE_OUTPUT_MODE"`: Parcourir le mode de sortie (TOP, LENGTH, BOTTOM).
 -   `"MODE"`: Accéder au mappage (mode) alternatif (`control_box_mode`,`board_mode`).
 -   `"WEIGHT"`: Imprime le poids mesuré par la balance Marel (si connectée).
 -   `"DELETE_LAST`: Supprimer la dernière valeur imprimée.
 -   `"PRINT <string to print>"]`: Imprime le`<string to print>`valeur.
 
-    Saisie valide au clavier (Source :[Pya Uto manger](https://pyautogui.readthedocs.io/en/latest/)):
+    Saisie valide au clavier (Source :[Pya Uto Manger](https://pyautogui.readthedocs.io/en/latest/)):
 
         ['\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'",
         '(', ')', '*', '+', ',', '-', '.', '/', '{', '|', '}', '~',
@@ -413,7 +413,7 @@ Usage:
     ```
 
     -   number_of_keys : les clés correspondent au cercle gris sur le tableau.
-    -   key_to_mm_ratio: The distance in mm from one edge of a circle (larger one) to the next.
+    -   key_to_mm_ratio : La distance en mm d'un bord d'un cercle (le plus grand) au suivant.
     -   zéro : La distance (mm) qui serait la touche 0 étant donné que la première touche du tableau est la touche 1.
     -   detection_range : Décalage à gauche en mm pour la détection du stylet.
     -   keys_layout : listes ordonnées pour le nom des touches du haut et pour les touches du bas. Ces noms sont utilisés pour mapper la commande.
@@ -422,7 +422,7 @@ Usage:
 
     _Remarques : Les deux listes (haut et bas) ne doivent pas contenir de noms identiques._
 -   boîtier de commande:
-    -   modèle : Modèle du boîtier de commande. Soit**XT**ou**micro**.
+    -   modèle : Modèle du boîtier de commande. Soit**xt**ou**micro**.
     -   keys_layout : mappage de l'identifiant intégré de la clé de la boîte de contrôleur sur un nom significatif. Ces noms sont utilisés pour mapper la commande.
 -   stylus_offset : décalage en mm qui s'ajoute à la valeur mesurée par la carte.
     -   Remarque : Ces valeurs dépendent de l'étalonnage.
