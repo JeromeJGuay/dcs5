@@ -50,8 +50,8 @@ XT_DEFAULT_DEVICES_SPECIFICATION_FILE = str(
 MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE = str(
     resolve_relative_path(DEFAULT_CONFIG_PATH + MICRO_DEVICES_SPECIFICATION_FILE_NAME, __file__))
 
-USER_GUIDE_FILE_FRANÇAIS = str(resolve_relative_path('static/user_guide_fr.pdf', __file__))
-USER_GUIDE_FILE_ENGLISH = str(resolve_relative_path('static/user_guide_en.pdf', __file__))
+#USER_GUIDE_FILE_FRANÇAIS = str(resolve_relative_path('static/user_guide_fr.pdf', __file__))
+USER_GUIDE_FILE_ENGLISH = str(resolve_relative_path('../user_guide_en.html', __file__))
 
 if sys.platform in ("linux", "linux2"):
     LOGO_PATH = str(resolve_relative_path('static/bigfin_logo.png', __file__))
@@ -552,8 +552,8 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                     window['-MUTE-'].update(text='Unmute')
             case 'Guide_en':
                 webbrowser.open_new(USER_GUIDE_FILE_ENGLISH)
-            case 'Guide_fr':
-                webbrowser.open_new(USER_GUIDE_FILE_FRANÇAIS)
+            # case 'Guide_fr':
+            #     webbrowser.open_new(USER_GUIDE_FILE_FRANÇAIS)
 
         refresh_layout(window, controller)
 

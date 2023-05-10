@@ -1,6 +1,5 @@
-name: Readme to pdf (Pandoc)
+name: Html User Guide
 
-#on: push
 on:
   push:
     paths:
@@ -15,73 +14,13 @@ jobs:
       - uses: docker://pandoc/latex:latest
         with:
           args: >-  # allows you to break string into multiple lines
-            --standalone
-            --from markdown
-            -V geometry:margin=1in
-            --toc
-            --highlight-style=tango
-            --section-divs
-            --output=dcs5/static/user_guide_en.pdf  
-            README.md
-
-
+            --from markdown+implicit_figures 
+            --to html5 
+            --metadata title="Dcs5 Controller" --metadata author="jerome.guay@dfo.mpo.gc.ca" --metadata date="May 2023" --highlight-style=tango -V colorlinks=True -V linkcolor=red -V urlcolor=blue --toc
+            --output=user_guide_en.html README.md
       - run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
           git add .
-          git commit -m "Converting README.md to Pdf"
+          git commit -m "Converting README.md to HTML"
           git push
-
-#      - uses: actions/upload-artifact@v3
-#        with:
-#          name: output
-#          path: user_guide_en.pdf
-
-#  convert_to_pdf_EN:
-#    name: Build PDF
-#    runs-on: ubuntu-22.04
-#    steps:
-#      - run: echo "foo" > input.txt  # create an example file
-#      - uses: docker://pandoc/core:2.9
-#        with:
-#          args: >-  # allows you to break string into multiple lines
-#            -o README.pdf
-##            "-fmarkdown-implicit_figures -o"
-##            --from=markdown
-##            -V geometry:margin=.4in
-##            --toc
-##            --highlight-style=espresso
-#            README.md
-#
-##    runs-on: ubuntu-22.04
-##    steps:
-##      - uses: actions/checkout@v3
-##      - name: Using Docker Pandoc
-##        uses: docker://pandoc/core:2.9
-##        with:
-##          args: >-  # allows you to break string into multiple lines
-##            -o README.pdf
-###            "-fmarkdown-implicit_figures -o"
-###            --from=markdown
-###            -V geometry:margin=.4in
-###            --toc
-###            --highlight-style=espresso
-##            README.md
-#
-#  convert_to_pdf_FR:
-#    name: Build PDF
-#    needs: Translate
-#    runs-on: ubuntu-22.04
-#    steps:
-#      - uses: actions/checkout@v3
-#      - name: Using Docker Pandoc
-#        uses: docker://pandoc/core:2.9
-#        with:
-#          args: >-  # allows you to break string into multiple lines
-#            -o README.fr.pdf
-##            "-fmarkdown-implicit_figures -o"
-##            --from=markdown
-##            -V geometry:margin=.4in
-##            --toc
-##            --highlight-style=espresso
-#            README.fr.md
