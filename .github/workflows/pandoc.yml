@@ -15,7 +15,11 @@ jobs:
       - uses: docker://pandoc/latex:2.9
         with:
           args: >-  # allows you to break string into multiple lines
-            --standalone
+            "-fmarkdown-implicit_figures -o"
+            --from=markdown
+            -V geometry:margin=.4in
+            --toc
+            --highlight-style=espresso
             --output=dcs5/static/user_guide_en.pdf
             README.md
 
