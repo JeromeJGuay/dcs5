@@ -12,8 +12,8 @@ jobs:
   convert_via_pandoc:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
-      - uses: docker://pandoc/core:2.9
+      - uses: actions/checkout@v3  # Go to project directory
+      - uses: docker://pandoc/latex:2.9
         with:
           args: >-  # allows you to break string into multiple lines
             --standalone
@@ -22,8 +22,8 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: output
-          path: dcs5/static/user_guide_en.pdf
+          name: dcs5/static/user_guide_en.pdf
+          path: user_guide_en.pdf
 
 #  convert_to_pdf_EN:
 #    name: Build PDF
