@@ -42,7 +42,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: docker://pandoc/latex:2.9 # - uses: docker://pandoc/core:2.9
+      - uses: docker://pandoc/core:2.9
         with:
           args: >-  # allows you to break string into multiple lines 
             -o README.pdf
@@ -60,7 +60,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: docker://pandoc/latex:2.9
+      - uses: docker://pandoc/core:2.9
         with:
           args: >-  # allows you to break string into multiple lines 
             -o README.fr.pdf

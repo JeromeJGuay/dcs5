@@ -21,14 +21,14 @@ from dcs5.controller_configurations import ConfigError
 from dcs5.logger import init_logging
 from dcs5.utils import resolve_relative_path, update_json_value
 
-logging.getLogger('MarelController').setLevel('ERROR')
+logging.getLogger('MarelController').setLevel('ERROR')  #
 
 # This is a fix for my computer. Should not influence anything.
 if os.environ.get('EDITOR') == 'EMACS':
     print('Text editor changed.')
     os.environ.update({'EDITOR': 'pluma'})
 
-# FILENAMES
+# CONFIGS FILENAMES
 CONTROLLER_CONFIGURATION_FILE_NAME = 'controller_configuration.json'
 XT_CONTROLLER_CONFIGURATION_FILE_NAME = 'xt_controller_configuration.json'
 MICRO_CONTROLLER_CONFIGURATION_FILE_NAME = 'micro_controller_configuration.json'
@@ -36,10 +36,9 @@ MICRO_CONTROLLER_CONFIGURATION_FILE_NAME = 'micro_controller_configuration.json'
 DEVICES_SPECIFICATION_FILE_NAME = 'devices_specification.json'
 XT_DEVICES_SPECIFICATION_FILE_NAME = 'xt_devices_specification.json'
 MICRO_DEVICES_SPECIFICATION_FILE_NAME = 'micro_devices_specification.json'
+
 # PATHS
 DEFAULT_CONFIG_PATH = "default_configs/"
-# DEFAULT_CONTROLLER_CONFIGURATION_FILE = str(
-#     resolve_relative_path(DEFAULT_CONFIG_axPATH + CONTROLLER_CONFIGURATION_FILE_NAME, __file__))
 
 XT_DEFAULT_CONTROLLER_CONFIGURATION_FILE = str(
     resolve_relative_path(DEFAULT_CONFIG_PATH + XT_CONTROLLER_CONFIGURATION_FILE_NAME, __file__))
@@ -51,7 +50,8 @@ XT_DEFAULT_DEVICES_SPECIFICATION_FILE = str(
 MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE = str(
     resolve_relative_path(DEFAULT_CONFIG_PATH + MICRO_DEVICES_SPECIFICATION_FILE_NAME, __file__))
 
-USER_GUIDE_FILE = str(resolve_relative_path('static/UserGuide_fr.pdf', __file__))
+USER_GUIDE_FILE_FRANÇAIS = str(resolve_relative_path('static/user_guide_fr.pdf', __file__))
+USER_GUIDE_FILE_ENGLISH = str(resolve_relative_path('static/user_guide_en.pdf', __file__))
 
 if sys.platform in ("linux", "linux2"):
     LOGO_PATH = str(resolve_relative_path('static/bigfin_logo.png', __file__))
@@ -353,7 +353,7 @@ def make_window():
             '&Configuration',
             '---',
             '&Exit']],
-        ['Help', ['Guide']]
+        ['Help', ['Guide_fr', 'Guide_en']]
     ]
 
     menu_layout = [sg.Menu(_menu_layout, k='-MENU-', p=0, font=REG_FONT, disabled_text_color='grey'), ]
@@ -550,8 +550,10 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 else:
                     controller.mute_board()
                     window['-MUTE-'].update(text='Unmute')
-            case 'Guide':
-                webbrowser.open_new(USER_GUIDE_FILE)
+            case 'Guide_en':
+                webbrowser.open_new(USER_GUIDE_FILE_ENGLISH)
+            case 'Guide_fr':
+                webbrowser.open_new(USER_GUIDE_FILE_FRANÇAIS)
 
         refresh_layout(window, controller)
 
