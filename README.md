@@ -32,10 +32,6 @@ The stylus needs to be placed within the detection zone.
 The detection delay can be adjusted in the configuration (See section [Configuration files](#configurations-files)).
 The control box lights will flash when a measurement is made.
 
-<p style="text-align: center;">
-<img src='doc/images/planche_zone.png' width='742' alt="Board Detection Zone"/>
-</p>
-
 
 ![board_zone](doc/images/planche_zone.png){width=500}
 
