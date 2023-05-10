@@ -1,3 +1,7 @@
+% Dcs5 Controller Application
+% Jerome J. Guay (jerome.guay@dfo-mpo.gc.ca)
+% May 2023
+
 # Dcs5 Controller Application
 
 This python (python 3.10) application provides a graphical interface to interact
@@ -9,6 +13,7 @@ See the project [marel_marine_scale_controller](https://github.com/iml-gddaiss/m
 
 # Download from releases
 Downloading the Dcs5 Controller App from the latest release.
+
 1. Download `dcs5.zip` from the last version here: https://github.com/iml-gddaiss/dcs5/releases.
 2. Unzip `dcs5.zip`
 3. Run `dcs5.exe`
@@ -30,6 +35,9 @@ The control box lights will flash when a measurement is made.
 <p style="text-align: center;">
 <img src='doc/images/planche_zone.png' width='742' alt="Board Detection Zone"/>
 </p>
+
+
+![board_zone](doc/images/planche_zone.png){width=500}
 
 #### Output modes
 
@@ -63,12 +71,14 @@ The corresponding output modes are:
 * Green: **Bottom**
 
 The map definition in the configuration file is:
+
   ```json
     {"output_modes": {
         "segments_limits": [0, 230, 430, 630, 800],
         "segments_mode": ["length", "top", "bottom", "length"]
         }}
   ```
+
 * See section [Device Specification](#device-specification) for information on how to define the swiping region. 
 
 
@@ -273,6 +283,7 @@ Default `micro` file:  [micro_controller_configuration.json](dcs5/default_config
 
 Usage:
 + client: Measuring board bluetooth information.
+
   ```json
     {"client": {
         "device_name": "BigFinDCS5-E5FE",
@@ -280,10 +291,12 @@ Usage:
         "marel_ip_address": "192.168.0.202"
     }}
   ``` 
+  
   - device_name: Name of the device. (Only used to display in the app.)
   - mac_address: Bluetooth (mac) address of the measuring board i.e. **00:06:66:89:E5:FE**.
   - marel_ip_address: Ip address of the Marel Scale (see [marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller)).
 + launch_settings: setting used when the app is launched.
+
   ```json
         {"launch_settings": {
         "output_mode": "length",
@@ -295,6 +308,7 @@ Usage:
         "auto_enter": true
         }}
   ```
+  
   - output_mode: top, length or bottom.
   - reading_profile: Name (key) of the profile. The reading profiles are defined below.
   - dynamic_stylus_mode: (true/false) If true, reading profiles will change for each output mode as defined in the next section.
@@ -304,6 +318,7 @@ Usage:
   - auto_enter: Automatically press the *enter* key after a length or weight value is printed.
   
 + reading_profiles:
+
   ```json
     {"reading_profiles": {
         "measure": {
@@ -312,11 +327,14 @@ Usage:
             "max_deviation": 50
         }}}
   ```
+  
   - settling_delay: (0-20) Delays after the stylus is first detected. (not seconds)
   - number_of_reading: Number of readings needed for a good measurements.
   - max_deviation: (1-100) Amount of deviation allowed between each reading.
   *Notes: For more information : [user_guide/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf)*
+
 + output_modes:
+
   ```json
     {"output_modes": {
         "swipe_threshold": 5,
@@ -329,12 +347,15 @@ Usage:
         }
   }}
   ```
+  
   - swipe_threshold: Minimal distance (mm) for a stylus swipe to be valid.
   - segments_limits: Define the boundaries (mm) of the different swipe segments.
   - segments_mode: The corresponding output_mode for each swipe segment.
   - mode_reading_profiles: The corresponding reading_profiles for each output mode.
 + keys_maps (See [Key Mapping](#key-mapping) section): 
+
   Fields: `control_box`, `control_box_mode`, `board`, `board_mode`
+
   - A key can be mapped to commands or keyboard inputs.
   - A map can be a list of commands or keyboard inputs which are executed one at a time.
   - A key can have two mappings: One default and when the alternative (mode) mapping. 
@@ -344,6 +365,7 @@ Usage:
   The names of the keys are set in [devices_specification.json](dcs5/default_configs/xt_devices_specification.json).
   
   Commands:
+
   + `"BACKLIGHT_UP", "BACKLIGHT_DOWN"`: Change the control box backlight level.
   + `"CHANGE_STYLUS"`: Cycle through the list of stylus defined in the [devices_specifications](#device-specification) file. 
   + `"UNITS_mm", "UNITS_cm"`: Change output units.
@@ -356,8 +378,8 @@ Usage:
   
   Valid keyboard input (Source: [PyAutoGui](https://pyautogui.readthedocs.io/en/latest/)):
     
-  ```
-  ['\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'",
+  ```python
+['\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'",
   '(', ')', '*', '+', ',', '-', '.', '/', '{', '|', '}', '~',
   ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`',
   '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
@@ -388,7 +410,9 @@ Usage:
 Default file: [devices_specification.json](dcs5/default_configs/xt_devices_specification.json)
 
 Usage:
+
 + board:
+
   ```json
    {"board": {
             "number_of_keys": 49,
@@ -397,6 +421,7 @@ Usage:
             "detection_range": 2}
   }
   ```
+  
   - number_of_keys: The keys correspond to the grey circle on the board.
   - key_to_mm_ratio: The distance in mm from one edge of a circle (larger one) to the next.
   - zero: The distance (mm) that would be the key 0 given that the first key on the board is key 1.

@@ -16,8 +16,9 @@ jobs:
         with:
           args: >-  # allows you to break string into multiple lines
             --standalone
-            -f markdown+fancy_lists+implicit_figures
-            --from=markdown
+            -from markdown+fancy_lists+implicit_figures
+            -V geometry:margin=.4in
+            --write=pdf
             --output=dcs5/static/user_guide_en.pdf
             README.md
 
