@@ -1,6 +1,6 @@
 name: Translate README
 
-on: push
+#on: push
 #  push:
 #    branches:
 #      - main
