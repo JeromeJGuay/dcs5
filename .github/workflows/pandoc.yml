@@ -22,8 +22,8 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: dcs5/static/user_guide_en.pdf
-          path: user_guide_en.pdf
+          name: output
+          path: dcs5/static/user_guide_en.pdf
 
 #  convert_to_pdf_EN:
 #    name: Build PDF
