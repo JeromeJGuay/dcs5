@@ -1,6 +1,5 @@
 name: Readme to pdf (Pandoc)
 
-
 on: push
 #on:
 #  push:
@@ -12,18 +11,25 @@ jobs:
   convert_via_pandoc:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3  # Go to project directory
+      - uses: actions/checkout@v3  # Go to branch repository
       - uses: docker://pandoc/latex:2.9
         with:
           args: >-  # allows you to break string into multiple lines
             --standalone
-            --output=user_guide_en.pdf
+            --output=dcs5/static/user_guide_en.pdf
             README.md
 
-      - uses: actions/upload-artifact@v3
-        with:
-          name: output
-          path: dcs5/static/user_guide_en.pdf
+      - run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "Converting README.md to Pdf"
+          git push
+
+#      - uses: actions/upload-artifact@v3
+#        with:
+#          name: output
+#          path: user_guide_en.pdf
 
 #  convert_to_pdf_EN:
 #    name: Build PDF
