@@ -1,4 +1,4 @@
-# Dcs5 Controller app
+# Dcs5 Controller Application
 
 This python (python 3.10) application provides a graphical interface to interact
 (GUI) with a BigFin Dcs5 XT or MICRO measuring board via Bluetooth.
