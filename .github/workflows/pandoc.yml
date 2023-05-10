@@ -10,8 +10,13 @@ jobs:
         with:
           args: >-  # allows you to break string into multiple lines
             --standalone
-            --output=index.html
+            --output=user_guide_en.pdf
             README.md
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: user_guide_en.pdf
+          path: dcs5/static/user_guide_en.pdf
 
 #  convert_to_pdf_EN:
 #    name: Build PDF
