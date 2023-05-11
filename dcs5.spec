@@ -8,7 +8,7 @@ a = Analysis(
     ['dcs5/gui.py'],
     pathex=[],
     binaries=[],
-    datas=['./*.html', '.'),
+    datas=[('./*.html', '.'),
     ('doc/images', 'doc/images'),
     ('dcs5/static', 'static'),
     ('dcs5/default_configs', 'default_configs')
