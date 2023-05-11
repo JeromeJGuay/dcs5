@@ -180,16 +180,17 @@ To load and manage configuration, click on **Dcs5 > Configuration** in the top b
 </figure>
 
 From the *Configuration* window, you can create **New**, **Load**, **Delete** and **Edit** configurations.
-<p style="text-align: center;">
-<img src='doc/images/dcs5_gui_config_menu.png' width='536' alt="gui config window"/>
-</p>
+<figure style="text-align: center;">
+<img src='doc/images/dcs5_gui_config_menu.png' width='536' alt="Config Window"/>
+<figcaption>Config Window</figcaption>
+</figure>
 
 #### New configuration
 Default configurations are provided for the `xt` and `micro` models.
 Select the Control Box model (xt or micro) and enter a name for the new configuration.
 <figure style="text-align: center;">
-<img src='doc/images/dcs5_gui_new_config.png' width='331' alt="Application Config Window"/>
-<figcaption>Application Config Window</figcaption>
+<img src='doc/images/dcs5_gui_new_config.png' width='331' alt="New Config Window"/>
+<figcaption>New Config Window</figcaption>
 </figure>
 
 The bluetooth address of the controller (mac address) will need to be changed once a new configuration is created.
