@@ -62,10 +62,10 @@ elif sys.platform == "win32":
 
 def scale_font(font_size: int) -> int:
     monitor_width, monitor_height = pag.size()
-    return int(font_size * monitor_height / 1080)
+    return int(font_size * monitor_height / (1080 * 1.1)) # 1.1 is to scale it down more for windows.
 
 
-REFRESH_PERIOD = .05
+REFRESH_PERIOD = .1  # was 0.05 but It was increased to give to for the backlight to be updated in the controller
 
 BACKLIGHT_SLIDER_MAX = 100
 
@@ -420,8 +420,6 @@ def run():
     else:
         while sg.user_settings()['configs_path'] is None:
             controller = modal(window, popup_window_select_config)
-
-
 
     init_layout(window, controller)
 
