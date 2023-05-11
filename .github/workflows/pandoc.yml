@@ -4,11 +4,6 @@ on:
   push:
     paths:
       - README.md
-#on:
-#  push:
-#    branches:
-#      - not_a_branch
-
 
 jobs:
   convert_via_pandoc:

@@ -5,7 +5,7 @@ This python (python 3.10) application provides a graphical interface to interact
 The application turns stylus inputs on the measuring board into keyboard entry,
 essentially turning the dcs5 measuring board into a wireless keyboard.
 A Marel Marine Scale can also be connected to the application. 
-See the project [marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller) for more information and how to set up the scale. 
+See the project [marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller) for more information and how to set up the scale.
 
 # Download from releases
 Downloading the Dcs5 Controller App from the latest release.
