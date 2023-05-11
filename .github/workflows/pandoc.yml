@@ -2,8 +2,8 @@ name: Html User Guide
 
 on:
   push:
-    paths:
-      - README.md
+    branches:
+      - not_a_branch
 
 jobs:
   convert_via_pandoc:
@@ -24,6 +24,7 @@ jobs:
             -V urlcolor=blue 
             --toc
             --output=user_guide_en.html README.md
+
       - run: |
           git config user.name github-actions
           git config user.email github-actions@github.com

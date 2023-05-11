@@ -1,38 +1,21 @@
 <h1 id="dcs5-controller-application">Dcs5 Controller Application</h1>
-<p>This python (python 3.10) application provides a graphical interface
-to interact (GUI) with a BigFin Dcs5 XT or MICRO measuring board via
-Bluetooth. The application turns stylus inputs on the measuring board
-into keyboard entry, essentially turning the dcs5 measuring board into a
-wireless keyboard. A Marel Marine Scale can also be connected to the
-application. See the project <a
-href="https://github.com/iml-gddaiss/marel_marine_scale_controller">marel_marine_scale_controller</a>
-for more information and how to set up the scale.</p>
+<p>This python (python 3.10) application provides a graphical interface to interact (GUI) with a BigFin Dcs5 XT or MICRO measuring board via Bluetooth. The application turns stylus inputs on the measuring board into keyboard entry, essentially turning the dcs5 measuring board into a wireless keyboard. A Marel Marine Scale can also be connected to the application. See the project <a href="https://github.com/iml-gddaiss/marel_marine_scale_controller">marel_marine_scale_controller</a> for more information and how to set up the scale.</p>
 <h1 id="download-from-releases">Download from releases</h1>
 <p>Downloading the Dcs5 Controller App from the latest release.</p>
 <ol type="1">
-<li>Download <code>dcs5.zip</code> from the last version <a
-href="https://github.com/iml-gddaiss/dcs5/releases">here</a>.</li>
+<li>Download <code>dcs5.zip</code> from the last version <a href="https://github.com/iml-gddaiss/dcs5/releases">here</a>.</li>
 <li>Unzip <code>dcs5.zip</code></li>
 <li>Run <code>dcs5.exe</code></li>
 </ol>
-<h2
-id="requirements-to-install-the-python-package.-not-required-to-use-the-app-as-a-standalone.">Requirements
-to install the python package. (Not required to use the app as a
-standalone.)</h2>
+<h2 id="requirements-to-install-the-python-package.-not-required-to-use-the-app-as-a-standalone.">Requirements to install the python package. (Not required to use the app as a standalone.)</h2>
 <ul>
 <li>python 3.10</li>
 </ul>
 <h1 id="usage">Usage</h1>
-<h3
-id="guide-dutilisation-en-français-pour-le-modèle-xt-userguide_fr.pdf.">Guide
-d’utilisation en français pour le modèle XT : <a
-href="doc/UserGuide_fr.pdf">UserGuide_fr.pdf</a>.</h3>
+<h3 id="guide-dutilisation-en-français-pour-le-modèle-xt-userguide_fr.pdf.">Guide d’utilisation en français pour le modèle XT : <a href="doc/UserGuide_fr.pdf">UserGuide_fr.pdf</a>.</h3>
 <h2 id="measuring-board">Measuring Board</h2>
 <h4 id="stylus-detection-zone">Stylus detection zone</h4>
-<p>The stylus needs to be placed within the detection zone. The
-detection delay can be adjusted in the configuration (See section <a
-href="#configurations-files">Configuration files</a>). The control box
-lights will flash when a measurement is made.</p>
+<p>The stylus needs to be placed within the detection zone. The detection delay can be adjusted in the configuration (See section <a href="#configurations-files">Configuration files</a>). The control box lights will flash when a measurement is made.</p>
 <figure style="text-align: center;">
 <img src='doc/images/planche_zone.png' width='742' alt="Board Detection Zone" style="background-color:gray;"/>
 <figcaption>
@@ -40,26 +23,11 @@ Board Detection Zone
 </figcaption>
 </figure>
 <h4 id="output-modes">Output modes</h4>
-<p>The measurement board has 3 different output modes;
-<strong>length</strong>, <strong>top</strong> and
-<strong>bottom</strong>. The <strong>top</strong> and
-<strong>bottom</strong> mode are used to access the top and bottom keys
-by placing the stylus on the corresponding circle within the detection
-zone of the board. There are 2 ways to change the detection zone; by
-mapping commands to the control box keys or by defining swiping regions
-on the board.</p>
-<p>The map command to change to a specific output mode or to cycle
-through the output modes. * See section <a
-href="#configurations-files">Configuration files</a> for the output mode
-commands.</p>
-<p>Furthermore, the default LED display of the control box changes
-depending on the output modes. * See section <a
-href="#leds-displays">LEDs Displays</a>.</p>
+<p>The measurement board has 3 different output modes; <strong>length</strong>, <strong>top</strong> and <strong>bottom</strong>. The <strong>top</strong> and <strong>bottom</strong> mode are used to access the top and bottom keys by placing the stylus on the corresponding circle within the detection zone of the board. There are 2 ways to change the detection zone; by mapping commands to the control box keys or by defining swiping regions on the board.</p>
+<p>The map command to change to a specific output mode or to cycle through the output modes. * See section <a href="#configurations-files">Configuration files</a> for the output mode commands.</p>
+<p>Furthermore, the default LED display of the control box changes depending on the output modes. * See section <a href="#leds-displays">LEDs Displays</a>.</p>
 <h4 id="swiping-region">Swiping Region</h4>
-Starting left to right in a swiping zone will change the output mode.
-The swiping regions are defined in the configuration files. For example,
-here are the defaults swiping regions for the <code>xt</code> control
-box.
+Starting left to right in a swiping zone will change the output mode. The swiping regions are defined in the configuration files. For example, here are the defaults swiping regions for the <code>xt</code> control box.
 <figure style="text-align: center;">
 <img src='doc/images/planche_swipe.png' width='741' alt="Board Swiping Zone"/>
 <figcaption>
@@ -73,27 +41,20 @@ Default XT Swipe Zone
 <li>Green: <strong>Bottom</strong></li>
 </ul>
 <p>The map definition in the configuration file is:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode json"><code class="sourceCode json"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span><span class="dt">&quot;output_modes&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;segments_limits&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="dv">0</span><span class="ot">,</span> <span class="dv">230</span><span class="ot">,</span> <span class="dv">430</span><span class="ot">,</span> <span class="dv">630</span><span class="ot">,</span> <span class="dv">800</span><span class="ot">]</span><span class="fu">,</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;segments_mode&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;length&quot;</span><span class="ot">,</span> <span class="st">&quot;top&quot;</span><span class="ot">,</span> <span class="st">&quot;bottom&quot;</span><span class="ot">,</span> <span class="st">&quot;length&quot;</span><span class="ot">]</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>      <span class="fu">}}</span></span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb1-1" title="1">  <span class="fu">{</span><span class="dt">&quot;output_modes&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
+<a class="sourceLine" id="cb1-2" title="2">      <span class="dt">&quot;segments_limits&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="dv">0</span><span class="ot">,</span> <span class="dv">230</span><span class="ot">,</span> <span class="dv">430</span><span class="ot">,</span> <span class="dv">630</span><span class="ot">,</span> <span class="dv">800</span><span class="ot">]</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb1-3" title="3">      <span class="dt">&quot;segments_mode&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;length&quot;</span><span class="ot">,</span> <span class="st">&quot;top&quot;</span><span class="ot">,</span> <span class="st">&quot;bottom&quot;</span><span class="ot">,</span> <span class="st">&quot;length&quot;</span><span class="ot">]</span></a>
+<a class="sourceLine" id="cb1-4" title="4">      <span class="fu">}}</span></a></code></pre></div>
 <ul>
-<li>See section <a href="#device-specification">Device Specification</a>
-for information on how to define the swiping region.</li>
+<li>See section <a href="#device-specification">Device Specification</a> for information on how to define the swiping region.</li>
 </ul>
 <h4 id="measurement-example">Measurement example</h4>
-Measurements are made by placing the stylus head flat on the board
-within the detection zone. You can change the measurement/detection
-settings in the <a
-href="#controller-configuration">controller_configuration</a>.
+Measurements are made by placing the stylus head flat on the board within the detection zone. You can change the measurement/detection settings in the <a href="#controller-configuration">controller_configuration</a>.
 <div style="text-align: center;">
 <p><img src='doc/images/measure_example.png' width='740' alt="Board Measurement Example"/></p>
 </div>
 <h2 id="control-box">Control Box</h2>
-<p>The only difference between the <code>xt</code> and
-<code>micro</code> control box models are the number of keys and the LED
-display and flash sequence.</p>
+<p>The only difference between the <code>xt</code> and <code>micro</code> control box models are the number of keys and the LED display and flash sequence.</p>
 <h3 id="model-xt">Model: <code>xt</code></h3>
 <ul>
 <li>32 keys</li>
@@ -115,8 +76,7 @@ Micro Control Box
 </figcaption>
 </figure>
 <h3 id="leds-displays">LEDs Displays</h3>
-<p>Different LEDs patterns are displayed on the control box to give
-feedback to the users.</p>
+<p>Different LEDs patterns are displayed on the control box to give feedback to the users.</p>
 <ul>
 <li>xt: FUEL GAUGE / ACTION led bar</li>
 <li>micro: Led Ring</li>
@@ -143,8 +103,7 @@ Stylus Detection LED Display
 </figcaption>
 </figure>
 <h4 id="measurements">Measurements</h4>
-All the leds flash rapidly when a measurement is made. The default
-pattern displays the current output mode.
+All the leds flash rapidly when a measurement is made. The default pattern displays the current output mode.
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_measurements.png' width='300' alt="Measurement LED Display" style="background-color:gray;"/>
 <figcaption>
@@ -170,9 +129,7 @@ In calibration mode, the default display changes to
 Calibration Mode LED Display
 </figcaption>
 </figure>
-<p>Then, once the stylus is placed down, the leds will slowly light up
-in the following sequences. When the point is successfully calibrated is
-over, all the leds will rapidly flash.</p>
+<p>Then, once the stylus is placed down, the leds will slowly light up in the following sequences. When the point is successfully calibrated is over, all the leds will rapidly flash.</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_calibration.png' width='300' alt="Calibration LED Display" style="background-color:gray;"/>
 <figcaption>
@@ -181,89 +138,51 @@ Calibration LED Display
 </figure>
 <h2 id="application">Application</h2>
 <h3 id="configurations">Configurations</h3>
-<p>The application requires a configuration to work. To load and manage
-configuration, click on <strong>Dcs5 &gt; Configuration</strong> in the
-top bar.</p>
+<p>The application requires a configuration to work. To load and manage configuration, click on <strong>Dcs5 &gt; Configuration</strong> in the top bar.</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_menu.png' width='203' alt="Application Menu Widget"/>
 <figcaption>
 Application Menu Widget
 </figcaption>
 </figure>
-From the <em>Configuration</em> window, you can create
-<strong>New</strong>, <strong>Load</strong>, <strong>Delete</strong> and
-<strong>Edit</strong> configurations.
+From the <em>Configuration</em> window, you can create <strong>New</strong>, <strong>Load</strong>, <strong>Delete</strong> and <strong>Edit</strong> configurations.
 <p style="text-align: center;">
 <img src='doc/images/dcs5_gui_config_menu.png' width='536' alt="gui config window"/>
 </p>
 <h4 id="new-configuration">New configuration</h4>
-Default configurations are provided for the <code>xt</code> and
-<code>micro</code> models. Select the Control Box model (xt or micro)
-and enter a name for the new configuration.
+Default configurations are provided for the <code>xt</code> and <code>micro</code> models. Select the Control Box model (xt or micro) and enter a name for the new configuration.
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_new_config.png' width='331' alt="Application Config Window"/>
 <figcaption>
 Application Config Window
 </figcaption>
 </figure>
-<p>The bluetooth address of the controller (mac address) will need to be
-changed once a new configuration is created. Select the configuration
-and the <code>Controller Configuration</code> file and press
-<strong>Edit</strong>. In the json file, change the following value:</p>
+<p>The bluetooth address of the controller (mac address) will need to be changed once a new configuration is created. Select the configuration and the <code>Controller Configuration</code> file and press <strong>Edit</strong>. In the json file, change the following value:</p>
 <ul>
 <li><code>client -&gt; mac_address</code></li>
 </ul>
-<p>See section <a href="#configurations-files">Configuration files</a>
-for more information on the different configuration parameters.</p>
-<h3 id="connect-the-board-via-bluetooth">Connect the board via
-Bluetooth</h3>
-<p>To connect to the Dcs5 measuring board, the Board Mac (bluetooth)
-address needs to be specified in the <em>Controller Configuration</em>
-file. You can edit the file via the configuration menu (see sections <a
-href="#configurations">Configurations</a> and <a
-href="#controller-configuration">Controller Configuration</a>)</p>
-<p>Then you need to connect and then activate the board by pressing the
-<strong>Connect</strong> and <strong>Activate</strong> button.</p>
+<p>See section <a href="#configurations-files">Configuration files</a> for more information on the different configuration parameters.</p>
+<h3 id="connect-the-board-via-bluetooth">Connect the board via Bluetooth</h3>
+<p>To connect to the Dcs5 measuring board, the Board Mac (bluetooth) address needs to be specified in the <em>Controller Configuration</em> file. You can edit the file via the configuration menu (see sections <a href="#configurations">Configurations</a> and <a href="#controller-configuration">Controller Configuration</a>)</p>
+<p>Then you need to connect and then activate the board by pressing the <strong>Connect</strong> and <strong>Activate</strong> button.</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_connect.png' width='365' alt="Connect Widget"/>
 <figcaption>
 Connect Widget
 </figcaption>
 </figure>
-<p>The red circle next to the <strong>Connect</strong> button will turn
-into a yellow triangle while the application is attempting to connect to
-the board and then into a green when connected.</p>
+<p>The red circle next to the <strong>Connect</strong> button will turn into a yellow triangle while the application is attempting to connect to the board and then into a green when connected.</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_activate.png' width='371' alt="Activate Widget"/>
 <figcaption>
 Activate Widget
 </figcaption>
 </figure>
-<p>The red circles next to the <strong>Activate</strong> button will
-also turn green when the application and board are ready to use. When
-activating the board, the application will synchronize with the board
-control box. (See the section <a
-href="#additional-information">Additional GUI features</a>). The
-application will try to synchronize with the board control box on
-activation. The application and the board are synchronized when the
-application receives confirmations that the board internal parameters
-(mainly those related to stylus detection) are the same as those
-specified in the configuration files. If the synchronization failed,
-indicated by a red circle next to the <strong>Synchronize</strong>
-button, you can press the <strong>Synchronize</strong> button to try
-again. If it still doesn’t work, try to restart the board and the
-application.</p>
+<p>The red circles next to the <strong>Activate</strong> button will also turn green when the application and board are ready to use. When activating the board, the application will synchronize with the board control box. (See the section <a href="#additional-information">Additional GUI features</a>). The application will try to synchronize with the board control box on activation. The application and the board are synchronized when the application receives confirmations that the board internal parameters (mainly those related to stylus detection) are the same as those specified in the configuration files. If the synchronization failed, indicated by a red circle next to the <strong>Synchronize</strong> button, you can press the <strong>Synchronize</strong> button to try again. If it still doesn’t work, try to restart the board and the application.</p>
 <h3 id="calibration-1">Calibration</h3>
-<p>The board needs to be calibrated using two calibration points.
-Although the calibration is linear, keep in mind that the stylus has
-some non-uniform thickness which will offset, to some extent, the
-measured values if the stylus’s orientation differs when measuring
-versus when calibrating. We recommend using the tiniest part of the
-stylus to make the calibration and then add <code>offset</code> in the
-calibration files for each stylus.</p>
+<p>The board needs to be calibrated using two calibration points. Although the calibration is linear, keep in mind that the stylus has some non-uniform thickness which will offset, to some extent, the measured values if the stylus’s orientation differs when measuring versus when calibrating. We recommend using the tiniest part of the stylus to make the calibration and then add <code>offset</code> in the calibration files for each stylus.</p>
 <ul>
-<li>See section <a href="#device-specification">Device
-Specification</a>.</li>
+<li>See section <a href="#device-specification">Device Specification</a>.</li>
 </ul>
 <p>To calibrate the board, click on <strong>Set Cal. Pts.</strong></p>
 <figure style="text-align: center;">
@@ -279,13 +198,7 @@ In the calibration points window set the two calibration points in mm.
 Calibration Set. Cal. Pts. Window
 </figcaption>
 </figure>
-<p>Press the <strong>Calibrate</strong> button to enter the calibration
-mode, from there follow the instruction given by the application. Note
-that a right to left swipe will exit the calibration mode. For each
-calibration point, the calibration progress will be shown by the
-following LEDs <a href="#calibration">display</a> once the stylus is
-placed down. If the stylus is lifted or moved too much before the
-calibration is done, the calibration restart.</p>
+<p>Press the <strong>Calibrate</strong> button to enter the calibration mode, from there follow the instruction given by the application. Note that a right to left swipe will exit the calibration mode. For each calibration point, the calibration progress will be shown by the following LEDs <a href="#calibration">display</a> once the stylus is placed down. If the stylus is lifted or moved too much before the calibration is done, the calibration restart.</p>
 <h3 id="additional-information.">Additional information.</h3>
 <h4 id="dcs5-tab">Dcs5 Tab</h4>
 <figure style="text-align: center;">
@@ -302,200 +215,148 @@ Application Marel Widget
 </figcaption>
 </figure>
 <h2 id="configurations-files">Configurations Files</h2>
-<p>Configurations are created and modified via the application GUI (See
-section <a href="#configurations">configuration</a>). A configuration is
-made of two json files that are used to change the controller and
-measuring board behavior. - <a
-href="#controller-configuration">controller_configuration</a> - <a
-href="#device-specification">device_specification</a></p>
+<p>Configurations are created and modified via the application GUI (See section <a href="#configurations">configuration</a>). A configuration is made of two json files that are used to change the controller and measuring board behavior. - <a href="#controller-configuration">controller_configuration</a> - <a href="#device-specification">device_specification</a></p>
 <h3 id="controller-configuration">Controller Configuration</h3>
-<p>Default <code>xt</code> file: <a
-href="dcs5/default_configs/xt_controller_configuration.json">xt_controller_configuration.json</a></p>
-<p>Default <code>micro</code> file: <a
-href="dcs5/default_configs/micro_controller_configuration.json">micro_controller_configuration.json</a></p>
+<p>Default <code>xt</code> file: <a href="dcs5/default_configs/xt_controller_configuration.json">xt_controller_configuration.json</a></p>
+<p>Default <code>micro</code> file: <a href="dcs5/default_configs/micro_controller_configuration.json">micro_controller_configuration.json</a></p>
 <p>Usage:</p>
 <ul>
 <li><p>client: Measuring board bluetooth information.</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode json"><code class="sourceCode json"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span><span class="dt">&quot;client&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;device_name&quot;</span><span class="fu">:</span> <span class="st">&quot;BigFinDCS5-E5FE&quot;</span><span class="fu">,</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;mac_address&quot;</span><span class="fu">:</span> <span class="st">&quot;00:06:66:89:E5:FE&quot;</span><span class="fu">,</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;marel_ip_address&quot;</span><span class="fu">:</span> <span class="st">&quot;192.168.0.202&quot;</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}}</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb2-1" title="1">  <span class="fu">{</span><span class="dt">&quot;client&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
+<a class="sourceLine" id="cb2-2" title="2">      <span class="dt">&quot;device_name&quot;</span><span class="fu">:</span> <span class="st">&quot;BigFinDCS5-E5FE&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb2-3" title="3">      <span class="dt">&quot;mac_address&quot;</span><span class="fu">:</span> <span class="st">&quot;00:06:66:89:E5:FE&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb2-4" title="4">      <span class="dt">&quot;marel_ip_address&quot;</span><span class="fu">:</span> <span class="st">&quot;192.168.0.202&quot;</span></a>
+<a class="sourceLine" id="cb2-5" title="5">  <span class="fu">}}</span></a></code></pre></div>
 <ul>
-<li>device_name: Name of the device. (Only used to display in the
-app.)</li>
-<li>mac_address: Bluetooth (mac) address of the measuring board
-i.e. <strong>00:06:66:89:E5:FE</strong>.</li>
-<li>marel_ip_address: Ip address of the Marel Scale (see <a
-href="https://github.com/iml-gddaiss/marel_marine_scale_controller">marel_marine_scale_controller</a>).</li>
+<li>device_name: Name of the device. (Only used to display in the app.)</li>
+<li>mac_address: Bluetooth (mac) address of the measuring board i.e. <strong>00:06:66:89:E5:FE</strong>.</li>
+<li>marel_ip_address: Ip address of the Marel Scale (see <a href="https://github.com/iml-gddaiss/marel_marine_scale_controller">marel_marine_scale_controller</a>).</li>
 </ul></li>
 <li><p>launch_settings: setting used when the app is launched.</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode json"><code class="sourceCode json"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>      <span class="fu">{</span><span class="dt">&quot;launch_settings&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;output_mode&quot;</span><span class="fu">:</span> <span class="st">&quot;length&quot;</span><span class="fu">,</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;reading_profile&quot;</span><span class="fu">:</span> <span class="st">&quot;measure&quot;</span><span class="fu">,</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;dynamic_stylus_mode&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;backlighting_level&quot;</span><span class="fu">:</span> <span class="dv">95</span><span class="fu">,</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;length_units&quot;</span><span class="fu">:</span> <span class="st">&quot;mm&quot;</span><span class="fu">,</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;stylus&quot;</span><span class="fu">:</span> <span class="st">&quot;pen&quot;</span><span class="fu">,</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;auto_enter&quot;</span><span class="fu">:</span> <span class="kw">true</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">}}</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb3-1" title="1">      <span class="fu">{</span><span class="dt">&quot;launch_settings&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
+<a class="sourceLine" id="cb3-2" title="2">      <span class="dt">&quot;output_mode&quot;</span><span class="fu">:</span> <span class="st">&quot;length&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb3-3" title="3">      <span class="dt">&quot;reading_profile&quot;</span><span class="fu">:</span> <span class="st">&quot;measure&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb3-4" title="4">      <span class="dt">&quot;dynamic_stylus_mode&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb3-5" title="5">      <span class="dt">&quot;backlighting_level&quot;</span><span class="fu">:</span> <span class="dv">95</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb3-6" title="6">      <span class="dt">&quot;length_units&quot;</span><span class="fu">:</span> <span class="st">&quot;mm&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb3-7" title="7">      <span class="dt">&quot;stylus&quot;</span><span class="fu">:</span> <span class="st">&quot;pen&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb3-8" title="8">      <span class="dt">&quot;auto_enter&quot;</span><span class="fu">:</span> <span class="kw">true</span></a>
+<a class="sourceLine" id="cb3-9" title="9">      <span class="fu">}}</span></a></code></pre></div>
 <ul>
 <li>output_mode: top, length or bottom.</li>
-<li>reading_profile: Name (key) of the profile. The reading profiles are
-defined below.</li>
-<li>dynamic_stylus_mode: (true/false) If true, reading profiles will
-change for each output mode as defined in the next section.</li>
+<li>reading_profile: Name (key) of the profile. The reading profiles are defined below.</li>
+<li>dynamic_stylus_mode: (true/false) If true, reading profiles will change for each output mode as defined in the next section.</li>
 <li>backlight_level: (0-95) Backlight intensity</li>
-<li>length_units: Units of the measurements values either
-<strong>cm</strong> or <strong>mm</strong></li>
-<li>stylus: Name of the stylus in use. Must be defined in the <a
-href="#device-specification">devices_specifications</a> file.</li>
-<li>auto_enter: Automatically press the <em>enter</em> key after a
-length or weight value is printed.</li>
+<li>length_units: Units of the measurements values either <strong>cm</strong> or <strong>mm</strong></li>
+<li>stylus: Name of the stylus in use. Must be defined in the <a href="#device-specification">devices_specifications</a> file.</li>
+<li>auto_enter: Automatically press the <em>enter</em> key after a length or weight value is printed.</li>
 </ul></li>
 <li><p>reading_profiles:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode json"><code class="sourceCode json"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span><span class="dt">&quot;reading_profiles&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;measure&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>          <span class="dt">&quot;settling_delay&quot;</span><span class="fu">:</span> <span class="dv">9</span><span class="fu">,</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>          <span class="dt">&quot;number_of_reading&quot;</span><span class="fu">:</span> <span class="dv">50</span><span class="fu">,</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>          <span class="dt">&quot;max_deviation&quot;</span><span class="fu">:</span> <span class="dv">50</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>      <span class="fu">}}}</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb4-1" title="1">  <span class="fu">{</span><span class="dt">&quot;reading_profiles&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
+<a class="sourceLine" id="cb4-2" title="2">      <span class="dt">&quot;measure&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
+<a class="sourceLine" id="cb4-3" title="3">          <span class="dt">&quot;settling_delay&quot;</span><span class="fu">:</span> <span class="dv">9</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb4-4" title="4">          <span class="dt">&quot;number_of_reading&quot;</span><span class="fu">:</span> <span class="dv">50</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb4-5" title="5">          <span class="dt">&quot;max_deviation&quot;</span><span class="fu">:</span> <span class="dv">50</span></a>
+<a class="sourceLine" id="cb4-6" title="6">      <span class="fu">}}}</span></a></code></pre></div>
 <ul>
-<li>settling_delay: (0-20) Delays after the stylus is first detected.
-(not seconds)</li>
-<li>number_of_reading: Number of readings needed for a good
-measurements.</li>
-<li>max_deviation: (1-100) Amount of deviation allowed between each
-reading. <em>Notes: For more information : <a
-href="doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf">user_guide/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf</a></em></li>
+<li>settling_delay: (0-20) Delays after the stylus is first detected. (not seconds)</li>
+<li>number_of_reading: Number of readings needed for a good measurements.</li>
+<li>max_deviation: (1-100) Amount of deviation allowed between each reading. <em>Notes: For more information : <a href="doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf">user_guide/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf</a></em></li>
 </ul></li>
 <li><p>output_modes:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode json"><code class="sourceCode json"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span><span class="dt">&quot;output_modes&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;swipe_threshold&quot;</span><span class="fu">:</span> <span class="dv">5</span><span class="fu">,</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;segments_limits&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="dv">0</span><span class="ot">,</span> <span class="dv">230</span><span class="ot">,</span> <span class="dv">430</span><span class="ot">,</span> <span class="dv">630</span><span class="ot">,</span> <span class="dv">800</span><span class="ot">]</span><span class="fu">,</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;segments_mode&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;length&quot;</span><span class="ot">,</span> <span class="st">&quot;top&quot;</span><span class="ot">,</span> <span class="st">&quot;bottom&quot;</span><span class="ot">,</span> <span class="st">&quot;length&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;mode_reading_profiles&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>          <span class="dt">&quot;top&quot;</span><span class="fu">:</span> <span class="st">&quot;key&quot;</span><span class="fu">,</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>          <span class="dt">&quot;length&quot;</span><span class="fu">:</span> <span class="st">&quot;measure&quot;</span><span class="fu">,</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>          <span class="dt">&quot;bottom&quot;</span><span class="fu">:</span> <span class="st">&quot;key&quot;</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">}</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="fu">}}</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb5-1" title="1">  <span class="fu">{</span><span class="dt">&quot;output_modes&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
+<a class="sourceLine" id="cb5-2" title="2">      <span class="dt">&quot;swipe_threshold&quot;</span><span class="fu">:</span> <span class="dv">5</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb5-3" title="3">      <span class="dt">&quot;segments_limits&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="dv">0</span><span class="ot">,</span> <span class="dv">230</span><span class="ot">,</span> <span class="dv">430</span><span class="ot">,</span> <span class="dv">630</span><span class="ot">,</span> <span class="dv">800</span><span class="ot">]</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb5-4" title="4">      <span class="dt">&quot;segments_mode&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;length&quot;</span><span class="ot">,</span> <span class="st">&quot;top&quot;</span><span class="ot">,</span> <span class="st">&quot;bottom&quot;</span><span class="ot">,</span> <span class="st">&quot;length&quot;</span><span class="ot">]</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb5-5" title="5">      <span class="dt">&quot;mode_reading_profiles&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
+<a class="sourceLine" id="cb5-6" title="6">          <span class="dt">&quot;top&quot;</span><span class="fu">:</span> <span class="st">&quot;key&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb5-7" title="7">          <span class="dt">&quot;length&quot;</span><span class="fu">:</span> <span class="st">&quot;measure&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb5-8" title="8">          <span class="dt">&quot;bottom&quot;</span><span class="fu">:</span> <span class="st">&quot;key&quot;</span></a>
+<a class="sourceLine" id="cb5-9" title="9">      <span class="fu">}</span></a>
+<a class="sourceLine" id="cb5-10" title="10"><span class="fu">}}</span></a></code></pre></div>
 <ul>
-<li>swipe_threshold: Minimal distance (mm) for a stylus swipe to be
-valid.</li>
-<li>segments_limits: Define the boundaries (mm) of the different swipe
-segments.</li>
-<li>segments_mode: The corresponding output_mode for each swipe
-segment.</li>
-<li>mode_reading_profiles: The corresponding reading_profiles for each
-output mode.</li>
+<li>swipe_threshold: Minimal distance (mm) for a stylus swipe to be valid.</li>
+<li>segments_limits: Define the boundaries (mm) of the different swipe segments.</li>
+<li>segments_mode: The corresponding output_mode for each swipe segment.</li>
+<li>mode_reading_profiles: The corresponding reading_profiles for each output mode.</li>
 </ul></li>
-<li><p>keys_maps (See <a href="#key-mapping">Key Mapping</a>
-section):</p>
-<p>Fields: <code>control_box</code>, <code>control_box_mode</code>,
-<code>board</code>, <code>board_mode</code></p>
+<li><p>keys_maps (See <a href="#key-mapping">Key Mapping</a> section):</p>
+<p>Fields: <code>control_box</code>, <code>control_box_mode</code>, <code>board</code>, <code>board_mode</code></p>
 <ul>
 <li>A key can be mapped to commands or keyboard inputs.</li>
-<li>A map can be a list of commands or keyboard inputs which are
-executed one at a time.</li>
-<li>A key can have two mappings: One default and when the alternative
-(mode) mapping.</li>
+<li>A map can be a list of commands or keyboard inputs which are executed one at a time.</li>
+<li>A key can have two mappings: One default and when the alternative (mode) mapping.</li>
 </ul></li>
 </ul>
 <h4 id="key-mapping">Key Mapping</h4>
-<p>The names of the keys are set in <a
-href="dcs5/default_configs/xt_devices_specification.json">devices_specification.json</a>.</p>
+<p>The names of the keys are set in <a href="dcs5/default_configs/xt_devices_specification.json">devices_specification.json</a>.</p>
 <p>Commands:</p>
 <ul>
-<li><code>"BACKLIGHT_UP", "BACKLIGHT_DOWN"</code>: Change the control
-box backlight level.</li>
-<li><code>"CHANGE_STYLUS"</code>: Cycle through the list of stylus
-defined in the <a
-href="#device-specification">devices_specifications</a> file.</li>
+<li><code>"BACKLIGHT_UP", "BACKLIGHT_DOWN"</code>: Change the control box backlight level.</li>
+<li><code>"CHANGE_STYLUS"</code>: Cycle through the list of stylus defined in the <a href="#device-specification">devices_specifications</a> file.</li>
 <li><code>"UNITS_mm", "UNITS_cm"</code>: Change output units.</li>
-<li><code>"MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"</code>: Change the
-output mode.</li>
-<li><code>"CHANGE_OUTPUT_MODE"</code>: Cycle through output mode (TOP,
-LENGTH, BOTTOM).</li>
-<li><code>"MODE"</code>: Access the alternative (mode) mapping
-(<code>control_box_mode</code>, <code>board_mode</code>).</li>
-<li><code>"WEIGHT"</code>: Prints the weight measured by the Marel Scale
-(if connected).</li>
+<li><code>"MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"</code>: Change the output mode.</li>
+<li><code>"CHANGE_OUTPUT_MODE"</code>: Cycle through output mode (TOP, LENGTH, BOTTOM).</li>
+<li><code>"MODE"</code>: Access the alternative (mode) mapping (<code>control_box_mode</code>, <code>board_mode</code>).</li>
+<li><code>"WEIGHT"</code>: Prints the weight measured by the Marel Scale (if connected).</li>
 <li><code>"DELETE_LAST</code>: Delete the last printed value.</li>
-<li><code>"PRINT &lt;string to print&gt;"]</code>: Prints the
-<code>&lt;string to print&gt;</code> value.</li>
+<li><code>"PRINT &lt;string to print&gt;"]</code>: Prints the <code>&lt;string to print&gt;</code> value.</li>
 </ul>
-<p>Valid keyboard input (Source: <a
-href="https://pyautogui.readthedocs.io/en/latest/">PyAutoGui</a>):</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>[<span class="st">&#39;</span><span class="ch">\t</span><span class="st">&#39;</span>, <span class="st">&#39;</span><span class="ch">\n</span><span class="st">&#39;</span>, <span class="st">&#39;</span><span class="ch">\r</span><span class="st">&#39;</span>, <span class="st">&#39; &#39;</span>, <span class="st">&#39;!&#39;</span>, <span class="st">&#39;&quot;&#39;</span>, <span class="st">&#39;#&#39;</span>, <span class="st">&#39;$&#39;</span>, <span class="st">&#39;%&#39;</span>, <span class="st">&#39;&amp;&#39;</span>, <span class="st">&quot;&#39;&quot;</span>,</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;(&#39;</span>, <span class="st">&#39;)&#39;</span>, <span class="st">&#39;*&#39;</span>, <span class="st">&#39;+&#39;</span>, <span class="st">&#39;,&#39;</span>, <span class="st">&#39;-&#39;</span>, <span class="st">&#39;.&#39;</span>, <span class="st">&#39;/&#39;</span>, <span class="st">&#39;{&#39;</span>, <span class="st">&#39;|&#39;</span>, <span class="st">&#39;}&#39;</span>, <span class="st">&#39;~&#39;</span>,</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;:&#39;</span>, <span class="st">&#39;;&#39;</span>, <span class="st">&#39;&lt;&#39;</span>, <span class="st">&#39;=&#39;</span>, <span class="st">&#39;&gt;&#39;</span>, <span class="st">&#39;?&#39;</span>, <span class="st">&#39;@&#39;</span>, <span class="st">&#39;[&#39;</span>, <span class="st">&#39;</span><span class="ch">\\</span><span class="st">&#39;</span>, <span class="st">&#39;]&#39;</span>, <span class="st">&#39;^&#39;</span>, <span class="st">&#39;_&#39;</span>, <span class="st">&#39;`&#39;</span>,</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;0&#39;</span>, <span class="st">&#39;1&#39;</span>, <span class="st">&#39;2&#39;</span>, <span class="st">&#39;3&#39;</span>, <span class="st">&#39;4&#39;</span>, <span class="st">&#39;5&#39;</span>, <span class="st">&#39;6&#39;</span>, <span class="st">&#39;7&#39;</span>, <span class="st">&#39;8&#39;</span>, <span class="st">&#39;9&#39;</span>,</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;a&#39;</span>, <span class="st">&#39;b&#39;</span>, <span class="st">&#39;c&#39;</span>, <span class="st">&#39;d&#39;</span>, <span class="st">&#39;e&#39;</span>, <span class="st">&#39;f&#39;</span>, <span class="st">&#39;g&#39;</span>, <span class="st">&#39;h&#39;</span>, <span class="st">&#39;i&#39;</span>, <span class="st">&#39;j&#39;</span>, <span class="st">&#39;k&#39;</span>, <span class="st">&#39;l&#39;</span>, <span class="st">&#39;m&#39;</span>, <span class="st">&#39;n&#39;</span>, <span class="st">&#39;o&#39;</span>,</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;p&#39;</span>, <span class="st">&#39;q&#39;</span>, <span class="st">&#39;r&#39;</span>, <span class="st">&#39;s&#39;</span>, <span class="st">&#39;t&#39;</span>, <span class="st">&#39;u&#39;</span>, <span class="st">&#39;v&#39;</span>, <span class="st">&#39;w&#39;</span>, <span class="st">&#39;x&#39;</span>, <span class="st">&#39;y&#39;</span>, <span class="st">&#39;z&#39;</span>,</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;A&#39;</span>, <span class="st">&#39;B&#39;</span>, <span class="st">&#39;C&#39;</span>, <span class="st">&#39;D&#39;</span>, <span class="st">&#39;E&#39;</span>, <span class="st">&#39;F&#39;</span>, <span class="st">&#39;G&#39;</span>, <span class="st">&#39;H&#39;</span>, <span class="st">&#39;I&#39;</span>, <span class="st">&#39;J&#39;</span>, <span class="st">&#39;K&#39;</span>, <span class="st">&#39;L&#39;</span>, <span class="st">&#39;M&#39;</span>, <span class="st">&#39;N&#39;</span>, <span class="st">&#39;O&#39;</span>,</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;P&#39;</span>, <span class="st">&#39;Q&#39;</span>, <span class="st">&#39;R&#39;</span>, <span class="st">&#39;S&#39;</span>, <span class="st">&#39;T&#39;</span>, <span class="st">&#39;U&#39;</span>, <span class="st">&#39;V&#39;</span>, <span class="st">&#39;W&#39;</span>, <span class="st">&#39;X&#39;</span>, <span class="st">&#39;Y&#39;</span>, <span class="st">&#39;Z&#39;</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;accept&#39;</span>, <span class="st">&#39;add&#39;</span>, <span class="st">&#39;alt&#39;</span>, <span class="st">&#39;altleft&#39;</span>, <span class="st">&#39;altright&#39;</span>, <span class="st">&#39;apps&#39;</span>, <span class="st">&#39;backspace&#39;</span>,</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;browserback&#39;</span>, <span class="st">&#39;browserfavorites&#39;</span>, <span class="st">&#39;browserforward&#39;</span>, <span class="st">&#39;browserhome&#39;</span>,</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;browserrefresh&#39;</span>, <span class="st">&#39;browsersearch&#39;</span>, <span class="st">&#39;browserstop&#39;</span>, <span class="st">&#39;capslock&#39;</span>, <span class="st">&#39;clear&#39;</span>,</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;convert&#39;</span>, <span class="st">&#39;ctrl&#39;</span>, <span class="st">&#39;ctrlleft&#39;</span>, <span class="st">&#39;ctrlright&#39;</span>, <span class="st">&#39;decimal&#39;</span>, <span class="st">&#39;del&#39;</span>, <span class="st">&#39;delete&#39;</span>,</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;divide&#39;</span>, <span class="st">&#39;down&#39;</span>, <span class="st">&#39;end&#39;</span>, <span class="st">&#39;enter&#39;</span>, <span class="st">&#39;esc&#39;</span>, <span class="st">&#39;escape&#39;</span>, <span class="st">&#39;execute&#39;</span>, <span class="st">&#39;f1&#39;</span>, <span class="st">&#39;f10&#39;</span>,</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;f11&#39;</span>, <span class="st">&#39;f12&#39;</span>, <span class="st">&#39;f13&#39;</span>, <span class="st">&#39;f14&#39;</span>, <span class="st">&#39;f15&#39;</span>, <span class="st">&#39;f16&#39;</span>, <span class="st">&#39;f17&#39;</span>, <span class="st">&#39;f18&#39;</span>, <span class="st">&#39;f19&#39;</span>, <span class="st">&#39;f2&#39;</span>, <span class="st">&#39;f20&#39;</span>,</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;f21&#39;</span>, <span class="st">&#39;f22&#39;</span>, <span class="st">&#39;f23&#39;</span>, <span class="st">&#39;f24&#39;</span>, <span class="st">&#39;f3&#39;</span>, <span class="st">&#39;f4&#39;</span>, <span class="st">&#39;f5&#39;</span>, <span class="st">&#39;f6&#39;</span>, <span class="st">&#39;f7&#39;</span>, <span class="st">&#39;f8&#39;</span>, <span class="st">&#39;f9&#39;</span>,</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;final&#39;</span>, <span class="st">&#39;fn&#39;</span>, <span class="st">&#39;hanguel&#39;</span>, <span class="st">&#39;hangul&#39;</span>, <span class="st">&#39;hanja&#39;</span>, <span class="st">&#39;help&#39;</span>, <span class="st">&#39;home&#39;</span>, <span class="st">&#39;insert&#39;</span>, <span class="st">&#39;junja&#39;</span>,</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;kana&#39;</span>, <span class="st">&#39;kanji&#39;</span>, <span class="st">&#39;launchapp1&#39;</span>, <span class="st">&#39;launchapp2&#39;</span>, <span class="st">&#39;launchmail&#39;</span>,</span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;launchmediaselect&#39;</span>, <span class="st">&#39;left&#39;</span>, <span class="st">&#39;modechange&#39;</span>, <span class="st">&#39;multiply&#39;</span>, <span class="st">&#39;nexttrack&#39;</span>,</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;nonconvert&#39;</span>, <span class="st">&#39;num0&#39;</span>, <span class="st">&#39;num1&#39;</span>, <span class="st">&#39;num2&#39;</span>, <span class="st">&#39;num3&#39;</span>, <span class="st">&#39;num4&#39;</span>, <span class="st">&#39;num5&#39;</span>, <span class="st">&#39;num6&#39;</span>,</span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;num7&#39;</span>, <span class="st">&#39;num8&#39;</span>, <span class="st">&#39;num9&#39;</span>, <span class="st">&#39;numlock&#39;</span>, <span class="st">&#39;pagedown&#39;</span>, <span class="st">&#39;pageup&#39;</span>, <span class="st">&#39;pause&#39;</span>, <span class="st">&#39;pgdn&#39;</span>,</span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;pgup&#39;</span>, <span class="st">&#39;playpause&#39;</span>, <span class="st">&#39;prevtrack&#39;</span>, <span class="st">&#39;print&#39;</span>, <span class="st">&#39;printscreen&#39;</span>, <span class="st">&#39;prntscrn&#39;</span>,</span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;prtsc&#39;</span>, <span class="st">&#39;prtscr&#39;</span>, <span class="st">&#39;return&#39;</span>, <span class="st">&#39;right&#39;</span>, <span class="st">&#39;scrolllock&#39;</span>, <span class="st">&#39;select&#39;</span>, <span class="st">&#39;separator&#39;</span>,</span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;shift&#39;</span>, <span class="st">&#39;shiftleft&#39;</span>, <span class="st">&#39;shiftright&#39;</span>, <span class="st">&#39;sleep&#39;</span>, <span class="st">&#39;space&#39;</span>, <span class="st">&#39;stop&#39;</span>, <span class="st">&#39;subtract&#39;</span>, <span class="st">&#39;tab&#39;</span>,</span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;up&#39;</span>, <span class="st">&#39;volumedown&#39;</span>, <span class="st">&#39;volumemute&#39;</span>, <span class="st">&#39;volumeup&#39;</span>, <span class="st">&#39;win&#39;</span>, <span class="st">&#39;winleft&#39;</span>, <span class="st">&#39;winright&#39;</span>, <span class="st">&#39;yen&#39;</span>,</span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;command&#39;</span>, <span class="st">&#39;option&#39;</span>, <span class="st">&#39;optionleft&#39;</span>, <span class="st">&#39;optionright&#39;</span>]</span></code></pre></div>
+<p>Valid keyboard input (Source: <a href="https://pyautogui.readthedocs.io/en/latest/">PyAutoGui</a>):</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb6-1" title="1">[<span class="st">&#39;</span><span class="ch">\t</span><span class="st">&#39;</span>, <span class="st">&#39;</span><span class="ch">\n</span><span class="st">&#39;</span>, <span class="st">&#39;</span><span class="ch">\r</span><span class="st">&#39;</span>, <span class="st">&#39; &#39;</span>, <span class="st">&#39;!&#39;</span>, <span class="st">&#39;&quot;&#39;</span>, <span class="st">&#39;#&#39;</span>, <span class="st">&#39;$&#39;</span>, <span class="st">&#39;%&#39;</span>, <span class="st">&#39;&amp;&#39;</span>, <span class="st">&quot;&#39;&quot;</span>,</a>
+<a class="sourceLine" id="cb6-2" title="2"><span class="st">&#39;(&#39;</span>, <span class="st">&#39;)&#39;</span>, <span class="st">&#39;*&#39;</span>, <span class="st">&#39;+&#39;</span>, <span class="st">&#39;,&#39;</span>, <span class="st">&#39;-&#39;</span>, <span class="st">&#39;.&#39;</span>, <span class="st">&#39;/&#39;</span>, <span class="st">&#39;{&#39;</span>, <span class="st">&#39;|&#39;</span>, <span class="st">&#39;}&#39;</span>, <span class="st">&#39;~&#39;</span>,</a>
+<a class="sourceLine" id="cb6-3" title="3"><span class="st">&#39;:&#39;</span>, <span class="st">&#39;;&#39;</span>, <span class="st">&#39;&lt;&#39;</span>, <span class="st">&#39;=&#39;</span>, <span class="st">&#39;&gt;&#39;</span>, <span class="st">&#39;?&#39;</span>, <span class="st">&#39;@&#39;</span>, <span class="st">&#39;[&#39;</span>, <span class="st">&#39;</span><span class="ch">\\</span><span class="st">&#39;</span>, <span class="st">&#39;]&#39;</span>, <span class="st">&#39;^&#39;</span>, <span class="st">&#39;_&#39;</span>, <span class="st">&#39;`&#39;</span>,</a>
+<a class="sourceLine" id="cb6-4" title="4"><span class="st">&#39;0&#39;</span>, <span class="st">&#39;1&#39;</span>, <span class="st">&#39;2&#39;</span>, <span class="st">&#39;3&#39;</span>, <span class="st">&#39;4&#39;</span>, <span class="st">&#39;5&#39;</span>, <span class="st">&#39;6&#39;</span>, <span class="st">&#39;7&#39;</span>, <span class="st">&#39;8&#39;</span>, <span class="st">&#39;9&#39;</span>,</a>
+<a class="sourceLine" id="cb6-5" title="5"><span class="st">&#39;a&#39;</span>, <span class="st">&#39;b&#39;</span>, <span class="st">&#39;c&#39;</span>, <span class="st">&#39;d&#39;</span>, <span class="st">&#39;e&#39;</span>, <span class="st">&#39;f&#39;</span>, <span class="st">&#39;g&#39;</span>, <span class="st">&#39;h&#39;</span>, <span class="st">&#39;i&#39;</span>, <span class="st">&#39;j&#39;</span>, <span class="st">&#39;k&#39;</span>, <span class="st">&#39;l&#39;</span>, <span class="st">&#39;m&#39;</span>, <span class="st">&#39;n&#39;</span>, <span class="st">&#39;o&#39;</span>,</a>
+<a class="sourceLine" id="cb6-6" title="6"><span class="st">&#39;p&#39;</span>, <span class="st">&#39;q&#39;</span>, <span class="st">&#39;r&#39;</span>, <span class="st">&#39;s&#39;</span>, <span class="st">&#39;t&#39;</span>, <span class="st">&#39;u&#39;</span>, <span class="st">&#39;v&#39;</span>, <span class="st">&#39;w&#39;</span>, <span class="st">&#39;x&#39;</span>, <span class="st">&#39;y&#39;</span>, <span class="st">&#39;z&#39;</span>,</a>
+<a class="sourceLine" id="cb6-7" title="7"><span class="st">&#39;A&#39;</span>, <span class="st">&#39;B&#39;</span>, <span class="st">&#39;C&#39;</span>, <span class="st">&#39;D&#39;</span>, <span class="st">&#39;E&#39;</span>, <span class="st">&#39;F&#39;</span>, <span class="st">&#39;G&#39;</span>, <span class="st">&#39;H&#39;</span>, <span class="st">&#39;I&#39;</span>, <span class="st">&#39;J&#39;</span>, <span class="st">&#39;K&#39;</span>, <span class="st">&#39;L&#39;</span>, <span class="st">&#39;M&#39;</span>, <span class="st">&#39;N&#39;</span>, <span class="st">&#39;O&#39;</span>,</a>
+<a class="sourceLine" id="cb6-8" title="8"><span class="st">&#39;P&#39;</span>, <span class="st">&#39;Q&#39;</span>, <span class="st">&#39;R&#39;</span>, <span class="st">&#39;S&#39;</span>, <span class="st">&#39;T&#39;</span>, <span class="st">&#39;U&#39;</span>, <span class="st">&#39;V&#39;</span>, <span class="st">&#39;W&#39;</span>, <span class="st">&#39;X&#39;</span>, <span class="st">&#39;Y&#39;</span>, <span class="st">&#39;Z&#39;</span></a>
+<a class="sourceLine" id="cb6-9" title="9"><span class="st">&#39;accept&#39;</span>, <span class="st">&#39;add&#39;</span>, <span class="st">&#39;alt&#39;</span>, <span class="st">&#39;altleft&#39;</span>, <span class="st">&#39;altright&#39;</span>, <span class="st">&#39;apps&#39;</span>, <span class="st">&#39;backspace&#39;</span>,</a>
+<a class="sourceLine" id="cb6-10" title="10"><span class="st">&#39;browserback&#39;</span>, <span class="st">&#39;browserfavorites&#39;</span>, <span class="st">&#39;browserforward&#39;</span>, <span class="st">&#39;browserhome&#39;</span>,</a>
+<a class="sourceLine" id="cb6-11" title="11"><span class="st">&#39;browserrefresh&#39;</span>, <span class="st">&#39;browsersearch&#39;</span>, <span class="st">&#39;browserstop&#39;</span>, <span class="st">&#39;capslock&#39;</span>, <span class="st">&#39;clear&#39;</span>,</a>
+<a class="sourceLine" id="cb6-12" title="12"><span class="st">&#39;convert&#39;</span>, <span class="st">&#39;ctrl&#39;</span>, <span class="st">&#39;ctrlleft&#39;</span>, <span class="st">&#39;ctrlright&#39;</span>, <span class="st">&#39;decimal&#39;</span>, <span class="st">&#39;del&#39;</span>, <span class="st">&#39;delete&#39;</span>,</a>
+<a class="sourceLine" id="cb6-13" title="13"><span class="st">&#39;divide&#39;</span>, <span class="st">&#39;down&#39;</span>, <span class="st">&#39;end&#39;</span>, <span class="st">&#39;enter&#39;</span>, <span class="st">&#39;esc&#39;</span>, <span class="st">&#39;escape&#39;</span>, <span class="st">&#39;execute&#39;</span>, <span class="st">&#39;f1&#39;</span>, <span class="st">&#39;f10&#39;</span>,</a>
+<a class="sourceLine" id="cb6-14" title="14"><span class="st">&#39;f11&#39;</span>, <span class="st">&#39;f12&#39;</span>, <span class="st">&#39;f13&#39;</span>, <span class="st">&#39;f14&#39;</span>, <span class="st">&#39;f15&#39;</span>, <span class="st">&#39;f16&#39;</span>, <span class="st">&#39;f17&#39;</span>, <span class="st">&#39;f18&#39;</span>, <span class="st">&#39;f19&#39;</span>, <span class="st">&#39;f2&#39;</span>, <span class="st">&#39;f20&#39;</span>,</a>
+<a class="sourceLine" id="cb6-15" title="15"><span class="st">&#39;f21&#39;</span>, <span class="st">&#39;f22&#39;</span>, <span class="st">&#39;f23&#39;</span>, <span class="st">&#39;f24&#39;</span>, <span class="st">&#39;f3&#39;</span>, <span class="st">&#39;f4&#39;</span>, <span class="st">&#39;f5&#39;</span>, <span class="st">&#39;f6&#39;</span>, <span class="st">&#39;f7&#39;</span>, <span class="st">&#39;f8&#39;</span>, <span class="st">&#39;f9&#39;</span>,</a>
+<a class="sourceLine" id="cb6-16" title="16"><span class="st">&#39;final&#39;</span>, <span class="st">&#39;fn&#39;</span>, <span class="st">&#39;hanguel&#39;</span>, <span class="st">&#39;hangul&#39;</span>, <span class="st">&#39;hanja&#39;</span>, <span class="st">&#39;help&#39;</span>, <span class="st">&#39;home&#39;</span>, <span class="st">&#39;insert&#39;</span>, <span class="st">&#39;junja&#39;</span>,</a>
+<a class="sourceLine" id="cb6-17" title="17"><span class="st">&#39;kana&#39;</span>, <span class="st">&#39;kanji&#39;</span>, <span class="st">&#39;launchapp1&#39;</span>, <span class="st">&#39;launchapp2&#39;</span>, <span class="st">&#39;launchmail&#39;</span>,</a>
+<a class="sourceLine" id="cb6-18" title="18"><span class="st">&#39;launchmediaselect&#39;</span>, <span class="st">&#39;left&#39;</span>, <span class="st">&#39;modechange&#39;</span>, <span class="st">&#39;multiply&#39;</span>, <span class="st">&#39;nexttrack&#39;</span>,</a>
+<a class="sourceLine" id="cb6-19" title="19"><span class="st">&#39;nonconvert&#39;</span>, <span class="st">&#39;num0&#39;</span>, <span class="st">&#39;num1&#39;</span>, <span class="st">&#39;num2&#39;</span>, <span class="st">&#39;num3&#39;</span>, <span class="st">&#39;num4&#39;</span>, <span class="st">&#39;num5&#39;</span>, <span class="st">&#39;num6&#39;</span>,</a>
+<a class="sourceLine" id="cb6-20" title="20"><span class="st">&#39;num7&#39;</span>, <span class="st">&#39;num8&#39;</span>, <span class="st">&#39;num9&#39;</span>, <span class="st">&#39;numlock&#39;</span>, <span class="st">&#39;pagedown&#39;</span>, <span class="st">&#39;pageup&#39;</span>, <span class="st">&#39;pause&#39;</span>, <span class="st">&#39;pgdn&#39;</span>,</a>
+<a class="sourceLine" id="cb6-21" title="21"><span class="st">&#39;pgup&#39;</span>, <span class="st">&#39;playpause&#39;</span>, <span class="st">&#39;prevtrack&#39;</span>, <span class="st">&#39;print&#39;</span>, <span class="st">&#39;printscreen&#39;</span>, <span class="st">&#39;prntscrn&#39;</span>,</a>
+<a class="sourceLine" id="cb6-22" title="22"><span class="st">&#39;prtsc&#39;</span>, <span class="st">&#39;prtscr&#39;</span>, <span class="st">&#39;return&#39;</span>, <span class="st">&#39;right&#39;</span>, <span class="st">&#39;scrolllock&#39;</span>, <span class="st">&#39;select&#39;</span>, <span class="st">&#39;separator&#39;</span>,</a>
+<a class="sourceLine" id="cb6-23" title="23"><span class="st">&#39;shift&#39;</span>, <span class="st">&#39;shiftleft&#39;</span>, <span class="st">&#39;shiftright&#39;</span>, <span class="st">&#39;sleep&#39;</span>, <span class="st">&#39;space&#39;</span>, <span class="st">&#39;stop&#39;</span>, <span class="st">&#39;subtract&#39;</span>, <span class="st">&#39;tab&#39;</span>,</a>
+<a class="sourceLine" id="cb6-24" title="24"><span class="st">&#39;up&#39;</span>, <span class="st">&#39;volumedown&#39;</span>, <span class="st">&#39;volumemute&#39;</span>, <span class="st">&#39;volumeup&#39;</span>, <span class="st">&#39;win&#39;</span>, <span class="st">&#39;winleft&#39;</span>, <span class="st">&#39;winright&#39;</span>, <span class="st">&#39;yen&#39;</span>,</a>
+<a class="sourceLine" id="cb6-25" title="25"><span class="st">&#39;command&#39;</span>, <span class="st">&#39;option&#39;</span>, <span class="st">&#39;optionleft&#39;</span>, <span class="st">&#39;optionright&#39;</span>]</a></code></pre></div>
 <h3 id="device-specification">Device Specification</h3>
-<p>Default file: <a
-href="dcs5/default_configs/xt_devices_specification.json">devices_specification.json</a></p>
+<p>Default file: <a href="dcs5/default_configs/xt_devices_specification.json">devices_specification.json</a></p>
 <p>Usage:</p>
 <ul>
 <li><p>board:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode json"><code class="sourceCode json"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a> <span class="fu">{</span><span class="dt">&quot;board&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>          <span class="dt">&quot;number_of_keys&quot;</span><span class="fu">:</span> <span class="dv">49</span><span class="fu">,</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>          <span class="dt">&quot;key_to_mm_ratio&quot;</span><span class="fu">:</span> <span class="fl">15.385</span><span class="fu">,</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>          <span class="dt">&quot;zero&quot;</span><span class="fu">:</span> <span class="fl">-3.695</span><span class="fu">,</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>          <span class="dt">&quot;detection_range&quot;</span><span class="fu">:</span> <span class="dv">2</span><span class="fu">}</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb7-1" title="1"> <span class="fu">{</span><span class="dt">&quot;board&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
+<a class="sourceLine" id="cb7-2" title="2">          <span class="dt">&quot;number_of_keys&quot;</span><span class="fu">:</span> <span class="dv">49</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb7-3" title="3">          <span class="dt">&quot;key_to_mm_ratio&quot;</span><span class="fu">:</span> <span class="fl">15.385</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb7-4" title="4">          <span class="dt">&quot;zero&quot;</span><span class="fu">:</span> <span class="fl">-3.695</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb7-5" title="5">          <span class="dt">&quot;detection_range&quot;</span><span class="fu">:</span> <span class="dv">2</span><span class="fu">}</span></a>
+<a class="sourceLine" id="cb7-6" title="6"><span class="fu">}</span></a></code></pre></div>
 <ul>
-<li>number_of_keys: The keys correspond to the grey circle on the
-board.</li>
-<li>key_to_mm_ratio: The distance in mm from one edge of a circle
-(larger one) to the next.</li>
-<li>zero: The distance (mm) that would be the key 0 given that the first
-key on the board is key 1.</li>
+<li>number_of_keys: The keys correspond to the grey circle on the board.</li>
+<li>key_to_mm_ratio: The distance in mm from one edge of a circle (larger one) to the next.</li>
+<li>zero: The distance (mm) that would be the key 0 given that the first key on the board is key 1.</li>
 <li>detection_range: Offset on the left in mm for stylus detection.</li>
-<li>keys_layout: Ordered lists for the name of the top keys and the for
-the bottom keys. These names are used to map command.
+<li>keys_layout: Ordered lists for the name of the top keys and the for the bottom keys. These names are used to map command.
 <ul>
 <li>Top:</li>
 <li>Bottom:</li>
 </ul></li>
 </ul>
-<p><em>Notes: The two lists (top and bottom) should not contain
-identical names.</em></p></li>
-<li><p>control_box:</p>
+<em>Notes: The two lists (top and bottom) should not contain identical names.</em></li>
+<li>control_box:
 <ul>
-<li>model: Model of the control box. Either <strong>xt</strong> or
-<strong>micro</strong>.</li>
-<li>keys_layout: Mapping of the controller box key builtin id to
-meaningful name. These names are used to map command.</li>
+<li>model: Model of the control box. Either <strong>xt</strong> or <strong>micro</strong>.</li>
+<li>keys_layout: Mapping of the controller box key builtin id to meaningful name. These names are used to map command.</li>
 </ul></li>
-<li><p>stylus_offset: Offset in mm that is added to the value measured
-by the board.</p>
+<li>stylus_offset: Offset in mm that is added to the value measured by the board.
 <ul>
 <li>Note: These values will depend on the calibration.</li>
 </ul></li>
