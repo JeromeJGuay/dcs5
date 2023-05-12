@@ -3,6 +3,7 @@ May 2022 JeromeJGuay
 This modules contains script to init the logger.
 """
 import logging
+from logging.handlers import RotatingFileHandler
 import sys
 import time
 import re
@@ -101,7 +102,9 @@ def init_logging(
 
     # file
     filename = LOG_FILES_PATH.joinpath(time.strftime("%Y-%m-%dT%H_%M_%S", time.localtime())).with_suffix('.log')
-    file_handler = logging.FileHandler(filename, delay=not write) # delay=True will write a log only on crash.
+    #file_handler = logging.FileHandler(filename, delay=not write) # delay=True will write a log only on crash. # TODO ROTATING FILE HANDLER
+    file_handler = RotatingFileHandler(filename, maxBytes=8*1000*5, delay=not write)  # delay=True will write a log only on crash. # TODO ROTATING FILE HANDLER
+
     file_handler.setLevel(file_level.upper())
     file_handler.setFormatter(formatter)
     handlers.append(file_handler)

@@ -21,7 +21,6 @@ from dcs5.controller_configurations import ConfigError
 from dcs5.logger import init_logging
 from dcs5.utils import resolve_relative_path, update_json_value
 
-logging.getLogger('MarelController').setLevel('ERROR')  #
 
 # This is a fix for my computer. Should not influence anything.
 if os.environ.get('EDITOR') == 'EMACS':
@@ -1172,6 +1171,5 @@ def update_marel_host(controller: Dcs5Controller, value):
 
 if __name__ == "__main__":
     main()
-    c = init_dcs5_controller()
 #    c.start_client()
 # c.start_listening()
