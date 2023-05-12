@@ -213,7 +213,7 @@ def make_window():
             'Marel', [
                 [sg.Text(dotted(" Host", _pad), pad=(0, 0), font=REG_FONT),
                  sg.InputText(size=(14, 1), border_width=1, pad=(0, 0), key='-MAREL_HOST-', justification='right',
-                              font=REG_FONT, tooltip="Scale IP address", enable_events=True)
+                              font=REG_FONT, tooltip="Scale IP address", enable_events=False)
                  ],
                 [sg.Text(" Status", pad=(0, 0), font=REG_FONT), led(key='-MAREL_LED-'),
                  sg.Push(),
@@ -392,7 +392,6 @@ def make_window():
     #window.set_min_size(tuple(map(lambda x: int(x / 2), window.size)))
     #window.set_min_size((window.size[0], int(window.size[1]/2)))
 
-
     window['-MAREL_HOST-'].bind("<Return>", "ENTER-")
 
     return window
@@ -459,18 +458,9 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
 
         match event:
             case "-MAREL_HOST-ENTER-":
-                controller.config.client.marel_ip_address = values['-MAREL_HOST-']
-                update_json_value(controller.config_path, ['client', 'marel_ip_address'],
-                                  str(controller.config.client.marel_ip_address))
-                logging.debug('Marel Host address updated')
-
-            case "-MAREL_HOST-ENTER-":
-                controller.config.client.marel_ip_address = values['-MAREL_HOST-']
-                update_json_value(controller.config_path, ['client', 'marel_ip_address'],
-                                  str(controller.config.client.marel_ip_address))
-                logging.debug('Marel Host address updated')
-
+                update_marel_host(controller, values['-MAREL_HOST-'])
             case "-MAREL_START-":
+                update_marel_host(controller, values['-MAREL_HOST-'])
                 controller.start_marel_listening()
                 window['-MAREL_LED-'].update(**LED_WAIT)
                 window['-MAREL_START-'].update(disabled=True)
@@ -486,7 +476,6 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                     window['-AUTO_ENTER-'].update('Off')
                 else:
                     window['-AUTO_ENTER-'].update('On')
-
                 controller.set_auto_enter(not controller.auto_enter)
                 window.refresh()
             case "-CONNECT-":
@@ -594,15 +583,16 @@ def refresh_layout(window: sg.Window, controller: Dcs5Controller):
 def _refresh_marel_layout(window: sg.Window, controller: Dcs5Controller):
     if controller.marel is not None:
         window["-MAREL_UNITS-"].update(disabled=False)
-        #window["-MAREL_AUTO_ENTER-"].update(disabled=False)
         if controller.marel.client.is_connecting:
             window["-MAREL_STOP-"].update(disabled=False)
             window["-MAREL_LED-"].update(**LED_WAIT)
             window["-MAREL_WEIGHT-"].update("N/A")
             window["-MAREL_WEIGHT_DEVICE-"].update("N/A")
-        elif controller.marel.is_listening:
-            if controller.marel.client.is_connected:
-                window["-MAREL_LED-"].update(**LED_ON)
+        elif controller.marel.client.is_connected and controller.marel.is_listening:
+            # elif controller.marel.is_listening:
+            #     if controller.marel.client.is_connected:
+            #         window["-MAREL_LED-"].update(**LED_ON)
+            window["-MAREL_LED-"].update(**LED_ON)
             window["-MAREL_HOST-"].update(disabled=True)
             window["-MAREL_START-"].update(disabled=True)
             window["-MAREL_STOP-"].update(disabled=False)
@@ -1171,6 +1161,13 @@ def modal(window: sg.Window, func: callable, *args, **kwargs) -> Any:
     out = func(*args, **kwargs)
     window.DisableClose = False
     return out
+
+
+def update_marel_host(controller: Dcs5Controller, value):
+    controller.config.client.marel_ip_address = value
+    update_json_value(controller.config_path, ['client', 'marel_ip_address'],
+                      str(controller.config.client.marel_ip_address))
+    logging.debug(f'Marel Host address updated {value}')
 
 
 if __name__ == "__main__":

@@ -688,12 +688,14 @@ class Dcs5Controller:
         self.command_handler.queue_command(f'&{pt}mm,{pos}#', f'%{pt}mm,{pos}#\r')
 
     def start_marel_listening(self):
-        logging.debug('starting Marel')
+        logging.debug(f'starting Marel: {self.config.client.marel_ip_address}')
         if not self.marel:
             if self.config.client.marel_ip_address:
                 self.marel = MarelController(host=self.config.client.marel_ip_address)
             else:
                 pass # fixme maybe
+        else:
+            self.marel.host = self.config.client.marel_ip_address
 
         self.marel_thread = threading.Thread(target=self.marel.start_listening)
         self.marel_thread.start()
