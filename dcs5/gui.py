@@ -105,7 +105,7 @@ USER_SETTING_FILE = 'user_settings.json'
 
 def main():
     try:
-        init_logging(stdout_level='DEBUG')
+        init_logging(stdout_level='DEBUG', write=True)
         run()
     except Exception as e:
         logging.error(traceback.format_exc(), exc_info=True)
