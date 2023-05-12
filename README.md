@@ -389,7 +389,7 @@ Usage:
   + `"MODE"`: Access the alternative (mode) mapping (`control_box_mode`, `board_mode`).
   + `"WEIGHT"`: Prints the weight measured by the Marel Scale (if connected).
   + `"DELETE_LAST`: Delete the last printed value.
-  + `"PRINT <string to print>"]`: Prints the `<string to print>` value.
+  + `"PRINT <string to print>"`: Prints the `<string to print>` value. e.g. "PRINT This Will be Printed" 
   
   Valid keyboard input (Source: [PyAutoGui](https://pyautogui.readthedocs.io/en/latest/)):
     
