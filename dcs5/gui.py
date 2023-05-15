@@ -582,6 +582,10 @@ def refresh_layout(window: sg.Window, controller: Dcs5Controller):
 def _refresh_marel_layout(window: sg.Window, controller: Dcs5Controller):
     if controller.marel is not None:
         window["-MAREL_UNITS-"].update(disabled=False)
+
+        if controller.marel.is_listening:
+            window["-MAREL_STOP-"].update(disabled=False)
+
         if controller.marel.client.is_connecting:
             window["-MAREL_STOP-"].update(disabled=False)
             window["-MAREL_LED-"].update(**LED_WAIT)
