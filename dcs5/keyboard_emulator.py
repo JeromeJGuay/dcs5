@@ -26,7 +26,7 @@ class KeyboardEmulator:
 
     def _shout(self, value: str):
         with pag.hold(self.meta_key_combo):
-            logging.debug(f"Keyboard out: {'+'.join(self.meta_key_combo)} {value}")
+            logging.info(f"Keyboard out: {'+'.join(self.meta_key_combo)} {value}")
             if pag.isValidKey(value):
                 pag.press(value)
                 self.last_msg_length = 1

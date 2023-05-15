@@ -104,7 +104,7 @@ USER_SETTING_FILE = 'user_settings.json'
 
 def main():
     try:
-        init_logging(stdout_level='DEBUG', write=True)
+        init_logging(stdout_level='INFO', write=True)
         run()
     except Exception as e:
         logging.error(traceback.format_exc(), exc_info=True)
@@ -624,6 +624,10 @@ def _refresh_controller_layout(window: sg.Window, controller: Dcs5Controller):
     window['-NUMBER-READING-'].update(controller.internal_board_state.number_of_reading)
     window['-MAX-DEVIATION-'].update(controller.internal_board_state.stylus_max_deviation)
 
+    if controller.auto_enter:
+        window['-AUTO_ENTER-'].update('On')
+    else:
+        window['-AUTO_ENTER-'].update('Off')
     window["-AUTO_ENTER-"].update(disabled=False)
 
     window['-STYLUS-'].update(value=controller.stylus,
