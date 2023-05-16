@@ -39,10 +39,10 @@ The measurement board has 3 different output modes; **length**, **top** and **bo
 The **top** and **bottom** mode are used
 to access the top and bottom keys
 by placing the stylus on the corresponding circle within the detection zone of the board.
-There are 2 ways to change the detection zone;
+There are 2 ways to change the output mode:
 by mapping commands to the control box keys or by defining swiping regions on the board.
 
-The map command to change to a specific output mode or to cycle through the output modes.
+Commands can be mapped to change to a specific output mode or to cycle through the output modes.
 * See section [Configuration files](#configurations-files) for the output mode commands.
 
 
@@ -52,13 +52,14 @@ Furthermore, the default LED display of the control box changes depending on the
 
 #### Swiping Region
 
-Starting left to right in a swiping zone will change the output mode.
+Swiping from left to right in a swiping zone will change the output mode.
 The swiping regions are defined in the configuration files.
 For example, here are the defaults swiping regions for the `xt` control box.
 <figure style="text-align: center;">
 <img src='doc/images/planche_swipe.png' width='741' alt="Board Swiping Zone"/>
 <figcaption>Default XT Swipe Zone </figcaption>
 </figure>
+
 The corresponding output modes are:
 
 * Left, Right : **Length**
@@ -112,11 +113,12 @@ The only difference between the `xt` and `micro` control box models are the numb
 ### LEDs Displays
 Different LEDs patterns are displayed on the control box to give feedback to the users.
 
-* xt: FUEL GAUGE / ACTION led bar
-* micro: Led Ring
+* xt: `FUEL GAUGE / ACTION` LED bar
+* micro: LED Ring
 
 #### Output mode
 The default pattern displays the current output mode.
+
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_output_mode.png' width='300' alt="Output Mode LED Display" style="background-color:gray;"/>
 <figcaption>Output Mode LED Display</figcaption>
@@ -128,6 +130,7 @@ The default pattern displays the current output mode.
 
 #### Stylus detection
 The follow led pattern is displayed when the board detects the stylus.
+
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_detection.png' width='300' alt="Stylus Detection LED Display" style="background-color:gray;"/>
 <figcaption>Stylus Detection LED Display</figcaption>
@@ -135,7 +138,7 @@ The follow led pattern is displayed when the board detects the stylus.
  
 #### Measurements
 All the leds flash rapidly when a measurement is made.
-The default pattern displays the current output mode.
+
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_measurements.png' width='300' alt="Measurement LED Display" style="background-color:gray;"/>
 <figcaption>Measurement LED Display</figcaption>
@@ -225,7 +228,6 @@ while the application is attempting to connect to the board and then into a gree
 The red circles next to the **Activate** button will also turn green when the application and board are ready to use.
 When activating the board, the application will synchronize with the board control box.
 (See the section [Additional GUI features](#additional-information)).
-The application will try to synchronize with the board control box on activation.
 The application and the board are synchronized
 when the application receives confirmations that the board internal parameters
 (mainly those related to stylus detection) are the same as those specified in the configuration files. 
