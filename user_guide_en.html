@@ -88,7 +88,7 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 <li><a href="#requirements-to-install-the-python-package.-not-required-to-use-the-app-as-a-standalone.">Requirements to install the python package. (Not required to use the app as a standalone.)</a></li>
 </ul></li>
 <li><a href="#usage">Usage</a><ul>
-<li><a href="#guide-dutilisation-en-français-pour-le-modèle-xt-userguide_fr.pdf.">Guide d’utilisation en français pour le modèle XT : <span>UserGuide_fr.pdf</span>.</a></li>
+<li><a href="#guide-dutilisation-en-français-pour-le-modèle-xt-user_guide_fr.">Guide d’utilisation en français pour le modèle XT : <span>user_guide_fr</span>.</a></li>
 <li><a href="#measuring-board">Measuring Board</a></li>
 <li><a href="#control-box">Control Box</a><ul>
 <li><a href="#model-xt">Model: <code>xt</code></a></li>
@@ -122,7 +122,7 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 <li>python 3.10</li>
 </ul>
 <h1 id="usage">Usage</h1>
-<h3 id="guide-dutilisation-en-français-pour-le-modèle-xt-userguide_fr.pdf.">Guide d’utilisation en français pour le modèle XT : <a href="doc/UserGuide_fr.pdf">UserGuide_fr.pdf</a>.</h3>
+<h3 id="guide-dutilisation-en-français-pour-le-modèle-xt-user_guide_fr.">Guide d’utilisation en français pour le modèle XT : <a href="user_guide_fr.html">user_guide_fr</a>.</h3>
 <h2 id="measuring-board">Measuring Board</h2>
 <h4 id="stylus-detection-zone">Stylus detection zone</h4>
 <p>The stylus needs to be placed within the detection zone. The detection delay can be adjusted in the configuration (See section <a href="#configurations-files">Configuration files</a>). The control box lights will flash when a measurement is made.</p>
@@ -133,11 +133,11 @@ Board Detection Zone
 </figcaption>
 </figure>
 <h4 id="output-modes">Output modes</h4>
-<p>The measurement board has 3 different output modes; <strong>length</strong>, <strong>top</strong> and <strong>bottom</strong>. The <strong>top</strong> and <strong>bottom</strong> mode are used to access the top and bottom keys by placing the stylus on the corresponding circle within the detection zone of the board. There are 2 ways to change the detection zone; by mapping commands to the control box keys or by defining swiping regions on the board.</p>
-<p>The map command to change to a specific output mode or to cycle through the output modes. * See section <a href="#configurations-files">Configuration files</a> for the output mode commands.</p>
+<p>The measurement board has 3 different output modes; <strong>length</strong>, <strong>top</strong> and <strong>bottom</strong>. The <strong>top</strong> and <strong>bottom</strong> mode are used to access the top and bottom keys by placing the stylus on the corresponding circle within the detection zone of the board. There are 2 ways to change the output mode: by mapping commands to the control box keys or by defining swiping regions on the board.</p>
+<p>Commands can be mapped to change to a specific output mode or to cycle through the output modes. * See section <a href="#configurations-files">Configuration files</a> for the output mode commands.</p>
 <p>Furthermore, the default LED display of the control box changes depending on the output modes. * See section <a href="#leds-displays">LEDs Displays</a>.</p>
 <h4 id="swiping-region">Swiping Region</h4>
-Starting left to right in a swiping zone will change the output mode. The swiping regions are defined in the configuration files. For example, here are the defaults swiping regions for the <code>xt</code> control box.
+Swiping from left to right in a swiping zone will change the output mode. The swiping regions are defined in the configuration files. For example, here are the defaults swiping regions for the <code>xt</code> control box.
 <figure style="text-align: center;">
 <img src='doc/images/planche_swipe.png' width='741' alt="Board Swiping Zone"/>
 <figcaption>
@@ -188,11 +188,11 @@ Micro Control Box
 <h3 id="leds-displays">LEDs Displays</h3>
 <p>Different LEDs patterns are displayed on the control box to give feedback to the users.</p>
 <ul>
-<li>xt: FUEL GAUGE / ACTION led bar</li>
-<li>micro: Led Ring</li>
+<li>xt: <code>FUEL GAUGE / ACTION</code> LED bar</li>
+<li>micro: LED Ring</li>
 </ul>
 <h4 id="output-mode">Output mode</h4>
-The default pattern displays the current output mode.
+<p>The default pattern displays the current output mode.</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_output_mode.png' width='300' alt="Output Mode LED Display" style="background-color:gray;"/>
 <figcaption>
@@ -205,7 +205,7 @@ Output Mode LED Display
 <li>B: Bottom</li>
 </ul>
 <h4 id="stylus-detection">Stylus detection</h4>
-The follow led pattern is displayed when the board detects the stylus.
+<p>The follow led pattern is displayed when the board detects the stylus.</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_detection.png' width='300' alt="Stylus Detection LED Display" style="background-color:gray;"/>
 <figcaption>
@@ -213,7 +213,7 @@ Stylus Detection LED Display
 </figcaption>
 </figure>
 <h4 id="measurements">Measurements</h4>
-All the leds flash rapidly when a measurement is made. The default pattern displays the current output mode.
+<p>All the leds flash rapidly when a measurement is made.</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_measurements.png' width='300' alt="Measurement LED Display" style="background-color:gray;"/>
 <figcaption>
@@ -291,7 +291,7 @@ Connect Widget
 Activate Widget
 </figcaption>
 </figure>
-<p>The red circles next to the <strong>Activate</strong> button will also turn green when the application and board are ready to use. When activating the board, the application will synchronize with the board control box. (See the section <a href="#additional-information">Additional GUI features</a>). The application will try to synchronize with the board control box on activation. The application and the board are synchronized when the application receives confirmations that the board internal parameters (mainly those related to stylus detection) are the same as those specified in the configuration files. If the synchronization failed, indicated by a red circle next to the <strong>Synchronize</strong> button, you can press the <strong>Synchronize</strong> button to try again. If it still doesn’t work, try to restart the board and the application.</p>
+<p>The red circles next to the <strong>Activate</strong> button will also turn green when the application and board are ready to use. When activating the board, the application will synchronize with the board control box. (See the section <a href="#additional-information">Additional GUI features</a>). The application and the board are synchronized when the application receives confirmations that the board internal parameters (mainly those related to stylus detection) are the same as those specified in the configuration files. If the synchronization failed, indicated by a red circle next to the <strong>Synchronize</strong> button, you can press the <strong>Synchronize</strong> button to try again. If it still doesn’t work, try to restart the board and the application.</p>
 <h3 id="calibration-1">Calibration</h3>
 <p>The board needs to be calibrated using two calibration points. Although the calibration is linear, keep in mind that the stylus has some non-uniform thickness which will offset, to some extent, the measured values if the stylus’s orientation differs when measuring versus when calibrating. We recommend using the tiniest part of the stylus to make the calibration and then add <code>offset</code> in the calibration files for each stylus.</p>
 <ul>
@@ -334,7 +334,7 @@ Application Marel Widget
 <p>Default <code>micro</code> file: <a href="dcs5/default_configs/micro_controller_configuration.json">micro_controller_configuration.json</a></p>
 <p>Usage:</p>
 <ul>
-<li><p>client: Measuring board bluetooth information.</p>
+<li><p>client: Connection parameters</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb2-1" title="1">  <span class="fu">{</span><span class="dt">&quot;client&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
 <a class="sourceLine" id="cb2-2" title="2">      <span class="dt">&quot;device_name&quot;</span><span class="fu">:</span> <span class="st">&quot;BigFinDCS5-E5FE&quot;</span><span class="fu">,</span></a>
 <a class="sourceLine" id="cb2-3" title="3">      <span class="dt">&quot;mac_address&quot;</span><span class="fu">:</span> <span class="st">&quot;00:06:66:89:E5:FE&quot;</span><span class="fu">,</span></a>
@@ -361,7 +361,7 @@ Application Marel Widget
 <li>dynamic_stylus_mode: (true/false) If true, reading profiles will change for each output mode as defined in the next section.</li>
 <li>backlight_level: (0-95) Backlight intensity</li>
 <li>length_units: Units of the measurements values either <strong>cm</strong> or <strong>mm</strong></li>
-<li>stylus: Name of the stylus in use. Must be defined in the <a href="#device-specification">devices_specifications</a> file.</li>
+<li>stylus: Name of the stylus in use. Must be defined in the <a href="#device-specification">devices_specifications</a> configuration file.</li>
 <li>auto_enter: Automatically press the <em>enter</em> key after a length or weight value is printed.</li>
 </ul></li>
 <li><p>reading_profiles:</p>
@@ -374,7 +374,7 @@ Application Marel Widget
 <ul>
 <li>settling_delay: (0-20) Delays after the stylus is first detected. (not seconds)</li>
 <li>number_of_reading: Number of readings needed for a good measurements.</li>
-<li>max_deviation: (1-100) Amount of deviation allowed between each reading. <em>Notes: For more information : <a href="doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf">user_guide/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf</a></em></li>
+<li>max_deviation: (1-100) Amount of deviation allowed between each reading. <em>Notes: For more information : <a href="doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf">Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf</a></em></li>
 </ul></li>
 <li><p>output_modes:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb5-1" title="1">  <span class="fu">{</span><span class="dt">&quot;output_modes&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
@@ -403,7 +403,7 @@ Application Marel Widget
 </ul>
 <h4 id="key-mapping">Key Mapping</h4>
 <p>The names of the keys are set in <a href="dcs5/default_configs/xt_devices_specification.json">devices_specification.json</a>.</p>
-<p>Commands:</p>
+<p>Mappable commands :</p>
 <ul>
 <li><code>"BACKLIGHT_UP", "BACKLIGHT_DOWN"</code>: Change the control box backlight level.</li>
 <li><code>"CHANGE_STYLUS"</code>: Cycle through the list of stylus defined in the <a href="#device-specification">devices_specifications</a> file.</li>
@@ -411,7 +411,7 @@ Application Marel Widget
 <li><code>"MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"</code>: Change the output mode.</li>
 <li><code>"CHANGE_OUTPUT_MODE"</code>: Cycle through output mode (TOP, LENGTH, BOTTOM).</li>
 <li><code>"MODE"</code>: Access the alternative (mode) mapping (<code>control_box_mode</code>, <code>board_mode</code>).</li>
-<li><code>"WEIGHT"</code>: Prints the weight measured by the Marel Scale (if connected).</li>
+<li><code>"WEIGHT"</code>: Prints the weight measured by the Marel Scale (if one is connected).</li>
 <li><code>"DELETE_LAST</code>: Delete the last printed value.</li>
 <li><code>"PRINT &lt;string to print&gt;"</code>: Prints the <code>&lt;string to print&gt;</code> value. e.g. “PRINT This Will be Printed”</li>
 </ul>
@@ -454,9 +454,9 @@ Application Marel Widget
 <a class="sourceLine" id="cb7-6" title="6"><span class="fu">}</span></a></code></pre></div>
 <ul>
 <li>number_of_keys: The keys correspond to the grey circle on the board.</li>
-<li>key_to_mm_ratio: The distance in mm from one edge of a circle (larger one) to the next.</li>
-<li>zero: The distance (mm) that would be the key 0 given that the first key on the board is key 1.</li>
-<li>detection_range: Offset on the left in mm for stylus detection.</li>
+<li>key_to_mm_ratio: The distance in mm entre deux cercles (center to center).</li>
+<li>zero: The position (in mm) of the left edge of the key #0 given that the first key on the board is key #1.</li>
+<li>detection_range: Offset to the left in mm for stylus detection.</li>
 <li>keys_layout: Ordered lists for the name of the top keys and the for the bottom keys. These names are used to map command.
 <ul>
 <li>Top:</li>
@@ -467,7 +467,7 @@ Application Marel Widget
 <li>control_box:
 <ul>
 <li>model: Model of the control box. Either <strong>xt</strong> or <strong>micro</strong>.</li>
-<li>keys_layout: Mapping of the controller box key builtin id to meaningful name. These names are used to map command.</li>
+<li>keys_layout: Mapping of the controller box key builtin id to meaningful name. These names are used to map command in <a href="#controller-configuration">controller_configuration</a>.</li>
 </ul></li>
 <li>stylus_offset: Offset in mm that is added to the value measured by the board.
 <ul>

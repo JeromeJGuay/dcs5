@@ -84,278 +84,271 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 <nav id="TOC">
 <ul>
 <li><a href="#application-contrôleur-dcs5">Application contrôleur DCS5</a></li>
-<li><a href="#télécharger-à-partir-des-versions">Télécharger à partir des versions</a><ul>
-<li><a href="#configuration-requise-pour-installer-le-package-python.-pas-nécessaire-pour-utiliser-lapplication-en-tant-quapplication-autonome.">Configuration requise pour installer le package python. (Pas nécessaire pour utiliser l’application en tant qu’application autonome.)</a></li>
-</ul></li>
+<li><a href="#téléchargement-de-lapplication">Téléchargement de l’application</a></li>
 <li><a href="#usage">Usage</a><ul>
-<li><a href="#guide-dutilisation-en-français-pour-le-modèle-xt-userguide_fr.pdf.">Guide d’utilisation en français pour le modèle XT :<span>UserGuide_fr.pdf</span>.</a></li>
-<li><a href="#planche-à-mesurer">Planche à mesurer</a></li>
-<li><a href="#boîtier-de-commande">Boîtier de commande</a><ul>
-<li><a href="#modèlext">Modèle:<code>xt</code></a></li>
-<li><a href="#modèlemiro">Modèle:<code>miro</code></a></li>
+<li><a href="#planche-de-mesure">Planche de mesure</a></li>
+<li><a href="#boîtier-de-contrôle">Boîtier de contrôle</a><ul>
+<li><a href="#modèle-xt">Modèle: <code>xt</code></a></li>
+<li><a href="#modèle-miro">Modèle: <code>miro</code></a></li>
 <li><a href="#affichages-led">Affichages LED</a></li>
 </ul></li>
 <li><a href="#application">Application</a><ul>
 <li><a href="#configurations">Configurations</a></li>
-<li><a href="#connectez-la-carte-via-bluetooth">Connectez la carte via Bluetooth</a></li>
+<li><a href="#connectez-la-planche-via-bluetooth">Connectez la planche via Bluetooth</a></li>
 <li><a href="#étalonnage-1">Étalonnage</a></li>
-<li><a href="#informations-complémentaires.">Informations Complémentaires.</a></li>
+<li><a href="#informations-supplémentaires.">Informations Supplémentaires.</a></li>
 </ul></li>
 <li><a href="#fichiers-de-configuration">Fichiers de configuration</a><ul>
 <li><a href="#configuration-du-contrôleur">Configuration du contrôleur</a></li>
-<li><a href="#spécification-de-lappareil">Spécification de l’appareil</a></li>
+<li><a href="#spécification-de-la-planche">Spécification de la planche</a></li>
 </ul></li>
 </ul></li>
 </ul>
 </nav>
 <h1 id="application-contrôleur-dcs5">Application contrôleur DCS5</h1>
-<p>Cette application python (python 3.10) fournit une interface graphique pour interagir (GUI) avec une carte de mesure BigFin Dcs5 XT ou MICRO via Bluetooth. L’application transforme les entrées du stylet sur la carte de mesure en entrée au clavier, transformer essentiellement la carte de mesure dcs5 en un clavier sans fil. Une balance marine Marel peut également être connectée à l’application. Voir le projet<a href="https://github.com/iml-gddaiss/marel_marine_scale_controller">marel_marine_scale_controller</a>pour plus d’informations et comment configurer la balance.</p>
-<h1 id="télécharger-à-partir-des-versions">Télécharger à partir des versions</h1>
-<p>Téléchargement de l’application Dcs5 Controller à partir de la dernière version.</p>
+<p>Cette application python (python 3.10) fournit une interface graphique (GUI) pour interagir avec une planche de mesure BigFin Dcs5 XT ou MICRO via Bluetooth. L’application transforme les entrées de stylet sur la planche de mesure en saisie de clavier, transformant essentiellement la planche de mesure en un clavier sans fil. Il est également possible de connecter une balance Marel Marine à l’application. Voir le projet <a href="https://github.com/iml-gddaiss/marel_marine_scale_controller">marel_marine_scale_controller</a> pour plus d’informations sur comment configurer et utiliser la balance.</p>
+<h1 id="téléchargement-de-lapplication">Téléchargement de l’application</h1>
+<p>Télécharger la dernière version de l’application <code>Dcs5 Controller</code> via :</p>
 <ol type="1">
-<li>Télécharger<code>dcs5.zip</code>depuis la dernière version<a href="https://github.com/iml-gddaiss/dcs5/releases">ici</a>.</li>
-<li>Décompresser<code>dcs5.zip</code></li>
-<li>Courir<code>dcs5.exe</code></li>
+<li>Téléchargez la dernière vesion<code>dcs5-windows.zip</code> depuis la dernière version <a href="https://github.com/iml-gddaiss/dcs5/releases">ici</a>.</li>
+<li>Décompressez <code>dcs5-windows.zip</code></li>
+<li>Lancez <code>dcs5.exe</code></li>
 </ol>
-<h2 id="configuration-requise-pour-installer-le-package-python.-pas-nécessaire-pour-utiliser-lapplication-en-tant-quapplication-autonome.">Configuration requise pour installer le package python. (Pas nécessaire pour utiliser l’application en tant qu’application autonome.)</h2>
-<ul>
-<li>Python 3.10</li>
-</ul>
 <h1 id="usage">Usage</h1>
-<h3 id="guide-dutilisation-en-français-pour-le-modèle-xt-userguide_fr.pdf.">Guide d’utilisation en français pour le modèle XT :<a href="doc/UserGuide_fr.pdf">UserGuide_fr.pdf</a>.</h3>
-<h2 id="planche-à-mesurer">Planche à mesurer</h2>
+<h2 id="planche-de-mesure">Planche de mesure</h2>
 <h4 id="zone-de-détection-du-stylet">Zone de détection du stylet</h4>
-<p>Le stylet doit être placé dans la zone de détection. Le délai de détection est réglable dans la configuration (Voir section<a href="#configurations-files">Fichiers de configuration</a>). Les voyants du boîtier de commande clignotent lorsqu’une mesure est effectuée.</p>
+<p>Le stylet doit être placé à plat dans la zone de détection afin de prendre des mesures. Le délai de détection est réglable dans la configuration (Voir la section <a href="#fichiers-de-configuration">Fichiers de configuration</a>).</p>
+<p>L’affichage de LED du boîtier de contrôle clignotent lorsqu’une mesure est effectuée.</p>
 <figure style="text-align: center;">
 <img src='doc/images/planche_zone.png' width='742' alt="Board Detection Zone" style="background-color:gray;"/>
 <figcaption>
-Board Detection Zone
+Zone de détection de la planche
 </figcaption>
 </figure>
-<h4 id="modes-de-sortie">Modes de sortie</h4>
-<p>La carte de mesure dispose de 3 modes de sortie différents ;<strong>longueur</strong>,<strong>haut</strong>et<strong>bas</strong>. Le<strong>haut</strong>et<strong>bas</strong>mode sont utilisés pour accéder aux touches du haut et du bas en plaçant le stylet sur le cercle correspondant à l’intérieur de la zone de détection de la carte. Il y a 2 manières de changer la zone de détection ; en mappant les commandes sur les touches du boîtier de commande ou en définissant des régions de balayage sur le tableau.</p>
-<p>La commande map pour passer à un mode de sortie spécifique ou pour parcourir les modes de sortie.</p>
+<h4 id="modes-de-saisie">Modes de saisie</h4>
+<p>La planche de mesure dispose de 3 modes de saisie différents ; <strong>Length</strong>, <strong>Top</strong> et <strong>Bottom</strong>. Les modes <strong>Top</strong> et <strong>Bottom</strong> sont utilisés pour accéder aux touches du haut et du bas en plaçant le stylet sur les cercles correspondants à l’intérieur de la zone de détection de la planche. Le mode de saisie peut être change de 2 façons ; en associant des commandes à des touches du boîtier de contrôle ou en définissant des régions de balayage sur la planche de mesure.</p>
+<p>Des commandes peuvent être associées pour basculer vers un mode de sortie spécifique ou pour parcourir les modes de saisie.</p>
 <ul>
-<li>Voir section<a href="#configurations-files">Fichiers de configuration</a>pour les commandes de mode de sortie.</li>
+<li>Voir la section <a href="#fichiers-de-configuration">Fichiers de configuration</a> pour les commandes de mode de saisie.</li>
 </ul>
-<p>De plus, l’affichage LED par défaut du boîtier de commande change en fonction des modes de sortie.</p>
+<p>De plus, l’affichage de LED par défaut du boîtier de contrôle change en fonction des modes de saisie.</p>
 <ul>
-<li>Voir section<a href="#leds-displays">Affichages LED</a>.</li>
+<li>Voir la section <a href="#affichages-led">Affichages LED</a>.</li>
 </ul>
 <h4 id="balayer-la-région">Balayer la région</h4>
-<p>Commencer de gauche à droite dans une zone de balayage changera le mode de sortie. Les régions de balayage sont définies dans les fichiers de configuration. Par exemple, voici les régions de balayage par défaut pour le<code>xt</code>boîtier de commande.</p>
+<p>Glissez de la gauche vers la droite dans une zone de balayage changera le mode de saisie. Les régions de balayage sont définies dans les fichiers de configuration. Par exemple, voici les régions de balayage par défaut pour le modèle de boîtier de contrôle <code>xt</code>.</p>
 <figure style="text-align: center;">
 <img src='doc/images/planche_swipe.png' width='741' alt="Board Swiping Zone"/>
 <figcaption>
-Default XT Swipe Zone
+Zone de balayage par défaut du modèle XT
 </figcaption>
 </figure>
-<p>The corresponding output modes are:</p>
+<p>Les modes de saisie correspondants sont :</p>
 <ul>
-<li>Gauche droite :<strong>Longueur</strong></li>
-<li>Bleu :<strong>Haut</strong></li>
-<li>Vert:<strong>Bas</strong></li>
+<li>Gauche (Left), Droite (Right): <strong>Longueur</strong></li>
+<li>Bleu (Blue): <strong>Haut</strong></li>
+<li>Vert (Green): <strong>Bas</strong></li>
 </ul>
-<p>La définition de la carte dans le fichier de configuration est :</p>
+<p>La définition des régions de balayage dans le fichier de configuration est :</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb1-1" title="1">  <span class="fu">{</span><span class="dt">&quot;output_modes&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
 <a class="sourceLine" id="cb1-2" title="2">      <span class="dt">&quot;segments_limits&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="dv">0</span><span class="ot">,</span> <span class="dv">230</span><span class="ot">,</span> <span class="dv">430</span><span class="ot">,</span> <span class="dv">630</span><span class="ot">,</span> <span class="dv">800</span><span class="ot">]</span><span class="fu">,</span></a>
 <a class="sourceLine" id="cb1-3" title="3">      <span class="dt">&quot;segments_mode&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;length&quot;</span><span class="ot">,</span> <span class="st">&quot;top&quot;</span><span class="ot">,</span> <span class="st">&quot;bottom&quot;</span><span class="ot">,</span> <span class="st">&quot;length&quot;</span><span class="ot">]</span></a>
 <a class="sourceLine" id="cb1-4" title="4">      <span class="fu">}}</span></a></code></pre></div>
 <ul>
-<li>Voir section<a href="#device-specification">Spécification de l’appareil</a>pour plus d’informations sur la définition de la zone de balayage.</li>
+<li>Voir section [Spécification de la planchecation-de-lappareil) pour plus d’informations sur la définition des régions de balayage.</li>
 </ul>
 <h4 id="exemple-de-mesure">Exemple de mesure</h4>
-<p>Les mesures sont effectuées en plaçant la tête du stylet à plat sur la carte dans la zone de détection. Vous pouvez modifier les paramètres de mesure/détection dans<a href="#controller-configuration">configuration du contrôleur</a>.</p>
+<p>Les mesures sont effectuées en plaçant la tête du stylet à plat dans la zone de détection de la planche. Vous pouvez modifier les paramètres de mesures dans la <a href="#configuration-du-contrôleur">Configuration du contrôleur</a>.</p>
 <div style="text-align: center;">
-<p><img src='doc/images/measure_example.png' width='740' alt="Board Measurement Example"/></p>
+<p><img src='doc/images/measure_example.png' width='740' alt="Example de mesure sur la planche"/></p>
 </div>
-<h2 id="boîtier-de-commande">Boîtier de commande</h2>
-<p>La seule différence entre le<code>xt</code>et<code>micro</code>Les modèles de boîtier de commande sont le nombre de touches et l’affichage LED et la séquence de clignotement.</p>
-<h3 id="modèlext">Modèle:<code>xt</code></h3>
+<h2 id="boîtier-de-contrôle">Boîtier de contrôle</h2>
+<p>Les seules différences notables entre les modèles de boîtier de contrôle <code>xt</code> et <code>micro</code> sont le nombre de touches et l’affichage LED et la séquence de clignotement.</p>
+<h3 id="modèle-xt">Modèle: <code>xt</code></h3>
 <ul>
 <li>32 touches</li>
 </ul>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_xt_control_box_annotated.png' width='350' alt="Xt Control Box"/>
 <figcaption>
-Xt Control Box
+Boîtier de contrôle XT
 </figcaption>
 </figure>
-<h3 id="modèlemiro">Modèle:<code>miro</code></h3>
+<h3 id="modèle-miro">Modèle: <code>miro</code></h3>
 <ul>
-<li>3 clés</li>
+<li>3 touches</li>
 </ul>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_micro_control_box_annotated.png' width='350' alt="Micro Control Box"/>
 <figcaption>
-Micro Control Box
+Boîtier de contrôle MICRO
 </figcaption>
 </figure>
 <h3 id="affichages-led">Affichages LED</h3>
-<p>Différents modèles de LED sont affichés sur le boîtier de commande pour donner un retour aux utilisateurs.</p>
+<p>Les boîtiers de contrôle utilisent différents affichages de DELs pour donner un retour aux utilisateurs.</p>
 <ul>
-<li>xt : JAUGE DE CARBURANT / ACTION barre led</li>
-<li>micro : Anneau LED</li>
+<li>XT : Barre de DELs <code>FUEL GAUGE / ACTION</code></li>
+<li>MICRO : Anneau de DELs</li>
 </ul>
-<h4 id="mode-de-sortie">Mode de sortie</h4>
-<p>Le modèle par défaut affiche le mode de sortie actuel.</p>
+<h4 id="mode-de-saisie">Mode de saisie</h4>
+<p>L’affichage par défaut indique le mode de saisie.</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_output_mode.png' width='300' alt="Output Mode LED Display" style="background-color:gray;"/>
 <figcaption>
-Output Mode LED Display
+Affichage de DELs du mode de saisie
 </figcaption>
 </figure>
 <ul>
-<li>T : Haut</li>
+<li>T : Haut</li>
 <li>L : Longueur</li>
-<li>B : Bas</li>
+<li>B : Bas</li>
 </ul>
 <h4 id="détection-du-stylet">Détection du stylet</h4>
-<p>Le motif de led de suivi s’affiche lorsque la carte détecte le stylet.</p>
+<p>L’affichage de DELs lorsque le stylet est détecté.</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_detection.png' width='300' alt="Stylus Detection LED Display" style="background-color:gray;"/>
 <figcaption>
-Stylus Detection LED Display
+Affichage de DELs lors de la détection du stylet
 </figcaption>
 </figure>
-<h4 id="measurements">Measurements</h4>
-All the leds flash rapidly when a measurement is made. The default pattern displays the current output mode.
+<h4 id="mesures">Mesures</h4>
+<p>L’affichage de DELs clignotera rapidement lorsqu’une mesure est effectuée.</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_measurements.png' width='300' alt="Measurement LED Display" style="background-color:gray;"/>
 <figcaption>
-Measurement LED Display
+Affichage de DELs lorsqu’une mesure est effectuée
 </figcaption>
 </figure>
-<h4 id="glisser">Glisser</h4>
+<h4 id="balayage">Balayage</h4>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_slide.png' width='300' alt="Swipe LED Display" style="background-color:gray;"/>
 <figcaption>
-Swipe LED Display
+Affichage de DELs lors d’un balayage
 </figcaption>
 </figure>
 <ul>
-<li>L : balayage de droite à gauche</li>
-<li>R : Balayage de gauche à droite</li>
+<li>L : Balayage de droite à gauche</li>
+<li>R : Balayage de gauche à droite</li>
 </ul>
 <h4 id="étalonnage">Étalonnage</h4>
-<p>En mode d’étalonnage, l’affichage par défaut passe à</p>
+<p>En mode d’étalonnage, l’affichage par défaut devient :</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_calibration_mode.png' width='300' alt="Calibration Mode LED Display" style="background-color:gray;"/>
 <figcaption>
-Calibration Mode LED Display
+Affichage de DELs en mode d’étalonnage
 </figcaption>
 </figure>
-<p>Ensuite, une fois le stylet posé, les leds s’allumeront lentement dans les séquences suivantes. Lorsque le point est calibré avec succès, toutes les leds clignotent rapidement.</p>
+<p>Une fois le stylet déposé, les DELs s’allumeront séquentiellement. Lorsque qu’un point est calibré avec succès, l’ensemble des DELs clignoteront rapidement.</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_calibration.png' width='300' alt="Calibration LED Display" style="background-color:gray;"/>
 <figcaption>
-Calibration LED Display
+Affichage de DELs lors de l’étalonnage
 </figcaption>
 </figure>
 <h2 id="application">Application</h2>
 <h3 id="configurations">Configurations</h3>
-<p>L’application nécessite une configuration pour fonctionner. Pour charger et gérer la configuration, cliquez sur<strong>Dcs5 &gt; Paramétrage</strong>dans la barre supérieure.</p>
+<p>L’application nécessite une configuration pour fonctionner. Pour charger et modifier les configurations, cliquez sur <strong>Dcs5 &gt; Configuration</strong> dans la barre du haut.</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_menu.png' width='203' alt="Application Menu Widget"/>
 <figcaption>
-Application Menu Widget
+Barre du haut de l’application
 </figcaption>
 </figure>
-<p>Du_Configuration_fenêtre, vous pouvez créer<strong>Nouveau</strong>,<strong>Charger</strong>,<strong>Supprimer</strong>et<strong>Modifier</strong>configurations.</p>
+<p>À partir de la fenêtre <em>Configuration</em>, vous pouvez créer (<strong>New</strong>), charger (<strong>Load</strong>), supprimer (<strong>Delete</strong>) et modifier (<strong>Edit</strong>) les configurations.</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_config_menu.png' width='536' alt="Config Window"/>
 <figcaption>
-Config Window
+Fenêtre de Configurations
 </figcaption>
 </figure>
 <h4 id="nouvelle-configuration">Nouvelle configuration</h4>
-<p>Des configurations par défaut sont fournies pour le<code>xt</code>et<code>micro</code>des modèles. Sélectionnez le modèle de boîtier de commande (xt ou micro) et saisissez un nom pour la nouvelle configuration.</p>
+<p>Des configurations par défaut sont fournies pour les modèles <strong>xt</strong> et <strong>micro</strong>. Sélectionnez le modèle de boîtier de contrôle (XT ou MICRO) et saisissez un nom pour la nouvelle configuration.</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_new_config.png' width='331' alt="New Config Window"/>
 <figcaption>
-New Config Window
+Fenêtre de nouvelles Configurations
 </figcaption>
 </figure>
-<p>L’adresse Bluetooth du contrôleur (adresse MAC) devra être changée une fois qu’une nouvelle configuration est créée. Sélectionnez la configuration et le<code>Controller Configuration</code>déposer et appuyer<strong>Modifier</strong>. Dans le fichier json, modifiez la valeur suivante :</p>
+<p>L’adresse Bluetooth du contrôleur (adresse MAC) devra être changée une fois qu’une nouvelle configuration est créée. Sélectionnez la configuration et le fichier <code>Controller Configuration</code> puis appuyer sur le bouton <strong>Edit</strong>. Dans le fichier json, modifiez la valeur suivante :</p>
 <ul>
 <li><code>client -&gt; mac_address</code></li>
 </ul>
-<p>Voir section<a href="#configurations-files">Fichiers de configuration</a>pour plus d’informations sur les différents paramètres de configuration.</p>
-<h3 id="connectez-la-carte-via-bluetooth">Connectez la carte via Bluetooth</h3>
-<p>Pour se connecter à la carte de mesure Dcs5, l’adresse Board Mac (bluetooth) doit être spécifiée dans le_Configuration du contrôleur_déposer. Vous pouvez modifier le fichier via le menu de configuration (voir les sections<a href="#configurations">Configurations</a>et<a href="#controller-configuration">Configuration du contrôleur</a>)</p>
-<p>Ensuite, vous devez vous connecter puis activer la carte en appuyant sur le<strong>Connecter</strong>et<strong>Activer</strong>bouton.</p>
+<p>Voir la section <a href="#fichiers-de-configuration">Fichiers de configuration</a> pour plus d’informations sur les différents paramètres de configuration.</p>
+<h3 id="connectez-la-planche-via-bluetooth">Connectez la planche via Bluetooth</h3>
+<p>Pour se connecter à la planche de mesure Dcs5, l’adresse Mac (bluetooth) de la planche doit être spécifiée dans la Configuration du contrôleur. Vous pouvez modifier le fichier via le menu de configuration (voir les sections <a href="#configurations">Configurations</a> et <a href="#configuration-du-contrôleur">Configuration du contrôleur</a>)</p>
+<p>Ensuite, vous devez connecter la planche puis activer l’application en appuyant sur le bouton <strong>Connect</strong> et ensuite sur le bouton <strong>Activate</strong>.</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_connect.png' width='365' alt="Connect Widget"/>
 <figcaption>
-Connect Widget
+Widget Connect
 </figcaption>
 </figure>
-<p>Le cercle rouge à côté du<strong>Connecter</strong>le bouton se transformera en triangle jaune pendant que l’application tente de se connecter à la carte, puis dans un vert lorsqu’elle est connectée.</p>
+<p>Le cercle rouge à côté du bouton <strong>Connect</strong> se transformera en triangle jaune lorsque l’application tente de se connecter à la planche, puis en un cercle vert lorsqu’elle est connectée.</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_activate.png' width='371' alt="Activate Widget"/>
 <figcaption>
-Activate Widget
+Widget Activate
 </figcaption>
 </figure>
-<p>Les cercles rouges à côté du<strong>Activer</strong>Le bouton deviendra également vert lorsque l’application et la carte seront prêtes à être utilisées. Lors de l’activation de la carte, l’application se synchronisera avec le boîtier de commande de la carte. (Voir la rubrique<a href="#additional-information">Fonctionnalités supplémentaires de l’interface graphique</a>). L’application essaiera de se synchroniser avec le boîtier de commande de la carte lors de l’activation. L’application et la carte sont synchronisées lorsque l’application reçoit des confirmations que les paramètres internes de la carte (principalement ceux liés à la détection du stylet) sont les mêmes que ceux spécifiés dans les fichiers de configuration. Si la synchronisation a échoué, indiqué par un cercle rouge à côté du<strong>Synchroniser</strong>bouton, vous pouvez appuyer sur le<strong>Synchroniser</strong>bouton pour réessayer. Si cela ne fonctionne toujours pas, essayez de redémarrer la carte et l’application.</p>
+<p>Le cercle rouge à côté du bouton <strong>Activate</strong> deviendra également vert lorsque l’application et la planche seront prêtes à être utilisées. Lors de l’activation de la planche, l’application se synchronisera avec le boîtier de contrôle de la planche. (Voir la section <a href="#informations-supplémentaires">Informations Supplémentaires</a>). L’application et la planche sont synchronisées lorsque l’application reçoit les confirmations que les paramètres internes de la planche (principalement ceux liés à la détection du stylet) sont les mêmes que ceux spécifiés dans la configuration. Si la synchronisation échoue (indiqué par un cercle rouge à côté du bouton <strong>Synchronize</strong>) vous pouvez appuyer sur le bouton <strong>Synchronize</strong> pour réessayer. Si cela ne fonctionne toujours pas, essayez de redémarrer la planche et l’application.</p>
 <h3 id="étalonnage-1">Étalonnage</h3>
-<p>La carte doit être calibrée à l’aide de deux points de calibrage. Bien que l’étalonnage soit linéaire, gardez à l’esprit que le stylet a une épaisseur non uniforme qui compensera, dans une certaine mesure, les valeurs mesurées si l’orientation du stylet diffère lors de la mesure par rapport à l’étalonnage. Nous vous recommandons d’utiliser la plus petite partie du stylet pour effectuer le calibrage puis ajouter<code>offset</code>dans les fichiers d’étalonnage de chaque stylet.</p>
+<p>La planche doit être étalonnée à partir de deux points de référence. Bien que l’étalonnage soit linéaire, gardez en tête que le stylet a une épaisseur non uniforme qui compensera, dans une certaine mesure, les valeurs mesurées si l’orientation du stylet diffère lors de la mesure par rapport à l’étalonnage. Nous vous recommandons d’utiliser la plus petite partie du stylet pour effectuer l’étalonnage puis ajouter décalage <code>offset</code> dans la configuration pour chaque stylet.</p>
 <ul>
-<li>Voir section<a href="#device-specification">Spécification de l’appareil</a>.</li>
+<li>Voir la section <a href="#spécification-de-la-planche">Spécification de la planche</a>.</li>
 </ul>
-<p>Pour calibrer la carte, cliquez sur<strong>Réglez Cal. Pts.</strong></p>
+<p>Pour étalonner la planche, cliquez sur le bouton <strong>Set Cal. Pts.</strong></p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_calibration_frame.png' width='359' alt="Calibration Widget"/>
 <figcaption>
-Calibration Widget
+Widget Calibration
 </figcaption>
 </figure>
 <p>Dans la fenêtre des points d’étalonnage, définissez les deux points d’étalonnage en mm.</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_set_calibration_pts.png' width='239' alt="Calibration Set. Cal. Pts. Window"/>
 <figcaption>
-Calibration Set. Cal. Pts. Window
+Fenêtre de Calibration
 </figcaption>
 </figure>
-<p>appuie sur le<strong>Étalonner</strong>bouton pour entrer dans le mode de calibrage, à partir de là, suivez les instructions données par l’application. Notez qu’un balayage de droite à gauche permet de quitter le mode d’étalonnage. Pour chaque point d’étalonnage, la progression de l’étalonnage sera indiquée par les LED suivantes<a href="#calibration">afficher</a>une fois le stylet posé. Si le stylet est trop levé ou déplacé avant que le calibrage ne soit terminé, le calibrage redémarre.</p>
-<h3 id="informations-complémentaires.">Informations Complémentaires.</h3>
+<p>Appuyez sur le bouton <strong>Calibrate</strong> pour entrer en mode étalonnage, puis suivez les instructions données par l’application. Notez qu’un balayage de droite à gauche permet de quitter le mode d’étalonnage. Pour chaque point d’étalonnage, la progression de l’étalonnage sera indiquée par <a href="#calibration">l’affichage DELs</a> une fois le stylet déposé. Si le stylet est trop levé ou déplacé avant que l’étalonnage ne soit terminé, l’étalonnage du point recommence.</p>
+<h3 id="informations-supplémentaires.">Informations Supplémentaires.</h3>
 <h4 id="onglet-dcs5">Onglet DCS5</h4>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_main_annotated.png' width='700' alt="Application Window"/>
 <figcaption>
-Application Window
+Onglet Dcs5
 </figcaption>
 </figure>
 <h4 id="onglet-échelle-marel">Onglet Échelle Marel</h4>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_marel_annotated.png' width='700' alt="Applicaiton Marel Widget"/>
 <figcaption>
-Application Marel Widget
+Onglet Marel
 </figcaption>
 </figure>
 <h2 id="fichiers-de-configuration">Fichiers de configuration</h2>
-<p>Les configurations sont créées et modifiées via l’interface graphique de l’application (voir la section<a href="#configurations">configuration</a>). Une configuration est composée de deux fichiers json qui sont utilisés pour modifier le comportement du contrôleur et de la carte de mesure.</p>
+<p>Les configurations sont créées et modifiées via l’interface graphique de l’application (voir la section <a href="#configurations">configuration</a>). Une configuration est composée de deux fichiers json qui sont utilisés pour modifier le comportement du contrôleur et de la planche de mesure.</p>
 <ul>
-<li><a href="#controller-configuration">configuration du contrôleur</a></li>
-<li><a href="#device-specification">device_specification</a></li>
+<li><a href="#configuration-du-contrôleur">Configuration du contrôleur</a></li>
+<li><a href="#spécification-de-la-planche">Spécification de la planche</a></li>
 </ul>
 <h3 id="configuration-du-contrôleur">Configuration du contrôleur</h3>
-<p>Défaut<code>xt</code>déposer:<a href="dcs5/default_configs/xt_controller_configuration.json">xt_controller_configuration.json</a></p>
-<p>Défaut<code>micro</code>déposer:<a href="dcs5/default_configs/micro_controller_configuration.json">micro_controller_configuration.json</a></p>
+<p>Fichier <code>xt</code> par défaut : <a href="dcs5/default_configs/xt_controller_configuration.json">xt_controller_configuration.json</a></p>
+<p>Fichier <code>micro</code> par défaut : <a href="dcs5/default_configs/micro_controller_configuration.json">micro_controller_configuration.json</a></p>
 <p>Usage:</p>
 <ul>
-<li><p>client : Informations Bluetooth sur la carte de mesure.</p>
+<li><p>client: Paramètres de connections.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb2-1" title="1">  <span class="fu">{</span><span class="dt">&quot;client&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
 <a class="sourceLine" id="cb2-2" title="2">      <span class="dt">&quot;device_name&quot;</span><span class="fu">:</span> <span class="st">&quot;BigFinDCS5-E5FE&quot;</span><span class="fu">,</span></a>
 <a class="sourceLine" id="cb2-3" title="3">      <span class="dt">&quot;mac_address&quot;</span><span class="fu">:</span> <span class="st">&quot;00:06:66:89:E5:FE&quot;</span><span class="fu">,</span></a>
 <a class="sourceLine" id="cb2-4" title="4">      <span class="dt">&quot;marel_ip_address&quot;</span><span class="fu">:</span> <span class="st">&quot;192.168.0.202&quot;</span></a>
 <a class="sourceLine" id="cb2-5" title="5">  <span class="fu">}}</span></a></code></pre></div>
 <ul>
-<li>device_name : nom de l’appareil. (Seulement utilisé pour afficher dans l’application.)</li>
-<li>mac_address : adresse Bluetooth (mac) de la carte de mesure, c’est-à-dire<strong>00:06 : I : coupe : frère : dans</strong>.</li>
-<li>marel_ip_address : adresse IP de la balance Marel (voir<a href="https://github.com/iml-gddaiss/marel_marine_scale_controller">marel_marine_scale_controller</a>).</li>
+<li>device_name : Nom de la planche. (Uniquement utilisé pour afficher dans l’application).</li>
+<li>mac_address : Adresse Bluetooth (mac) de la planche de mesure, c’est-à-dire <strong>00:06:66:89:E5:FE</strong>.</li>
+<li>marel_ip_address : Adresse IP de la balance Marel (voir <a href="https://github.com/iml-gddaiss/marel_marine_scale_controller">marel_marine_scale_controller</a>).</li>
 </ul></li>
-<li><p>launch_settings : paramètre utilisé au lancement de l’application.</p>
+<li><p>launch_settings : Paramètres utilisés au lancement de l’application.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb3-1" title="1">      <span class="fu">{</span><span class="dt">&quot;launch_settings&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
 <a class="sourceLine" id="cb3-2" title="2">      <span class="dt">&quot;output_mode&quot;</span><span class="fu">:</span> <span class="st">&quot;length&quot;</span><span class="fu">,</span></a>
 <a class="sourceLine" id="cb3-3" title="3">      <span class="dt">&quot;reading_profile&quot;</span><span class="fu">:</span> <span class="st">&quot;measure&quot;</span><span class="fu">,</span></a>
@@ -366,15 +359,15 @@ Application Marel Widget
 <a class="sourceLine" id="cb3-8" title="8">      <span class="dt">&quot;auto_enter&quot;</span><span class="fu">:</span> <span class="kw">true</span></a>
 <a class="sourceLine" id="cb3-9" title="9">      <span class="fu">}}</span></a></code></pre></div>
 <ul>
-<li>output_mode : haut, longueur ou bas.</li>
-<li>reading_profile : Nom (clé) du profil. Les profils de lecture sont définis ci-dessous.</li>
-<li>dynamic_stylus_mode : (vrai/faux) Si vrai, les profils de lecture changeront pour chaque mode de sortie, comme défini dans la section suivante.</li>
-<li>backlight_level : (0-95) Intensité du rétroéclairage</li>
-<li>length_units : unités des valeurs de mesure soit<strong>cm</strong>ou<strong>millimètre</strong></li>
-<li>stylet : nom du stylet utilisé. Doit être défini dans le<a href="#device-specification">spécifications_appareils</a>déposer.</li>
-<li>auto_enter : appuyez automatiquement sur la touche_entrer_après l’impression d’une valeur de longueur ou de poids.</li>
+<li>output_mode : length(longueur), top(haut) ou bottom(bas).</li>
+<li>reading_profile : Nom (clé) du profil. Les profils de lecture sont définis plus bas.</li>
+<li>dynamic_stylus_mode : (true/false) Si vrai(true), les profils de lecture changeront pour chaque mode de saisie.</li>
+<li>backlight_level : (0-95) Intensité du rétroéclairage</li>
+<li>length_units : Unités des valeurs de mesure soit <strong>cm</strong> ou <strong>mm</strong></li>
+<li>stylet : Nom du stylet utilisé. Doit être défini dans le fichier de configuration <a href="#device-specification">device_specifications</a>.</li>
+<li>auto_enter : Appuie automatiquement sur la touche <em>enter</em> après avoir imprimé (à la position du curseur) d’une valeur de longueur ou de poids.</li>
 </ul></li>
-<li><p>lecture_profils :</p>
+<li><p>profiles de saisie :</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb4-1" title="1">  <span class="fu">{</span><span class="dt">&quot;reading_profiles&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
 <a class="sourceLine" id="cb4-2" title="2">      <span class="dt">&quot;measure&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
 <a class="sourceLine" id="cb4-3" title="3">          <span class="dt">&quot;settling_delay&quot;</span><span class="fu">:</span> <span class="dv">9</span><span class="fu">,</span></a>
@@ -382,11 +375,11 @@ Application Marel Widget
 <a class="sourceLine" id="cb4-5" title="5">          <span class="dt">&quot;max_deviation&quot;</span><span class="fu">:</span> <span class="dv">50</span></a>
 <a class="sourceLine" id="cb4-6" title="6">      <span class="fu">}}}</span></a></code></pre></div>
 <ul>
-<li>settling_delay : (0-20) Délai après la première détection du stylet. (pas des secondes)</li>
-<li>number_of_reading : nombre de lectures nécessaires pour une bonne mesure.</li>
-<li>max_deviation : (1-100) Quantité d’écart autorisée entre chaque lecture._Remarques : Pour plus d’informations :<a href="doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf">guide_utilisateur/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf</a>_</li>
+<li>settling_delay : (0-20) Délai après la première détection du stylet (pas en secondes).</li>
+<li>number_of_reading : Nombre de lectures nécessaires pour une bonne mesure.</li>
+<li>max_deviation : (1-100) Écart permis entre chaque lecture. Pour plus d’informations :<a href="doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf">Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf</a>_</li>
 </ul></li>
-<li><p>modes_sortie :</p>
+<li><p>modes de saisie :</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb5-1" title="1">  <span class="fu">{</span><span class="dt">&quot;output_modes&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
 <a class="sourceLine" id="cb5-2" title="2">      <span class="dt">&quot;swipe_threshold&quot;</span><span class="fu">:</span> <span class="dv">5</span><span class="fu">,</span></a>
 <a class="sourceLine" id="cb5-3" title="3">      <span class="dt">&quot;segments_limits&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="dv">0</span><span class="ot">,</span> <span class="dv">230</span><span class="ot">,</span> <span class="dv">430</span><span class="ot">,</span> <span class="dv">630</span><span class="ot">,</span> <span class="dv">800</span><span class="ot">]</span><span class="fu">,</span></a>
@@ -398,89 +391,65 @@ Application Marel Widget
 <a class="sourceLine" id="cb5-9" title="9">      <span class="fu">}</span></a>
 <a class="sourceLine" id="cb5-10" title="10"><span class="fu">}}</span></a></code></pre></div>
 <ul>
-<li>Seuil de balayage : distance minimale (mm) pour qu’un balayage de stylet soit valide.</li>
-<li>segments_limits : définit les limites (mm) des différents segments de balayage.</li>
-<li>segments_mode : Le output_mode correspondant pour chaque segment de balayage.</li>
-<li>mode_reading_profiles : les profils de lecture correspondants pour chaque mode de sortie.</li>
+<li>swipe_threshold : Distance minimale (mm) pour qu’un balayage de stylet soit valide.</li>
+<li>segments_limits : Définit les limites (mm) des différents segments de balayage.</li>
+<li>segments_mode : Le mode de saisie correspondant à chaque segment de balayage.</li>
+<li>mode_reading_profiles : Les profils de lecture correspondants pour chaque mode de saisie.</li>
 </ul></li>
-<li><p>keys_maps (voir<a href="#key-mapping">Mappage des clés</a>section):</p>
-<p>Des champs:<code>control_box</code>,<code>control_box_mode</code>,<code>board</code>,<code>board_mode</code></p>
+<li><p>keys_maps (voir la section <a href="#kassociations-mapping">Associations des clés</a>):</p>
+<p>Champs: <code>control_box</code>,<code>control_box_mode</code>,<code>board</code>,<code>board_mode</code></p>
 <ul>
 <li>Une touche peut être associée à des commandes ou à des entrées au clavier.</li>
-<li>Une carte peut être une liste de commandes ou d’entrées au clavier qui sont exécutées une par une.</li>
-<li>Une touche peut avoir deux mappages : un par défaut et un mappage alternatif (mode).</li>
+<li>Une association peut être une liste de commandes ou d’entrées au clavier qui sont exécutées une par une.</li>
+<li>Une touche peut avoir deux associations : une par défaut et une alternatif (mode).</li>
 </ul></li>
 </ul>
-<h4 id="mappage-des-clés">Mappage des clés</h4>
-<p>Les noms des clés sont définis dans<a href="dcs5/default_configs/xt_devices_specification.json">devices_specification.json</a>.</p>
-<p>Commandes :</p>
+<h4 id="associations-des-clés">Associations des clés</h4>
+<p>Les noms des clés sont définis dans <a href="dcs5/default_configs/xt_devices_specification.json">devices_specification.json</a>.</p>
+<p>Commandes associables :</p>
 <ul>
-<li><code>"BACKLIGHT_UP", "BACKLIGHT_DOWN"</code>: Modifier le niveau de rétroéclairage du boîtier de commande.</li>
-<li><code>"CHANGE_STYLUS"</code>: Parcourir la liste des stylets définis dans le<a href="#device-specification">spécifications_appareils</a>déposer.</li>
-<li><code>"UNITS_mm", "UNITS_cm"</code>: Modifier les unités de sortie.</li>
-<li><code>"MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"</code>: Changez le mode de sortie.</li>
-<li><code>"CHANGE_OUTPUT_MODE"</code>: Faire défiler le mode de sortie (TOP, LENGTH, BOTTOM).</li>
-<li><code>"MODE"</code>: Accéder au mappage (mode) alternatif (<code>control_box_mode</code>,<code>board_mode</code>).</li>
-<li><code>"WEIGHT"</code>: Imprime le poids mesuré par la balance Marel (si connectée).</li>
+<li><code>"BACKLIGHT_UP", "BACKLIGHT_DOWN"</code>: Augmenter ou diminuer le niveau de rétroéclairage du boîtier de contrôle.</li>
+<li><code>"CHANGE_STYLUS"</code>: Parcourir la liste des stylets définis dans le fichier <a href="#device-specification">device_specifications</a>.</li>
+<li><code>"UNITS_mm", "UNITS_cm"</code>: Modifier les unités de saisie.</li>
+<li><code>"MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"</code>: Passer à un mode de saisie spécifique.</li>
+<li><code>"CHANGE_OUTPUT_MODE"</code>: Changer de mode de saisie. Cycle: (TOP, LENGTH, BOTTOM).</li>
+<li><code>"MODE"</code>: Accéder aux associations (mode) alternatif (<code>control_box_mode</code>,<code>board_mode</code>).</li>
+<li><code>"WEIGHT"</code>: Imprimer le poids mesuré par la balance Marel (si une balance est connectée).</li>
 <li><code>"DELETE_LAST</code>: Supprimer la dernière valeur imprimée.</li>
-<li><p><code>"PRINT &lt;string to print&gt;"]</code>: Imprime le<code>&lt;string to print&gt;</code>valeur. Saisie valide au clavier (Source :<a href="https://pyautogui.readthedocs.io/en/latest/">Pya Uto manger</a>):</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb6-1" title="1">[<span class="st">&#39;</span><span class="ch">\t</span><span class="st">&#39;</span>, <span class="st">&#39;</span><span class="ch">\n</span><span class="st">&#39;</span>, <span class="st">&#39;</span><span class="ch">\r</span><span class="st">&#39;</span>, <span class="st">&#39; &#39;</span>, <span class="st">&#39;!&#39;</span>, <span class="st">&#39;&quot;&#39;</span>, <span class="st">&#39;#&#39;</span>, <span class="st">&#39;$&#39;</span>, <span class="st">&#39;%&#39;</span>, <span class="st">&#39;&amp;&#39;</span>, <span class="st">&quot;&#39;&quot;</span>,</a>
-<a class="sourceLine" id="cb6-2" title="2"><span class="st">&#39;(&#39;</span>, <span class="st">&#39;)&#39;</span>, <span class="st">&#39;*&#39;</span>, <span class="st">&#39;+&#39;</span>, <span class="st">&#39;,&#39;</span>, <span class="st">&#39;-&#39;</span>, <span class="st">&#39;.&#39;</span>, <span class="st">&#39;/&#39;</span>, <span class="st">&#39;{&#39;</span>, <span class="st">&#39;|&#39;</span>, <span class="st">&#39;}&#39;</span>, <span class="st">&#39;~&#39;</span>,</a>
-<a class="sourceLine" id="cb6-3" title="3"><span class="st">&#39;:&#39;</span>, <span class="st">&#39;;&#39;</span>, <span class="st">&#39;&lt;&#39;</span>, <span class="st">&#39;=&#39;</span>, <span class="st">&#39;&gt;&#39;</span>, <span class="st">&#39;?&#39;</span>, <span class="st">&#39;@&#39;</span>, <span class="st">&#39;[&#39;</span>, <span class="st">&#39;</span><span class="ch">\\</span><span class="st">&#39;</span>, <span class="st">&#39;]&#39;</span>, <span class="st">&#39;^&#39;</span>, <span class="st">&#39;_&#39;</span>, <span class="st">&#39;`&#39;</span>,</a>
-<a class="sourceLine" id="cb6-4" title="4"><span class="st">&#39;0&#39;</span>, <span class="st">&#39;1&#39;</span>, <span class="st">&#39;2&#39;</span>, <span class="st">&#39;3&#39;</span>, <span class="st">&#39;4&#39;</span>, <span class="st">&#39;5&#39;</span>, <span class="st">&#39;6&#39;</span>, <span class="st">&#39;7&#39;</span>, <span class="st">&#39;8&#39;</span>, <span class="st">&#39;9&#39;</span>,</a>
-<a class="sourceLine" id="cb6-5" title="5"><span class="st">&#39;a&#39;</span>, <span class="st">&#39;b&#39;</span>, <span class="st">&#39;c&#39;</span>, <span class="st">&#39;d&#39;</span>, <span class="st">&#39;e&#39;</span>, <span class="st">&#39;f&#39;</span>, <span class="st">&#39;g&#39;</span>, <span class="st">&#39;h&#39;</span>, <span class="st">&#39;i&#39;</span>, <span class="st">&#39;j&#39;</span>, <span class="st">&#39;k&#39;</span>, <span class="st">&#39;l&#39;</span>, <span class="st">&#39;m&#39;</span>, <span class="st">&#39;n&#39;</span>, <span class="st">&#39;o&#39;</span>,</a>
-<a class="sourceLine" id="cb6-6" title="6"><span class="st">&#39;p&#39;</span>, <span class="st">&#39;q&#39;</span>, <span class="st">&#39;r&#39;</span>, <span class="st">&#39;s&#39;</span>, <span class="st">&#39;t&#39;</span>, <span class="st">&#39;u&#39;</span>, <span class="st">&#39;v&#39;</span>, <span class="st">&#39;w&#39;</span>, <span class="st">&#39;x&#39;</span>, <span class="st">&#39;y&#39;</span>, <span class="st">&#39;z&#39;</span>,</a>
-<a class="sourceLine" id="cb6-7" title="7"><span class="st">&#39;A&#39;</span>, <span class="st">&#39;B&#39;</span>, <span class="st">&#39;C&#39;</span>, <span class="st">&#39;D&#39;</span>, <span class="st">&#39;E&#39;</span>, <span class="st">&#39;F&#39;</span>, <span class="st">&#39;G&#39;</span>, <span class="st">&#39;H&#39;</span>, <span class="st">&#39;I&#39;</span>, <span class="st">&#39;J&#39;</span>, <span class="st">&#39;K&#39;</span>, <span class="st">&#39;L&#39;</span>, <span class="st">&#39;M&#39;</span>, <span class="st">&#39;N&#39;</span>, <span class="st">&#39;O&#39;</span>,</a>
-<a class="sourceLine" id="cb6-8" title="8"><span class="st">&#39;P&#39;</span>, <span class="st">&#39;Q&#39;</span>, <span class="st">&#39;R&#39;</span>, <span class="st">&#39;S&#39;</span>, <span class="st">&#39;T&#39;</span>, <span class="st">&#39;U&#39;</span>, <span class="st">&#39;V&#39;</span>, <span class="st">&#39;W&#39;</span>, <span class="st">&#39;X&#39;</span>, <span class="st">&#39;Y&#39;</span>, <span class="st">&#39;Z&#39;</span></a>
-<a class="sourceLine" id="cb6-9" title="9"><span class="st">&#39;accept&#39;</span>, <span class="st">&#39;add&#39;</span>, <span class="st">&#39;alt&#39;</span>, <span class="st">&#39;altleft&#39;</span>, <span class="st">&#39;altright&#39;</span>, <span class="st">&#39;apps&#39;</span>, <span class="st">&#39;backspace&#39;</span>,</a>
-<a class="sourceLine" id="cb6-10" title="10"><span class="st">&#39;browserback&#39;</span>, <span class="st">&#39;browserfavorites&#39;</span>, <span class="st">&#39;browserforward&#39;</span>, <span class="st">&#39;browserhome&#39;</span>,</a>
-<a class="sourceLine" id="cb6-11" title="11"><span class="st">&#39;browserrefresh&#39;</span>, <span class="st">&#39;browsersearch&#39;</span>, <span class="st">&#39;browserstop&#39;</span>, <span class="st">&#39;capslock&#39;</span>, <span class="st">&#39;clear&#39;</span>,</a>
-<a class="sourceLine" id="cb6-12" title="12"><span class="st">&#39;convert&#39;</span>, <span class="st">&#39;ctrl&#39;</span>, <span class="st">&#39;ctrlleft&#39;</span>, <span class="st">&#39;ctrlright&#39;</span>, <span class="st">&#39;decimal&#39;</span>, <span class="st">&#39;del&#39;</span>, <span class="st">&#39;delete&#39;</span>,</a>
-<a class="sourceLine" id="cb6-13" title="13"><span class="st">&#39;divide&#39;</span>, <span class="st">&#39;down&#39;</span>, <span class="st">&#39;end&#39;</span>, <span class="st">&#39;enter&#39;</span>, <span class="st">&#39;esc&#39;</span>, <span class="st">&#39;escape&#39;</span>, <span class="st">&#39;execute&#39;</span>, <span class="st">&#39;f1&#39;</span>, <span class="st">&#39;f10&#39;</span>,</a>
-<a class="sourceLine" id="cb6-14" title="14"><span class="st">&#39;f11&#39;</span>, <span class="st">&#39;f12&#39;</span>, <span class="st">&#39;f13&#39;</span>, <span class="st">&#39;f14&#39;</span>, <span class="st">&#39;f15&#39;</span>, <span class="st">&#39;f16&#39;</span>, <span class="st">&#39;f17&#39;</span>, <span class="st">&#39;f18&#39;</span>, <span class="st">&#39;f19&#39;</span>, <span class="st">&#39;f2&#39;</span>, <span class="st">&#39;f20&#39;</span>,</a>
-<a class="sourceLine" id="cb6-15" title="15"><span class="st">&#39;f21&#39;</span>, <span class="st">&#39;f22&#39;</span>, <span class="st">&#39;f23&#39;</span>, <span class="st">&#39;f24&#39;</span>, <span class="st">&#39;f3&#39;</span>, <span class="st">&#39;f4&#39;</span>, <span class="st">&#39;f5&#39;</span>, <span class="st">&#39;f6&#39;</span>, <span class="st">&#39;f7&#39;</span>, <span class="st">&#39;f8&#39;</span>, <span class="st">&#39;f9&#39;</span>,</a>
-<a class="sourceLine" id="cb6-16" title="16"><span class="st">&#39;final&#39;</span>, <span class="st">&#39;fn&#39;</span>, <span class="st">&#39;hanguel&#39;</span>, <span class="st">&#39;hangul&#39;</span>, <span class="st">&#39;hanja&#39;</span>, <span class="st">&#39;help&#39;</span>, <span class="st">&#39;home&#39;</span>, <span class="st">&#39;insert&#39;</span>, <span class="st">&#39;junja&#39;</span>,</a>
-<a class="sourceLine" id="cb6-17" title="17"><span class="st">&#39;kana&#39;</span>, <span class="st">&#39;kanji&#39;</span>, <span class="st">&#39;launchapp1&#39;</span>, <span class="st">&#39;launchapp2&#39;</span>, <span class="st">&#39;launchmail&#39;</span>,</a>
-<a class="sourceLine" id="cb6-18" title="18"><span class="st">&#39;launchmediaselect&#39;</span>, <span class="st">&#39;left&#39;</span>, <span class="st">&#39;modechange&#39;</span>, <span class="st">&#39;multiply&#39;</span>, <span class="st">&#39;nexttrack&#39;</span>,</a>
-<a class="sourceLine" id="cb6-19" title="19"><span class="st">&#39;nonconvert&#39;</span>, <span class="st">&#39;num0&#39;</span>, <span class="st">&#39;num1&#39;</span>, <span class="st">&#39;num2&#39;</span>, <span class="st">&#39;num3&#39;</span>, <span class="st">&#39;num4&#39;</span>, <span class="st">&#39;num5&#39;</span>, <span class="st">&#39;num6&#39;</span>,</a>
-<a class="sourceLine" id="cb6-20" title="20"><span class="st">&#39;num7&#39;</span>, <span class="st">&#39;num8&#39;</span>, <span class="st">&#39;num9&#39;</span>, <span class="st">&#39;numlock&#39;</span>, <span class="st">&#39;pagedown&#39;</span>, <span class="st">&#39;pageup&#39;</span>, <span class="st">&#39;pause&#39;</span>, <span class="st">&#39;pgdn&#39;</span>,</a>
-<a class="sourceLine" id="cb6-21" title="21"><span class="st">&#39;pgup&#39;</span>, <span class="st">&#39;playpause&#39;</span>, <span class="st">&#39;prevtrack&#39;</span>, <span class="st">&#39;print&#39;</span>, <span class="st">&#39;printscreen&#39;</span>, <span class="st">&#39;prntscrn&#39;</span>,</a>
-<a class="sourceLine" id="cb6-22" title="22"><span class="st">&#39;prtsc&#39;</span>, <span class="st">&#39;prtscr&#39;</span>, <span class="st">&#39;return&#39;</span>, <span class="st">&#39;right&#39;</span>, <span class="st">&#39;scrolllock&#39;</span>, <span class="st">&#39;select&#39;</span>, <span class="st">&#39;separator&#39;</span>,</a>
-<a class="sourceLine" id="cb6-23" title="23"><span class="st">&#39;shift&#39;</span>, <span class="st">&#39;shiftleft&#39;</span>, <span class="st">&#39;shiftright&#39;</span>, <span class="st">&#39;sleep&#39;</span>, <span class="st">&#39;space&#39;</span>, <span class="st">&#39;stop&#39;</span>, <span class="st">&#39;subtract&#39;</span>, <span class="st">&#39;tab&#39;</span>,</a>
-<a class="sourceLine" id="cb6-24" title="24"><span class="st">&#39;up&#39;</span>, <span class="st">&#39;volumedown&#39;</span>, <span class="st">&#39;volumemute&#39;</span>, <span class="st">&#39;volumeup&#39;</span>, <span class="st">&#39;win&#39;</span>, <span class="st">&#39;winleft&#39;</span>, <span class="st">&#39;winright&#39;</span>, <span class="st">&#39;yen&#39;</span>,</a>
-<a class="sourceLine" id="cb6-25" title="25"><span class="st">&#39;command&#39;</span>, <span class="st">&#39;option&#39;</span>, <span class="st">&#39;optionleft&#39;</span>, <span class="st">&#39;optionright&#39;</span>]</a></code></pre></div></li>
+<li><code>"PRINT &lt;string to print&gt;"]</code>: Imprimer la valeur <code>&lt;string to print&gt;</code>. Exemple: “PRINT Ceci sera imprimé”</li>
 </ul>
-<h3 id="spécification-de-lappareil">Spécification de l’appareil</h3>
-<p>Fichier par défaut :<a href="dcs5/default_configs/xt_devices_specification.json">devices_specification.json</a></p>
+<p>Autres associations valides (saisie de clavier) (Source : <a href="https://pyautogui.readthedocs.io/en/latest/">Pya Uto manger</a>): <code>python     ['\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&amp;', "'",     '(', ')', '*', '+', ',', '-', '.', '/', '{', '|', '}', '~',     ':', ';', '&lt;', '=', '&gt;', '?', '@', '[', '\\', ']', '^', '_', '`',     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',     'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',     'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'     'accept', 'add', 'alt', 'altleft', 'altright', 'apps', 'backspace',     'browserback', 'browserfavorites', 'browserforward', 'browserhome',     'browserrefresh', 'browsersearch', 'browserstop', 'capslock', 'clear',     'convert', 'ctrl', 'ctrlleft', 'ctrlright', 'decimal', 'del', 'delete',     'divide', 'down', 'end', 'enter', 'esc', 'escape', 'execute', 'f1', 'f10',     'f11', 'f12', 'f13', 'f14', 'f15', 'f16', 'f17', 'f18', 'f19', 'f2', 'f20',     'f21', 'f22', 'f23', 'f24', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9',     'final', 'fn', 'hanguel', 'hangul', 'hanja', 'help', 'home', 'insert', 'junja',     'kana', 'kanji', 'launchapp1', 'launchapp2', 'launchmail',     'launchmediaselect', 'left', 'modechange', 'multiply', 'nexttrack',     'nonconvert', 'num0', 'num1', 'num2', 'num3', 'num4', 'num5', 'num6',     'num7', 'num8', 'num9', 'numlock', 'pagedown', 'pageup', 'pause', 'pgdn',     'pgup', 'playpause', 'prevtrack', 'print', 'printscreen', 'prntscrn',     'prtsc', 'prtscr', 'return', 'right', 'scrolllock', 'select', 'separator',     'shift', 'shiftleft', 'shiftright', 'sleep', 'space', 'stop', 'subtract', 'tab',     'up', 'volumedown', 'volumemute', 'volumeup', 'win', 'winleft', 'winright', 'yen',     'command', 'option', 'optionleft', 'optionright']</code></p>
+<h3 id="spécification-de-la-planche">Spécification de la planche</h3>
+<p>Fichier par défaut : <a href="dcs5/default_configs/xt_devices_specification.json">devices_specification.json</a></p>
 <p>Usage:</p>
 <ul>
-<li><p>conseil:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb7-1" title="1"> <span class="fu">{</span><span class="dt">&quot;board&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
-<a class="sourceLine" id="cb7-2" title="2">          <span class="dt">&quot;number_of_keys&quot;</span><span class="fu">:</span> <span class="dv">49</span><span class="fu">,</span></a>
-<a class="sourceLine" id="cb7-3" title="3">          <span class="dt">&quot;key_to_mm_ratio&quot;</span><span class="fu">:</span> <span class="fl">15.385</span><span class="fu">,</span></a>
-<a class="sourceLine" id="cb7-4" title="4">          <span class="dt">&quot;zero&quot;</span><span class="fu">:</span> <span class="fl">-3.695</span><span class="fu">,</span></a>
-<a class="sourceLine" id="cb7-5" title="5">          <span class="dt">&quot;detection_range&quot;</span><span class="fu">:</span> <span class="dv">2</span><span class="fu">}</span></a>
-<a class="sourceLine" id="cb7-6" title="6"><span class="fu">}</span></a></code></pre></div>
+<li><p>planche:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb6-1" title="1"> <span class="fu">{</span><span class="dt">&quot;board&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
+<a class="sourceLine" id="cb6-2" title="2">          <span class="dt">&quot;number_of_keys&quot;</span><span class="fu">:</span> <span class="dv">49</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb6-3" title="3">          <span class="dt">&quot;key_to_mm_ratio&quot;</span><span class="fu">:</span> <span class="fl">15.385</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb6-4" title="4">          <span class="dt">&quot;zero&quot;</span><span class="fu">:</span> <span class="fl">-3.695</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb6-5" title="5">          <span class="dt">&quot;detection_range&quot;</span><span class="fu">:</span> <span class="dv">2</span><span class="fu">}</span></a>
+<a class="sourceLine" id="cb6-6" title="6"><span class="fu">}</span></a></code></pre></div>
 <ul>
-<li>number_of_keys : les clés correspondent au cercle gris sur le tableau.</li>
-<li>key_to_mm_ratio : La distance en mm d’un bord d’un cercle (le plus grand) au suivant.</li>
-<li>zéro : La distance (mm) qui serait la touche 0 étant donné que la première touche du tableau est la touche 1.</li>
-<li>detection_range : Décalage à gauche en mm pour la détection du stylet.</li>
-<li>keys_layout : listes ordonnées pour le nom des touches du haut et pour les touches du bas. Ces noms sont utilisés pour mapper la commande.
+<li>number_of_keys : Les clés correspondent au cercle gris sur la planche de mesure.</li>
+<li>key_to_mm_ratio : La distance en mm entre deux cercles (centre à centre).</li>
+<li>zero : Position (en mm) de l’extrémité gauche de la touche #0 étant donné que la première touche de la planche la touche #1.</li>
+<li>detection_range : Décalage vers la gauche en mm pour la détection du stylet.</li>
+<li>keys_layout : Listes ordonnées pour le nom des touches du haut et pour les touches du bas. Ces noms sont utilisés pour associer les commandes des modes de saisie.
 <ul>
-<li>Haut:</li>
-<li>Bas:</li>
+<li>top: Haut</li>
+<li>bottom: Bas</li>
 </ul></li>
 </ul>
-<em>Remarques : Les deux listes (haut et bas) ne doivent pas contenir de noms identiques.</em></li>
-<li>boîtier de commande:
+<em>Remarques : Les deux listes (top et bottom) ne doivent pas contenir de noms identiques.</em></li>
+<li>boîtier de contrôle:
 <ul>
-<li>modèle : Modèle du boîtier de commande. Soit<strong>XT</strong>ou<strong>micro</strong>.</li>
-<li>keys_layout : Mappage de l’identifiant intégré de la clé de la boîte de contrôleur sur un nom significatif. Ces noms sont utilisés pour mapper la commande.</li>
+<li>modole : Modèle du boîtier de contrôle. Soit <strong>xt</strong> ou <strong>micro</strong>.</li>
+<li>keys_layout : Mappage de l’identifiant intégré des clés du boîtier de contrôleur vers un nom significatif. Ces noms sont utilisées pour associer les commandes aux touches de la planche dans <a href="#configuration-du-contrôleur">Configuration du contrôler</a>.</li>
 </ul></li>
-<li>stylus_offset : décalage en mm qui s’ajoute à la valeur mesurée par la carte.
+<li>stylus_offset : Décalage en mm qui est ajouté à la valeur mesurée par la planche.
 <ul>
-<li>Remarque : Ces valeurs dépendent de l’étalonnage.</li>
+<li>Remarque : Ces valeurs devraient dépendre de l’étalonnage.</li>
 </ul></li>
 </ul>
 </body>
