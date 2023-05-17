@@ -290,8 +290,8 @@ Si le stylet est trop levé ou déplacé avant que l'étalonnage ne soit termin�
 Les configurations sont créées et modifiées via l'interface graphique de l'application (voir la section [configuration](#configurations)).
 Une configuration est composée de deux fichiers json qui sont utilisés pour modifier le comportement du contrôleur et de la planche de mesure.
 
--   [configuration du contrôleur](#configurations)
--   [Spécification de la planche](#spécification-de-la-planche)
+-   [configuration du contrôleur](#configuration-du-contrôleur)
+-   [Spécification de la planche](#specification-de-la-planche)
 
 ### Configuration du contrôleur
 
@@ -369,33 +369,34 @@ Usage:
 
     -   swipe_threshold : Distance minimale (mm) pour qu'un balayage de stylet soit valide.
     -   segments_limits : Définit les limites (mm) des différents segments de balayage.
-    -   segments_mode : Le mode de saisie correspondant pour chaque segment de balayage.
+    -   segments_mode : Le mode de saisie correspondant à chaque segment de balayage.
     -   mode_reading_profiles : Les profils de lecture correspondants pour chaque mode de saisie.
 
 -   keys_maps (voir la section [Associations des clés](#kassociations-mapping)):
 
-    Des champs:`control_box`,`control_box_mode`,`board`,`board_mode`
+    Champs: `control_box`,`control_box_mode`,`board`,`board_mode`
 
     -   Une touche peut être associée à des commandes ou à des entrées au clavier.
-    -   Une planche peut être une liste de commandes ou d'entrées au clavier qui sont exécutées une par une.
-    -   Une touche peut avoir deux mappages : un par défaut et un mappage alternatif (mode).
+    -   Une association peut être une liste de commandes ou d'entrées au clavier qui sont exécutées une par une.
+    -   Une touche peut avoir deux associations : une par défaut et une alternatif (mode).
 
 #### Associations des clés
 
 Les noms des clés sont définis dans [devices_specification.json](dcs5/default_configs/xt_devices_specification.json).
 
-Commandes :
+Commandes associables :
 
--   `"BACKLIGHT_UP", "BACKLIGHT_DOWN"`: Modifier le niveau de rétroéclairage du boîtier de contrôle.
--   `"CHANGE_STYLUS"`: Parcourir la liste des stylets définis dans le fichier [device_specifications](#device-specification)déposer.
+-   `"BACKLIGHT_UP", "BACKLIGHT_DOWN"`: Augmenter ou diminuer le niveau de rétroéclairage du boîtier de contrôle.
+-   `"CHANGE_STYLUS"`: Parcourir la liste des stylets définis dans le fichier [device_specifications](#device-specification).
 -   `"UNITS_mm", "UNITS_cm"`: Modifier les unités de saisie.
--   `"MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"`: Changez le mode de saisie.
--   `"CHANGE_OUTPUT_MODE"`: Faire défiler le mode de saisie (TOP, LENGTH, BOTTOM).
--   `"MODE"`: Accéder au mappage (mode) alternatif (`control_box_mode`,`board_mode`).
--   `"WEIGHT"`: Imprime le poids mesuré par la balance Marel (si connectée).
+-   `"MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"`: Passer à un mode de saisie spécifique.
+-   `"CHANGE_OUTPUT_MODE"`: Changer de mode de saisie. Cycle: (TOP, LENGTH, BOTTOM).
+-   `"MODE"`: Accéder aux associations (mode) alternatif (`control_box_mode`,`board_mode`).
+-   `"WEIGHT"`: Imprimer le poids mesuré par la balance Marel (si une balance est connectée).
 -   `"DELETE_LAST`: Supprimer la dernière valeur imprimée.
--   `"PRINT <string to print>"]`: Imprime le`<string to print>`valeur.
-    Saisie valide au clavier (Source : [Pya Uto manger](https://pyautogui.readthedocs.io/en/latest/)):
+-   `"PRINT <string to print>"]`: Imprimer la valeur `<string to print>`. Exemple: "PRINT Ceci sera imprimé"
+    
+Autres associations valides (saisie de clavier) (Source : [Pya Uto manger](https://pyautogui.readthedocs.io/en/latest/)):
     ```python
     ['\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'",
     '(', ')', '*', '+', ',', '-', '.', '/', '{', '|', '}', '~',
@@ -430,7 +431,7 @@ Fichier par défaut : [devices_specification.json](dcs5/default_configs/xt_devic
 
 Usage:
 
--   conseil:
+-   planche:
 
     ```json
      {"board": {
@@ -441,17 +442,17 @@ Usage:
     }
     ```
 
-    -   number_of_keys : les clés correspondent au cercle gris sur le tableau.
-    -   key_to_mm_ratio : La distance en mm d'un bord d'un cercle (le plus grand) au suivant.
-    -   zéro : La distance (mm) qui serait la touche 0 étant donné que la première touche du tableau est la touche 1.
-    -   detection_range : Décalage à gauche en mm pour la détection du stylet.
-    -   keys_layout : listes ordonnées pour le nom des touches du haut et pour les touches du bas. Ces noms sont utilisés pour mapper la commande.
-        -   Haut:
-        -   Bas:
+    -   number_of_keys : Les clés correspondent au cercle gris sur la planche de mesure.
+    -   key_to_mm_ratio : La distance en mm entre deux cercles (centre à centre).
+    -   zero : Position (en mm) de l'extrémité gauche de la touche #0 étant donné que la première touche de la planche la touche #1.
+    -   detection_range : Décalage vers la gauche en mm pour la détection du stylet.
+    -   keys_layout : Listes ordonnées pour le nom des touches du haut et pour les touches du bas. Ces noms sont utilisés pour associer les commandes des modes de saisie.
+        -   top: Haut
+        -   bottom: Bas
 
-    _Remarques : Les deux listes (haut et bas) ne doivent pas contenir de noms identiques.
+    *Remarques : Les deux listes (top et bottom) ne doivent pas contenir de noms identiques.*
 -   boîtier de contrôle:
-    -   modèle : Modèle du boîtier de contrôle. Soit **xt** ou **micro**.
-    -   keys_layout : Mappage de l'identifiant intégré de la clé de la boîte de contrôleur sur un nom significatif. Ces noms sont utilisés pour mapper la commande.
--   stylus_offset : décalage en mm qui s'ajoute à la valeur mesurée par la planche.
-    -   Remarque : Ces valeurs dépendent de l'étalonnage.
+    -   modole : Modèle du boîtier de contrôle. Soit **xt** ou **micro**.
+    -   keys_layout : Mappage de l'identifiant intégré des clés du boîtier de contrôleur vers un nom significatif. Ces noms sont utilisées pour associer les commandes aux touches de la planche dans [Configuration du contrôler](#configuration-du-contrôleur).
+-   stylus_offset : Décalage en mm qui est ajouté à la valeur mesurée par la planche.
+    -   Remarque : Ces valeurs devraient dépendre de l'étalonnage.

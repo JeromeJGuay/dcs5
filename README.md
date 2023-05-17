@@ -381,7 +381,7 @@ Usage:
 #### Key Mapping
   The names of the keys are set in [devices_specification.json](dcs5/default_configs/xt_devices_specification.json).
   
-  Commands:
+  Mappable commands :
 
   + `"BACKLIGHT_UP", "BACKLIGHT_DOWN"`: Change the control box backlight level.
   + `"CHANGE_STYLUS"`: Cycle through the list of stylus defined in the [devices_specifications](#device-specification) file. 
@@ -389,7 +389,7 @@ Usage:
   + `"MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"`: Change the output mode.
   + `"CHANGE_OUTPUT_MODE"`: Cycle through output mode (TOP, LENGTH, BOTTOM).
   + `"MODE"`: Access the alternative (mode) mapping (`control_box_mode`, `board_mode`).
-  + `"WEIGHT"`: Prints the weight measured by the Marel Scale (if connected).
+  + `"WEIGHT"`: Prints the weight measured by the Marel Scale (if one is connected).
   + `"DELETE_LAST`: Delete the last printed value.
   + `"PRINT <string to print>"`: Prints the `<string to print>` value. e.g. "PRINT This Will be Printed" 
   
@@ -440,9 +440,9 @@ Usage:
   ```
   
   - number_of_keys: The keys correspond to the grey circle on the board.
-  - key_to_mm_ratio: The distance in mm from one edge of a circle (larger one) to the next.
-  - zero: The distance (mm) that would be the key 0 given that the first key on the board is key 1.
-  - detection_range: Offset on the left in mm for stylus detection. 
+  - key_to_mm_ratio: The distance in mm entre deux cercles (center to center).
+  - zero: The position (in mm) of the left edge of the key #0 given that the first key on the board is key #1.
+  - detection_range: Offset to the left in mm for stylus detection. 
   - keys_layout: Ordered lists for the name of the top keys and the for the bottom keys. These names are used to map command.
     * Top:
     * Bottom: 
@@ -450,6 +450,6 @@ Usage:
   *Notes: The two lists (top and bottom) should not contain identical names.*
 + control_box:
   - model: Model of the control box. Either **xt** or **micro**.
-  - keys_layout: Mapping of the controller box key builtin id to meaningful name. These names are used to map command. 
+  - keys_layout: Mapping of the controller box key builtin id to meaningful name. These names are used to map command in [controller_configuration](#controller-configuration). 
 + stylus_offset: Offset in mm that is added to the value measured by the board. 
   - Note: These values will depend on the calibration.
