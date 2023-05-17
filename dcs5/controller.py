@@ -424,7 +424,7 @@ class Dcs5Controller:
         self.change_board_output_mode({'top': 'bottom', 'bottom': 'length','length': 'top'}[self.output_mode])
 
     def change_board_output_mode(self, value: str):
-        """Value must be one of  [length, bottom, top]
+        """Value must be one of [length, bottom, top]
         """
         self.output_mode = value
         if self.client.is_connected:
@@ -688,16 +688,20 @@ class Dcs5Controller:
         self.command_handler.queue_command(f'&{pt}mm,{pos}#', f'%{pt}mm,{pos}#\r')
 
     def start_marel_listening(self):
+        logging.debug(f'starting Marel: {self.config.client.marel_ip_address}')
         if not self.marel:
             if self.config.client.marel_ip_address:
                 self.marel = MarelController(host=self.config.client.marel_ip_address)
             else:
                 pass # fixme maybe
+        else:
+            self.marel.host = self.config.client.marel_ip_address
 
         self.marel_thread = threading.Thread(target=self.marel.start_listening)
         self.marel_thread.start()
 
     def stop_marel_listening(self):
+        logging.debug('stopping Marel')
         if self.marel:
             self.marel.stop_listening()
 
@@ -708,11 +712,9 @@ class Dcs5Controller:
         if self.marel is not None:
             weight = self.marel.get_weight()
             if self.marel.weight != "":
-                self.to_keyboard(self.marel.weight)
+                self.to_keyboard(weight)
                 if self.auto_enter is True:
                     self.to_keyboard('enter')
-
-            self.marel.weight = ""
 
 
 class CommandHandler:
@@ -892,7 +894,7 @@ class CommandHandler:
 
 
 class SocketListener:
-    """The socket listener also do the command interpretation."""
+    """The socket listener also does the command interpretation."""
     def __init__(self, controller: Dcs5Controller):
         self.controller = controller
         self.message_queue = Queue()
@@ -1018,7 +1020,7 @@ class SocketListener:
                     self.controller.mapped_controller_commands(value)
                 else:
                     if value.startswith(PRINT_COMMAND):
-                        value = value[6:].strip(' ')
+                        value = value[len(PRINT_COMMAND):]
                     self.controller.to_keyboard(value)
         else:
             raise ValueError(f'CRITICAL error in _process_output.')

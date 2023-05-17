@@ -21,14 +21,13 @@ from dcs5.controller_configurations import ConfigError
 from dcs5.logger import init_logging
 from dcs5.utils import resolve_relative_path, update_json_value
 
-logging.getLogger('MarelController').setLevel('ERROR')
 
 # This is a fix for my computer. Should not influence anything.
 if os.environ.get('EDITOR') == 'EMACS':
     print('Text editor changed.')
     os.environ.update({'EDITOR': 'pluma'})
 
-# FILENAMES
+# CONFIGS FILENAMES
 CONTROLLER_CONFIGURATION_FILE_NAME = 'controller_configuration.json'
 XT_CONTROLLER_CONFIGURATION_FILE_NAME = 'xt_controller_configuration.json'
 MICRO_CONTROLLER_CONFIGURATION_FILE_NAME = 'micro_controller_configuration.json'
@@ -36,10 +35,9 @@ MICRO_CONTROLLER_CONFIGURATION_FILE_NAME = 'micro_controller_configuration.json'
 DEVICES_SPECIFICATION_FILE_NAME = 'devices_specification.json'
 XT_DEVICES_SPECIFICATION_FILE_NAME = 'xt_devices_specification.json'
 MICRO_DEVICES_SPECIFICATION_FILE_NAME = 'micro_devices_specification.json'
+
 # PATHS
 DEFAULT_CONFIG_PATH = "default_configs/"
-# DEFAULT_CONTROLLER_CONFIGURATION_FILE = str(
-#     resolve_relative_path(DEFAULT_CONFIG_axPATH + CONTROLLER_CONFIGURATION_FILE_NAME, __file__))
 
 XT_DEFAULT_CONTROLLER_CONFIGURATION_FILE = str(
     resolve_relative_path(DEFAULT_CONFIG_PATH + XT_CONTROLLER_CONFIGURATION_FILE_NAME, __file__))
@@ -51,7 +49,13 @@ XT_DEFAULT_DEVICES_SPECIFICATION_FILE = str(
 MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE = str(
     resolve_relative_path(DEFAULT_CONFIG_PATH + MICRO_DEVICES_SPECIFICATION_FILE_NAME, __file__))
 
-USER_GUIDE_FILE = str(resolve_relative_path('static/UserGuide_fr.pdf', __file__))
+#USER_GUIDE_FILE_FRANÇAIS = str(resolve_relative_path('static/user_guide_fr.pdf', __file__))
+#if not Path(USER_GUIDE_FILE_FRANÇAIS).exists():
+#    USER_GUIDE_FILE_FRANÇAIS = str(resolve_relative_path('../user_guide_fr.html', __file__))
+USER_GUIDE_FILE_ENGLISH = str(resolve_relative_path('user_guide_en.html', __file__))
+if not Path(USER_GUIDE_FILE_ENGLISH).exists():
+    USER_GUIDE_FILE_ENGLISH = str(resolve_relative_path('../user_guide_en.html', __file__))
+
 
 if sys.platform in ("linux", "linux2"):
     LOGO_PATH = str(resolve_relative_path('static/bigfin_logo.png', __file__))
@@ -62,10 +66,10 @@ elif sys.platform == "win32":
 
 def scale_font(font_size: int) -> int:
     monitor_width, monitor_height = pag.size()
-    return int(font_size * monitor_height / 1080)
+    return int(font_size * monitor_height / (1080 * 1.1)) # 1.1 is to scale it down more for windows.
 
 
-REFRESH_PERIOD = .05
+REFRESH_PERIOD = .1  # was 0.05 but It was increased to give to for the backlight to be updated in the controller
 
 BACKLIGHT_SLIDER_MAX = 100
 
@@ -100,7 +104,7 @@ USER_SETTING_FILE = 'user_settings.json'
 
 def main():
     try:
-        init_logging(stdout_level='DEBUG')
+        init_logging(stdout_level='INFO', write=True)
         run()
     except Exception as e:
         logging.error(traceback.format_exc(), exc_info=True)
@@ -208,7 +212,7 @@ def make_window():
             'Marel', [
                 [sg.Text(dotted(" Host", _pad), pad=(0, 0), font=REG_FONT),
                  sg.InputText(size=(14, 1), border_width=1, pad=(0, 0), key='-MAREL_HOST-', justification='right',
-                              font=REG_FONT, tooltip="Scale IP address", enable_events=True)
+                              font=REG_FONT, tooltip="Scale IP address", enable_events=False)
                  ],
                 [sg.Text(" Status", pad=(0, 0), font=REG_FONT), led(key='-MAREL_LED-'),
                  sg.Push(),
@@ -220,7 +224,7 @@ def make_window():
                 [
                     sg.Push(),
                     sg.Text("Units", pad=(0, 0), font=REG_FONT),
-                    sg.Combo(default_value='kg', values=['kg', 'g', 'lb', 'oz'], key='-MAREL_UNITS-', enable_events=True, size=(5, 1),
+                    sg.Combo(default_value='kg', values=['kg', 'g', 'lb', 'oz'], key='-MAREL_UNITS-', enable_events=True, size=(5, 1), readonly=True,
                      pad=(1, 1), font=REG_FONT)
                 ],
             ],
@@ -297,7 +301,7 @@ def make_window():
 
     ### STYLUS
     _stylus_layout = [
-        [sg.Combo(values=[''], key='-STYLUS-', enable_events=True, size=(10, 1), pad=(1, 1), font=REG_FONT),
+        [sg.Combo(values=[''], key='-STYLUS-', enable_events=True, size=(10, 1), pad=(1, 1), font=REG_FONT, readonly=True),
          sg.Text('Offset:', font=REG_FONT),
          sg.Text("-", font=REG_FONT_BOLD, background_color='white',
                  size=(3, 1), p=(1, 0), justification='c', key='-STYLUS_OFFSET-')
@@ -353,7 +357,7 @@ def make_window():
             '&Configuration',
             '---',
             '&Exit']],
-        ['Help', ['Guide']]
+        ['Help', ['Guide_fr', 'Guide_en']]
     ]
 
     menu_layout = [sg.Menu(_menu_layout, k='-MENU-', p=0, font=REG_FONT, disabled_text_color='grey'), ]
@@ -387,7 +391,6 @@ def make_window():
     #window.set_min_size(tuple(map(lambda x: int(x / 2), window.size)))
     #window.set_min_size((window.size[0], int(window.size[1]/2)))
 
-
     window['-MAREL_HOST-'].bind("<Return>", "ENTER-")
 
     return window
@@ -418,7 +421,8 @@ def run():
     if sg.user_settings()['configs_path'] is not None:
         controller = init_dcs5_controller()
     else:
-        controller = modal(window, popup_window_select_config)
+        while sg.user_settings()['configs_path'] is None:
+            controller = modal(window, popup_window_select_config)
 
     init_layout(window, controller)
 
@@ -453,17 +457,9 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
 
         match event:
             case "-MAREL_HOST-ENTER-":
-                controller.config.client.marel_ip_address = values['-MAREL_HOST-']
-                update_json_value(controller.config_path, ['client', 'marel_ip_address'],
-                                  str(controller.config.client.marel_ip_address))
-                logging.debug('Marel Host address updated')
-
-            case "-MAREL_HOST-ENTER-":
-                controller.config.client.marel_ip_address = values['-MAREL_HOST-']
-                update_json_value(controller.config_path, ['client', 'marel_ip_address'],
-                                  str(controller.config.client.marel_ip_address))
-                logging.debug('Marel Host address updated')
-
+                update_marel_host(controller, values['-MAREL_HOST-'])
+            case "-MAREL_START-":
+                update_marel_host(controller, values['-MAREL_HOST-'])
                 controller.start_marel_listening()
                 window['-MAREL_LED-'].update(**LED_WAIT)
                 window['-MAREL_START-'].update(disabled=True)
@@ -479,7 +475,6 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                     window['-AUTO_ENTER-'].update('Off')
                 else:
                     window['-AUTO_ENTER-'].update('On')
-
                 controller.set_auto_enter(not controller.auto_enter)
                 window.refresh()
             case "-CONNECT-":
@@ -513,6 +508,8 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 modal(window, popup_window_calibrate, controller)
             case 'Configuration':
                 controller = modal(window, popup_window_select_config, controller=controller)
+                # MAREL HOST IS UPDATED HERE SINCE THE FIELD IS ALSO AN INPUT
+                window['-MAREL_HOST-'].update(controller.config.client.marel_ip_address)
             case '-STYLUS-':
                 controller.change_stylus(values['-STYLUS-'], flash=False)
             case '-BACKLIGHT-':
@@ -544,8 +541,10 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 else:
                     controller.mute_board()
                     window['-MUTE-'].update(text='Unmute')
-            case 'Guide':
-                webbrowser.open_new(USER_GUIDE_FILE)
+            case 'Guide_en':
+                webbrowser.open_new(USER_GUIDE_FILE_ENGLISH)
+            # case 'Guide_fr':
+            #     webbrowser.open_new(USER_GUIDE_FILE_FRANÇAIS)
 
         refresh_layout(window, controller)
 
@@ -583,19 +582,25 @@ def refresh_layout(window: sg.Window, controller: Dcs5Controller):
 def _refresh_marel_layout(window: sg.Window, controller: Dcs5Controller):
     if controller.marel is not None:
         window["-MAREL_UNITS-"].update(disabled=False)
-        #window["-MAREL_AUTO_ENTER-"].update(disabled=False)
+
+        if controller.marel.is_listening:
+            window["-MAREL_STOP-"].update(disabled=False)
+
         if controller.marel.client.is_connecting:
+            window["-MAREL_STOP-"].update(disabled=False)
             window["-MAREL_LED-"].update(**LED_WAIT)
             window["-MAREL_WEIGHT-"].update("N/A")
             window["-MAREL_WEIGHT_DEVICE-"].update("N/A")
-        elif controller.marel.is_listening:
-            if controller.marel.client.is_connected:
-                window["-MAREL_LED-"].update(**LED_ON)
+        elif controller.marel.client.is_connected and controller.marel.is_listening:
+            # elif controller.marel.is_listening:
+            #     if controller.marel.client.is_connected:
+            #         window["-MAREL_LED-"].update(**LED_ON)
+            window["-MAREL_LED-"].update(**LED_ON)
             window["-MAREL_HOST-"].update(disabled=True)
             window["-MAREL_START-"].update(disabled=True)
             window["-MAREL_STOP-"].update(disabled=False)
-            window["-MAREL_WEIGHT-"].update(f"{controller.marel.get_weight()} {controller.marel.units}")
-            window["-MAREL_WEIGHT_DEVICE-"].update(f"{controller.marel.get_weight()} {controller.marel.units}")
+            window["-MAREL_WEIGHT-"].update(f"{controller.marel.get_weight(controller.marel.units)} {controller.marel.units}")
+            window["-MAREL_WEIGHT_DEVICE-"].update(f"{controller.marel.get_weight(controller.marel.units)} {controller.marel.units}")
         else:
             window["-MAREL_HOST-"].update(disabled=False)
             window["-MAREL_START-"].update(disabled=False)
@@ -623,6 +628,10 @@ def _refresh_controller_layout(window: sg.Window, controller: Dcs5Controller):
     window['-NUMBER-READING-'].update(controller.internal_board_state.number_of_reading)
     window['-MAX-DEVIATION-'].update(controller.internal_board_state.stylus_max_deviation)
 
+    if controller.auto_enter:
+        window['-AUTO_ENTER-'].update('On')
+    else:
+        window['-AUTO_ENTER-'].update('Off')
     window["-AUTO_ENTER-"].update(disabled=False)
 
     window['-STYLUS-'].update(value=controller.stylus,
@@ -999,8 +1008,8 @@ def list_configs():
 
 def new_config_window():
     model_layout = [[sg.Text('Model: ', font=REG_FONT),
-                     sg.DropDown(['xt', 'micro'], default_value='xt', size=(20, 4), enable_events=False, font=REG_FONT,
-                                 key='-MODEL-')]]
+                     sg.DropDown(['xt', 'micro'], default_value='xt', size=(20, 4), enable_events=False, font=REG_FONT, readonly=True,
+                                  key='-MODEL-')]]
     path_layout = [
         [sg.Text('Name:  ', font=REG_FONT), sg.InputText(key='-PATH-', font=REG_FONT, size=[20, 1], default_text=None)]]
     submit_layout = [[
@@ -1161,8 +1170,14 @@ def modal(window: sg.Window, func: callable, *args, **kwargs) -> Any:
     return out
 
 
+def update_marel_host(controller: Dcs5Controller, value):
+    controller.config.client.marel_ip_address = value
+    update_json_value(controller.config_path, ['client', 'marel_ip_address'],
+                      str(controller.config.client.marel_ip_address))
+    logging.debug(f'Marel Host address updated {value}')
+
+
 if __name__ == "__main__":
     main()
-    c = init_dcs5_controller()
 #    c.start_client()
 # c.start_listening()
