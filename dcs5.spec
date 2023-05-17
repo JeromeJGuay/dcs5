@@ -9,6 +9,7 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[('./*.html', '.'),
+    ('doc/*.pdf', 'doc/'),
     ('doc/images', 'doc/images'),
     ('dcs5/static', 'static'),
     ('dcs5/default_configs', 'default_configs')

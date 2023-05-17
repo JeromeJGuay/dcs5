@@ -1,75 +1,72 @@
 # Application contrôleur DCS5
 
-Cette application python (python 3.10) fournit une interface graphique pour interagir
-(GUI) avec une carte de mesure BigFin Dcs5 XT ou MICRO via Bluetooth.
-L'application transforme les entrées du stylet sur la carte de mesure en entrée au clavier,
-transformer essentiellement la carte de mesure dcs5 en un clavier sans fil.
-Une balance marine Marel peut également être connectée à l'application.
-Voir le projet[marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller)pour plus d'informations et comment configurer la balance.
+Cette application python (python 3.10) fournit une interface graphique (GUI) pour interagir
+avec une planche de mesure BigFin Dcs5 XT ou MICRO via Bluetooth.
+L'application transforme les entrées de stylet sur la planche de mesure en saisie de clavier,
+transformant essentiellement la planche de mesure en un clavier sans fil.
+Il est également possible de connecter une balance Marel Marine à l'application.
+Voir le projet [marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller) pour plus d'informations sur comment configurer et utiliser la balance.
 
-# Télécharger à partir des versions
+# Téléchargement de l'application
 
-Téléchargement de l'application Dcs5 Controller à partir de la dernière version.
+Télécharger la dernière version de l'application `Dcs5 Controller` via :
 
-1.  Télécharger`dcs5.zip`depuis la dernière version[ici](https://github.com/iml-gddaiss/dcs5/releases).
-2.  Décompresser`dcs5.zip`
-3.  Courir`dcs5.exe`
+1.  Téléchargez la dernière vesion`dcs5-windows.zip` depuis la dernière version [ici](https://github.com/iml-gddaiss/dcs5/releases).
+2.  Décompressez `dcs5-windows.zip`
+3.  Lancez `dcs5.exe`
 
-## Configuration requise pour installer le package python. (Pas nécessaire pour utiliser l'application en tant qu'application autonome.)
-
--   Python 3.10
 
 # Usage
 
-### Guide d'utilisation en français pour le modèle XT :[UserGuide_fr.pdf](doc/UserGuide_fr.pdf).
-
-## Planche à mesurer
+## Planche de mesure
 
 #### Zone de détection du stylet
 
-Le stylet doit être placé dans la zone de détection.
-Le délai de détection est réglable dans la configuration (Voir section[Fichiers de configuration](#configurations-files)).
-Les voyants du boîtier de commande clignotent lorsqu'une mesure est effectuée.
+Le stylet doit être placé à plat dans la zone de détection afin de prendre des mesures.
+Le délai de détection est réglable dans la configuration (Voir la section [Fichiers de configuration](#fichiers-de-configuration)).
+
+L'affichage de LED du boîtier de contrôle clignotent lorsqu'une mesure est effectuée.
 
 <figure style="text-align: center;">
 <img src='doc/images/planche_zone.png' width='742' alt="Board Detection Zone" style="background-color:gray;"/>
-<figcaption>Board Detection Zone </figcaption>
+<figcaption>Zone de détection de la planche</figcaption>
 </figure>
 
-#### Modes de sortie
+#### Modes de saisie
 
-La carte de mesure dispose de 3 modes de sortie différents ;**longueur**,**haut**et**bas**.
-Le**haut**et**bas**mode sont utilisés
+La planche de mesure dispose de 3 modes de saisie différents ; **Length**, **Top** et **Bottom**.
+Les modes **Top** et **Bottom** sont utilisés
 pour accéder aux touches du haut et du bas
-en plaçant le stylet sur le cercle correspondant à l'intérieur de la zone de détection de la carte.
-Il y a 2 manières de changer la zone de détection ;
-en mappant les commandes sur les touches du boîtier de commande ou en définissant des régions de balayage sur le tableau.
+en plaçant le stylet sur les cercles correspondants à l'intérieur de la zone de détection de la planche.
+Le mode de saisie peut être change de 2 façons ;
+en associant des commandes à des touches du boîtier de contrôle ou en définissant des régions de balayage sur la planche de mesure.
 
-La commande map pour passer à un mode de sortie spécifique ou pour parcourir les modes de sortie.
+Des commandes peuvent être associées pour basculer vers un mode de sortie spécifique ou pour parcourir les modes de saisie.
 
--   Voir section[Fichiers de configuration](#configurations-files)pour les commandes de mode de sortie.
+-   Voir la section [Fichiers de configuration](#fichiers-de-configuration) pour les commandes de mode de saisie.
 
-De plus, l'affichage LED par défaut du boîtier de commande change en fonction des modes de sortie.
+De plus, l'affichage de LED par défaut du boîtier de contrôle change en fonction des modes de saisie.
 
--   Voir section[Affichages LED](#leds-displays).
+-   Voir la section [Affichages LED](#affichages-led).
 
 #### Balayer la région
 
-Commencer de gauche à droite dans une zone de balayage changera le mode de sortie.
+Glissez de la gauche vers la droite dans une zone de balayage changera le mode de saisie.
 Les régions de balayage sont définies dans les fichiers de configuration.
-Par exemple, voici les régions de balayage par défaut pour le`xt`boîtier de commande.
+Par exemple, voici les régions de balayage par défaut pour le modèle de boîtier de contrôle `xt`.
 
 <figure style="text-align: center;">
 <img src='doc/images/planche_swipe.png' width='741' alt="Board Swiping Zone"/>
-<figcaption>Default XT Swipe Zone </figcaption>
+<figcaption>Zone de balayage par défaut du modèle XT</figcaption>
 </figure>
-The corresponding output modes are:
 
--   Gauche droite :**Longueur**
--   Bleu :**Haut**
--   Vert:**Bas**
+Les modes de saisie correspondants sont :
 
-La définition de la carte dans le fichier de configuration est :
+-   Gauche (Left), Droite (Right): **Longueur**
+-   Bleu (Blue): **Haut**
+-   Vert (Green): **Bas**
+
+La définition des régions de balayage dans le fichier de configuration est :
 
 ```json
   {"output_modes": {
@@ -78,101 +75,102 @@ La définition de la carte dans le fichier de configuration est :
       }}
 ```
 
--   Voir section[Spécification de l'appareil](#device-specification)pour plus d'informations sur la définition de la zone de balayage.
+-   Voir section [Spécification de la planchecation-de-lappareil) pour plus d'informations sur la définition des régions de balayage.
 
 #### Exemple de mesure
 
-Les mesures sont effectuées en plaçant la tête du stylet à plat sur la carte dans la zone de détection.
-Vous pouvez modifier les paramètres de mesure/détection dans[configuration du contrôleur](#controller-configuration).
+Les mesures sont effectuées en plaçant la tête du stylet à plat dans la zone de détection de la planche.
+Vous pouvez modifier les paramètres de mesures dans la [Configuration du contrôleur](#configuration-du-contrôleur).
 
 <div style="text-align: center;">
-<img src='doc/images/measure_example.png' width='740' alt="Board Measurement Example"/>
+<img src='doc/images/measure_example.png' width='740' alt="Example de mesure sur la planche"/>
 </div>
 
-## Boîtier de commande
+## Boîtier de contrôle
 
-La seule différence entre le`xt`et`micro`Les modèles de boîtier de commande sont le nombre de touches et l'affichage LED et la séquence de clignotement.
+Les seules différences notables entre les modèles de boîtier de contrôle `xt` et `micro` sont le nombre de touches et l'affichage LED et la séquence de clignotement.
 
-### Modèle:`xt`
+### Modèle: `xt`
 
 -   32 touches
 
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_xt_control_box_annotated.png' width='350' alt="Xt Control Box"/>
-<figcaption>Xt Control Box</figcaption>
+<figcaption>Boîtier de contrôle XT</figcaption>
 </figure>
 
-### Modèle:`miro`
+### Modèle: `miro`
 
--   3 clés
+-   3 touches
 
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_micro_control_box_annotated.png' width='350' alt="Micro Control Box"/>
-<figcaption>Micro Control Box</figcaption>
+<figcaption>Boîtier de contrôle MICRO</figcaption>
 </figure>
 
 ### Affichages LED
 
-Différents modèles de LED sont affichés sur le boîtier de commande pour donner un retour aux utilisateurs.
+Les boîtiers de contrôle utilisent différents affichages de DELs pour donner un retour aux utilisateurs.
 
--   xt : JAUGE DE CARBURANT / ACTION barre led
--   micro : Anneau LED
+-   XT : Barre de DELs `FUEL GAUGE / ACTION`
+-   MICRO : Anneau de DELs
 
-#### Mode de sortie
+#### Mode de saisie
 
-Le modèle par défaut affiche le mode de sortie actuel.
+L'affichage par défaut indique le mode de saisie.
 
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_output_mode.png' width='300' alt="Output Mode LED Display" style="background-color:gray;"/>
-<figcaption>Output Mode LED Display</figcaption>
+<figcaption>Affichage de DELs du mode de saisie</figcaption>
 </figure>
 
--   T : Haut
+-   T : Haut
 -   L : Longueur
--   B : Bas
+-   B : Bas
 
 #### Détection du stylet
 
-Le motif de led de suivi s'affiche lorsque la carte détecte le stylet.
+L'affichage de DELs lorsque le stylet est détecté.
 
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_detection.png' width='300' alt="Stylus Detection LED Display" style="background-color:gray;"/>
-<figcaption>Stylus Detection LED Display</figcaption>
+<figcaption>Affichage de DELs lors de la détection du stylet</figcaption>
 </figure>
  
-#### Measurements
-All the leds flash rapidly when a measurement is made.
-The default pattern displays the current output mode.
+#### Mesures
+
+L'affichage de DELs clignotera rapidement lorsqu'une mesure est effectuée.
+
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_measurements.png' width='300' alt="Measurement LED Display" style="background-color:gray;"/>
-<figcaption>Measurement LED Display</figcaption>
+<figcaption>Affichage de DELs lorsqu'une mesure est effectuée</figcaption>
 </figure>
 
-#### Glisser
+#### Balayage
 
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_slide.png' width='300' alt="Swipe LED Display" style="background-color:gray;"/>
-<figcaption>Swipe LED Display</figcaption>
+<figcaption>Affichage de DELs lors d'un balayage</figcaption>
 </figure>
 
--   L : balayage de droite à gauche
--   R : Balayage de gauche à droite
+-   L : Balayage de droite à gauche
+-   R : Balayage de gauche à droite
 
 #### Étalonnage
 
-En mode d'étalonnage, l'affichage par défaut passe à
+En mode d'étalonnage, l'affichage par défaut devient :
 
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_calibration_mode.png' width='300' alt="Calibration Mode LED Display" style="background-color:gray;"/>
-<figcaption>Calibration Mode LED Display</figcaption>
+<figcaption>Affichage de DELs en mode d'étalonnage</figcaption>
 </figure>
 
-Ensuite, une fois le stylet posé, les leds s'allumeront lentement dans les séquences suivantes.
-Lorsque le point est calibré avec succès, toutes les leds clignotent rapidement.
+Une fois le stylet déposé, les DELs s'allumeront séquentiellement.
+Lorsque qu'un point est calibré avec succès, l'ensemble des DELs clignoteront rapidement.
 
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_led_calibration.png' width='300' alt="Calibration LED Display" style="background-color:gray;"/>
-<figcaption>Calibration LED Display</figcaption>
+<figcaption>Affichage de DELs lors de l'étalonnage</figcaption>
 </figure>
 
 ## Application
@@ -180,132 +178,130 @@ Lorsque le point est calibré avec succès, toutes les leds clignotent rapidemen
 ### Configurations
 
 L'application nécessite une configuration pour fonctionner.
-Pour charger et gérer la configuration, cliquez sur**Dcs5 > Paramétrage**dans la barre supérieure.
+Pour charger et modifier les configurations, cliquez sur **Dcs5 > Configuration** dans la barre du haut.
 
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_menu.png' width='203' alt="Application Menu Widget"/>
-<figcaption>Application Menu Widget</figcaption>
+<figcaption>Barre du haut de l'application</figcaption>
 </figure>
 
-Du_Configuration_fenêtre, vous pouvez créer**Nouveau**,**Charger**,**Supprimer**et**Modifier**configurations.
+À partir de la fenêtre *Configuration*, vous pouvez créer (**New**), charger (**Load**), supprimer (**Delete**) et modifier (**Edit**) les configurations.
 
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_config_menu.png' width='536' alt="Config Window"/>
-<figcaption>Config Window</figcaption>
+<figcaption>Fenêtre de Configurations</figcaption>
 </figure>
 
 #### Nouvelle configuration
 
-Des configurations par défaut sont fournies pour le`xt`et`micro`des modèles.
-Sélectionnez le modèle de boîtier de commande (xt ou micro) et saisissez un nom pour la nouvelle configuration.
+Des configurations par défaut sont fournies pour les modèles **xt** et **micro**.
+Sélectionnez le modèle de boîtier de contrôle (XT ou MICRO) et saisissez un nom pour la nouvelle configuration.
 
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_new_config.png' width='331' alt="New Config Window"/>
-<figcaption>New Config Window</figcaption>
+<figcaption>Fenêtre de nouvelles Configurations</figcaption>
 </figure>
 
 L'adresse Bluetooth du contrôleur (adresse MAC) devra être changée une fois qu'une nouvelle configuration est créée.
-Sélectionnez la configuration et le`Controller Configuration`déposer et appuyer**Modifier**.
-Dans le fichier json, modifiez la valeur suivante :
+Sélectionnez la configuration et le fichier `Controller Configuration` puis appuyer sur le bouton **Edit**.
+Dans le fichier json, modifiez la valeur suivante :
 
 -   `client -> mac_address`
 
-Voir section[Fichiers de configuration](#configurations-files)pour plus d'informations sur les différents paramètres de configuration.
+Voir la section [Fichiers de configuration](#fichiers-de-configuration) pour plus d'informations sur les différents paramètres de configuration.
 
-### Connectez la carte via Bluetooth
+### Connectez la planche via Bluetooth
 
-Pour se connecter à la carte de mesure Dcs5, l'adresse Board Mac (bluetooth) doit être spécifiée dans le_Configuration du contrôleur_déposer. Vous pouvez modifier le fichier via le menu de configuration (voir les sections[Configurations](#configurations)et[Configuration du contrôleur](#controller-configuration))
+Pour se connecter à la planche de mesure Dcs5, l'adresse Mac (bluetooth) de la planche doit être spécifiée dans la Configuration du contrôleur.
+Vous pouvez modifier le fichier via le menu de configuration (voir les sections [Configurations](#configurations) et [Configuration du contrôleur](#configuration-du-contrôleur))
 
-Ensuite, vous devez vous connecter puis activer la carte en appuyant sur le**Connecter**et**Activer**bouton.
+Ensuite, vous devez connecter la planche puis activer l'application en appuyant sur le bouton **Connect** et ensuite sur le bouton **Activate**.
 
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_connect.png' width='365' alt="Connect Widget"/>
-<figcaption>Connect Widget</figcaption>
+<figcaption>Widget Connect</figcaption>
 </figure>
 
-Le cercle rouge à côté du**Connecter**le bouton se transformera en triangle jaune
-pendant que l'application tente de se connecter à la carte, puis dans un vert lorsqu'elle est connectée.
+Le cercle rouge à côté du bouton **Connect** se transformera en triangle jaune
+lorsque l'application tente de se connecter à la planche, puis en un cercle vert lorsqu'elle est connectée.
 
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_activate.png' width='371' alt="Activate Widget"/>
-<figcaption>Activate Widget</figcaption>
+<figcaption>Widget Activate</figcaption>
 </figure>
 
-Les cercles rouges à côté du**Activer**Le bouton deviendra également vert lorsque l'application et la carte seront prêtes à être utilisées.
-Lors de l'activation de la carte, l'application se synchronisera avec le boîtier de commande de la carte.
-(Voir la rubrique[Fonctionnalités supplémentaires de l'interface graphique](#additional-information)).
-L'application essaiera de se synchroniser avec le boîtier de commande de la carte lors de l'activation.
-L'application et la carte sont synchronisées
-lorsque l'application reçoit des confirmations que les paramètres internes de la carte
-(principalement ceux liés à la détection du stylet) sont les mêmes que ceux spécifiés dans les fichiers de configuration.
-Si la synchronisation a échoué, indiqué par un cercle rouge à côté du**Synchroniser**bouton,
-vous pouvez appuyer sur le**Synchroniser**bouton pour réessayer.
-Si cela ne fonctionne toujours pas, essayez de redémarrer la carte et l'application.
+Le cercle rouge à côté du bouton **Activate** deviendra également vert lorsque l'application et la planche seront prêtes à être utilisées.
+Lors de l'activation de la planche, l'application se synchronisera avec le boîtier de contrôle de la planche.
+(Voir la section [Informations Supplémentaires](#informations-supplémentaires)).
+L'application et la planche sont synchronisées
+lorsque l'application reçoit les confirmations que les paramètres internes de la planche
+(principalement ceux liés à la détection du stylet) sont les mêmes que ceux spécifiés dans la configuration.
+Si la synchronisation échoue (indiqué par un cercle rouge à côté du bouton **Synchronize**)
+vous pouvez appuyer sur le bouton **Synchronize** pour réessayer.
+Si cela ne fonctionne toujours pas, essayez de redémarrer la planche et l'application.
 
 ### Étalonnage
 
-La carte doit être calibrée à l'aide de deux points de calibrage.
-Bien que l'étalonnage soit linéaire, gardez à l'esprit que le stylet a une épaisseur non uniforme qui compensera,
+La planche doit être étalonnée à partir de deux points de référence.
+Bien que l'étalonnage soit linéaire, gardez en tête que le stylet a une épaisseur non uniforme qui compensera,
 dans une certaine mesure, les valeurs mesurées si l'orientation du stylet diffère lors de la mesure par rapport à l'étalonnage.
-Nous vous recommandons d'utiliser la plus petite partie du stylet pour effectuer le calibrage
-puis ajouter`offset`dans les fichiers d'étalonnage de chaque stylet.
+Nous vous recommandons d'utiliser la plus petite partie du stylet pour effectuer l'étalonnage puis ajouter décalage `offset` dans la configuration pour chaque stylet.
 
--   Voir section[Spécification de l'appareil](#device-specification).
+-   Voir la section [Spécification de la planche](#spécification-de-la-planche).
 
-Pour calibrer la carte, cliquez sur**Réglez Cal. Pts.**
+Pour étalonner la planche, cliquez sur le bouton **Set Cal. Pts.**
 
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_calibration_frame.png' width='359' alt="Calibration Widget"/>
-<figcaption>Calibration Widget</figcaption>
+<figcaption>Widget Calibration</figcaption>
 </figure>
 
 Dans la fenêtre des points d'étalonnage, définissez les deux points d'étalonnage en mm.
 
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_set_calibration_pts.png' width='239' alt="Calibration Set. Cal. Pts. Window"/>
-<figcaption>Calibration Set. Cal. Pts. Window</figcaption>
+<figcaption>Fenêtre de Calibration</figcaption>
 </figure>
 
-appuie sur le**Étalonner**bouton pour entrer dans le mode de calibrage,
-à partir de là, suivez les instructions données par l'application.
+Appuyez sur le bouton **Calibrate** pour entrer en mode étalonnage, puis suivez les instructions données par l'application.
 Notez qu'un balayage de droite à gauche permet de quitter le mode d'étalonnage.
 Pour chaque point d'étalonnage,
-la progression de l'étalonnage sera indiquée par les LED suivantes[afficher](#calibration)une fois le stylet posé.
-Si le stylet est trop levé ou déplacé avant que le calibrage ne soit terminé, le calibrage redémarre.
+la progression de l'étalonnage sera indiquée par [l'affichage DELs](#calibration) une fois le stylet déposé.
+Si le stylet est trop levé ou déplacé avant que l'étalonnage ne soit terminé, l'étalonnage du point recommence.
 
-### Informations Complémentaires.
+### Informations Supplémentaires.
 
 #### Onglet DCS5
 
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_main_annotated.png' width='700' alt="Application Window"/>
-<figcaption>Application Window</figcaption>
+<figcaption>Onglet Dcs5</figcaption>
 </figure>
 
 #### Onglet Échelle Marel
 
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_marel_annotated.png' width='700' alt="Applicaiton Marel Widget"/>
-<figcaption>Application Marel Widget</figcaption>
+<figcaption>Onglet Marel</figcaption>
 </figure>
 
 ## Fichiers de configuration
 
-Les configurations sont créées et modifiées via l'interface graphique de l'application (voir la section[configuration](#configurations)).
-Une configuration est composée de deux fichiers json qui sont utilisés pour modifier le comportement du contrôleur et de la carte de mesure.
+Les configurations sont créées et modifiées via l'interface graphique de l'application (voir la section [configuration](#configurations)).
+Une configuration est composée de deux fichiers json qui sont utilisés pour modifier le comportement du contrôleur et de la planche de mesure.
 
--   [configuration du contrôleur](#controller-configuration)
--   [device_specification](#device-specification)
+-   [configuration du contrôleur](#configurations)
+-   [Spécification de la planche](#spécification-de-la-planche)
 
 ### Configuration du contrôleur
 
-Défaut`xt`déposer:[xt_controller_configuration.json](dcs5/default_configs/xt_controller_configuration.json)
+Fichier `xt` par défaut : [xt_controller_configuration.json](dcs5/default_configs/xt_controller_configuration.json)
 
-Défaut`micro`déposer:[micro_controller_configuration.json](dcs5/default_configs/micro_controller_configuration.json)
+Fichier `micro` par défaut : [micro_controller_configuration.json](dcs5/default_configs/micro_controller_configuration.json)
 
 Usage:
 
--   client : Informations Bluetooth sur la carte de mesure.
+-   client: Paramètres de connections.
 
     ```json
       {"client": {
@@ -315,11 +311,11 @@ Usage:
       }}
     ```
 
-    -   device_name : nom de l'appareil. (Seulement utilisé pour afficher dans l'application.)
-    -   mac_address : adresse Bluetooth (mac) de la carte de mesure, c'est-à-dire**00:06 : I : coupe : frère : dans**.
-    -   marel_ip_address : adresse IP de la balance Marel (voir[marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller)).
+    -   device_name : Nom de la planche. (Uniquement utilisé pour afficher dans l'application).
+    -   mac_address : Adresse Bluetooth (mac) de la planche de mesure, c'est-à-dire **00:06:66:89:E5:FE**.
+    -   marel_ip_address : Adresse IP de la balance Marel (voir [marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller)).
 
--   launch_settings : paramètre utilisé au lancement de l'application.
+-   launch_settings : Paramètres utilisés au lancement de l'application.
 
     ```json
           {"launch_settings": {
@@ -333,15 +329,15 @@ Usage:
           }}
     ```
 
-    -   output_mode : haut, longueur ou bas.
-    -   reading_profile : Nom (clé) du profil. Les profils de lecture sont définis ci-dessous.
-    -   dynamic_stylus_mode : (vrai/faux) Si vrai, les profils de lecture changeront pour chaque mode de sortie, comme défini dans la section suivante.
-    -   backlight_level : (0-95) Intensité du rétroéclairage
-    -   length_units : unités des valeurs de mesure soit**cm**ou**millimètre**
-    -   stylet : nom du stylet utilisé. Doit être défini dans le[spécifications_appareils](#device-specification)déposer.
-    -   auto_enter : appuyez automatiquement sur la touche_entrer_après l'impression d'une valeur de longueur ou de poids.
+    -   output_mode : length(longueur), top(haut) ou bottom(bas).
+    -   reading_profile : Nom (clé) du profil. Les profils de lecture sont définis plus bas.
+    -   dynamic_stylus_mode : (true/false) Si vrai(true), les profils de lecture changeront pour chaque mode de saisie.
+    -   backlight_level : (0-95) Intensité du rétroéclairage
+    -   length_units : Unités des valeurs de mesure soit **cm** ou **mm**
+    -   stylet : Nom du stylet utilisé. Doit être défini dans le fichier de configuration [device_specifications](#device-specification).
+    -   auto_enter : Appuie automatiquement sur la touche *enter* après avoir imprimé (à la position du curseur) d'une valeur de longueur ou de poids.
 
--   lecture_profils :
+-   profiles de saisie :
 
     ```json
       {"reading_profiles": {
@@ -352,11 +348,11 @@ Usage:
           }}}
     ```
 
-    -   settling_delay : (0-20) Délai après la première détection du stylet. (pas des secondes)
-    -   number_of_reading : nombre de lectures nécessaires pour une bonne mesure.
-    -   max_deviation : (1-100) Quantité d'écart autorisée entre chaque lecture._Remarques : Pour plus d'informations :[guide_utilisateur/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf)_
+    -   settling_delay : (0-20) Délai après la première détection du stylet (pas en secondes).
+    -   number_of_reading : Nombre de lectures nécessaires pour une bonne mesure.
+    -   max_deviation : (1-100) Écart permis entre chaque lecture. Pour plus d'informations :[Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf)_
 
--   modes_sortie :
+-   modes de saisie :
 
     ```json
       {"output_modes": {
@@ -371,35 +367,35 @@ Usage:
     }}
     ```
 
-    -   Seuil de balayage : distance minimale (mm) pour qu'un balayage de stylet soit valide.
-    -   segments_limits : définit les limites (mm) des différents segments de balayage.
-    -   segments_mode : Le output_mode correspondant pour chaque segment de balayage.
-    -   mode_reading_profiles : les profils de lecture correspondants pour chaque mode de sortie.
+    -   swipe_threshold : Distance minimale (mm) pour qu'un balayage de stylet soit valide.
+    -   segments_limits : Définit les limites (mm) des différents segments de balayage.
+    -   segments_mode : Le mode de saisie correspondant pour chaque segment de balayage.
+    -   mode_reading_profiles : Les profils de lecture correspondants pour chaque mode de saisie.
 
--   keys_maps (voir[Mappage des clés](#key-mapping)section):
+-   keys_maps (voir la section [Associations des clés](#kassociations-mapping)):
 
     Des champs:`control_box`,`control_box_mode`,`board`,`board_mode`
 
     -   Une touche peut être associée à des commandes ou à des entrées au clavier.
-    -   Une carte peut être une liste de commandes ou d'entrées au clavier qui sont exécutées une par une.
+    -   Une planche peut être une liste de commandes ou d'entrées au clavier qui sont exécutées une par une.
     -   Une touche peut avoir deux mappages : un par défaut et un mappage alternatif (mode).
 
-#### Mappage des clés
+#### Associations des clés
 
-Les noms des clés sont définis dans[devices_specification.json](dcs5/default_configs/xt_devices_specification.json).
+Les noms des clés sont définis dans [devices_specification.json](dcs5/default_configs/xt_devices_specification.json).
 
-Commandes :
+Commandes :
 
--   `"BACKLIGHT_UP", "BACKLIGHT_DOWN"`: Modifier le niveau de rétroéclairage du boîtier de commande.
--   `"CHANGE_STYLUS"`: Parcourir la liste des stylets définis dans le[spécifications_appareils](#device-specification)déposer.
--   `"UNITS_mm", "UNITS_cm"`: Modifier les unités de sortie.
--   `"MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"`: Changez le mode de sortie.
--   `"CHANGE_OUTPUT_MODE"`: Faire défiler le mode de sortie (TOP, LENGTH, BOTTOM).
+-   `"BACKLIGHT_UP", "BACKLIGHT_DOWN"`: Modifier le niveau de rétroéclairage du boîtier de contrôle.
+-   `"CHANGE_STYLUS"`: Parcourir la liste des stylets définis dans le fichier [device_specifications](#device-specification)déposer.
+-   `"UNITS_mm", "UNITS_cm"`: Modifier les unités de saisie.
+-   `"MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"`: Changez le mode de saisie.
+-   `"CHANGE_OUTPUT_MODE"`: Faire défiler le mode de saisie (TOP, LENGTH, BOTTOM).
 -   `"MODE"`: Accéder au mappage (mode) alternatif (`control_box_mode`,`board_mode`).
 -   `"WEIGHT"`: Imprime le poids mesuré par la balance Marel (si connectée).
 -   `"DELETE_LAST`: Supprimer la dernière valeur imprimée.
 -   `"PRINT <string to print>"]`: Imprime le`<string to print>`valeur.
-    Saisie valide au clavier (Source :[Pya Uto manger](https://pyautogui.readthedocs.io/en/latest/)):
+    Saisie valide au clavier (Source : [Pya Uto manger](https://pyautogui.readthedocs.io/en/latest/)):
     ```python
     ['\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'",
     '(', ')', '*', '+', ',', '-', '.', '/', '{', '|', '}', '~',
@@ -428,9 +424,9 @@ Commandes :
     'command', 'option', 'optionleft', 'optionright']
     ```
 
-### Spécification de l'appareil
+### Spécification de la planche
 
-Fichier par défaut :[devices_specification.json](dcs5/default_configs/xt_devices_specification.json)
+Fichier par défaut : [devices_specification.json](dcs5/default_configs/xt_devices_specification.json)
 
 Usage:
 
@@ -445,17 +441,17 @@ Usage:
     }
     ```
 
-    -   number_of_keys : les clés correspondent au cercle gris sur le tableau.
+    -   number_of_keys : les clés correspondent au cercle gris sur le tableau.
     -   key_to_mm_ratio : La distance en mm d'un bord d'un cercle (le plus grand) au suivant.
     -   zéro : La distance (mm) qui serait la touche 0 étant donné que la première touche du tableau est la touche 1.
     -   detection_range : Décalage à gauche en mm pour la détection du stylet.
-    -   keys_layout : listes ordonnées pour le nom des touches du haut et pour les touches du bas. Ces noms sont utilisés pour mapper la commande.
+    -   keys_layout : listes ordonnées pour le nom des touches du haut et pour les touches du bas. Ces noms sont utilisés pour mapper la commande.
         -   Haut:
         -   Bas:
 
-    _Remarques : Les deux listes (haut et bas) ne doivent pas contenir de noms identiques._
--   boîtier de commande:
-    -   modèle : Modèle du boîtier de commande. Soit**XT**ou**micro**.
-    -   keys_layout : Mappage de l'identifiant intégré de la clé de la boîte de contrôleur sur un nom significatif. Ces noms sont utilisés pour mapper la commande.
--   stylus_offset : décalage en mm qui s'ajoute à la valeur mesurée par la carte.
+    _Remarques : Les deux listes (haut et bas) ne doivent pas contenir de noms identiques.
+-   boîtier de contrôle:
+    -   modèle : Modèle du boîtier de contrôle. Soit **xt** ou **micro**.
+    -   keys_layout : Mappage de l'identifiant intégré de la clé de la boîte de contrôleur sur un nom significatif. Ces noms sont utilisés pour mapper la commande.
+-   stylus_offset : décalage en mm qui s'ajoute à la valeur mesurée par la planche.
     -   Remarque : Ces valeurs dépendent de l'étalonnage.

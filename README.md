@@ -19,7 +19,7 @@ Downloading the Dcs5 Controller App from the latest release.
 - python 3.10
 
 # Usage
-### Guide d'utilisation en français pour le modèle XT : [UserGuide_fr.pdf](doc/UserGuide_fr.pdf).
+### Guide d'utilisation en français pour le modèle XT : [user_guide_fr](user_guide_fr.html).
 
 ## Measuring Board
 
@@ -299,7 +299,7 @@ Default `micro` file:  [micro_controller_configuration.json](dcs5/default_config
 
 Usage:
 
-+ client: Measuring board bluetooth information.
++ client: Connection parameters
 
   ```json
     {"client": {
@@ -331,7 +331,7 @@ Usage:
   - dynamic_stylus_mode: (true/false) If true, reading profiles will change for each output mode as defined in the next section.
   - backlight_level: (0-95) Backlight intensity
   - length_units: Units of the measurements values either **cm** or **mm**
-  - stylus: Name of the stylus in use. Must be defined in the [devices_specifications](#device-specification) file. 
+  - stylus: Name of the stylus in use. Must be defined in the [devices_specifications](#device-specification) configuration file. 
   - auto_enter: Automatically press the *enter* key after a length or weight value is printed.
   
 + reading_profiles:
@@ -348,7 +348,7 @@ Usage:
   - settling_delay: (0-20) Delays after the stylus is first detected. (not seconds)
   - number_of_reading: Number of readings needed for a good measurements.
   - max_deviation: (1-100) Amount of deviation allowed between each reading.
-  *Notes: For more information : [user_guide/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf)*
+  *Notes: For more information : [Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf)*
 
 + output_modes:
 
