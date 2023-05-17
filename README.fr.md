@@ -290,8 +290,8 @@ Si le stylet est trop levé ou déplacé avant que l'étalonnage ne soit termin�
 Les configurations sont créées et modifiées via l'interface graphique de l'application (voir la section [configuration](#configurations)).
 Une configuration est composée de deux fichiers json qui sont utilisés pour modifier le comportement du contrôleur et de la planche de mesure.
 
--   [configuration du contrôleur](#configuration-du-contrôleur)
--   [Spécification de la planche](#specification-de-la-planche)
+-   [Configuration du contrôleur](#configuration-du-contrôleur)
+-   [Spécification de la planche](#spécification-de-la-planche)
 
 ### Configuration du contrôleur
 
