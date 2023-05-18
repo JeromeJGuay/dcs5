@@ -63,7 +63,7 @@
             ".": ".",
             "skip": "pagedown",
             "enter": "enter",
-            "del": "delete",
+            "del": "DELETE_LAST",
             "up": "up",
             "down": "down",
             "left": "left",
@@ -97,7 +97,7 @@
             ".": ".",
             "skip": "pagedown",
             "enter": "enter",
-            "del": "delete",
+            "del": "DELETE_LAST",
             "up": "up",
             "down": "down",
             "left": "left",
@@ -172,8 +172,8 @@
             "6B": null,
             "7B": "alt",
             "8B": "shift",
-            "1G": "BACKLIGHT_DOWN",
-            "2G": "BACKLIGHT_UP",
+            "1G": null,
+            "2G": null,
             "3G": null,
             "4G": null,
             "5G": null,
@@ -186,8 +186,8 @@
             "right_space_4": "space",
             "right_space_5": "space",
             "right_space_6": "space",
-            "del_last_1": "backspace",
-            "del_last_2": "backspace"
+            "del_last_1": "DELETE_LAST",
+            "del_last_2": "DELETE_LAST"
         },
         "board_mode": {
             "a": "a",
@@ -263,16 +263,16 @@
             "4G": null,
             "5G": null,
             "6G": null,
-            "7G": "BACKLIGHT_DOWN",
-            "8G": "BACKLIGHT_UP",
+            "7G": null,
+            "8G": null,
             "right_space_1": "space",
             "right_space_2": "space",
             "right_space_3": "space",
             "right_space_4": "space",
             "right_space_5": "space",
             "right_space_6": "space",
-            "del_last_1": "backspace",
-            "del_last_2": "backspace"
+            "del_last_1": "DELETE_LAST",
+            "del_last_2": "DELETE_LAST"
         }
     }
 }

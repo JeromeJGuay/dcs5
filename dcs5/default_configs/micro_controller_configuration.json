@@ -113,7 +113,7 @@
             "7G": "f9",
             "8G": "f10",
             "9G": "f11",
-            "del_last": "backspace"
+            "del_last": "DELETE_LAST"
         },
         "board_mode": {
             "a": "a",
@@ -197,8 +197,8 @@
             "right_space_4": "space",
             "right_space_5": "space",
             "right_space_6": "space",
-            "del_last_1": "backspace",
-            "del_last_2": "backspace"
+            "del_last_1": "DELETE_LAST",
+            "del_last_2": "DELETE_LAST"
         }
     }
 }
