@@ -49,7 +49,7 @@ XT_DEFAULT_DEVICES_SPECIFICATION_FILE = str(
 MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE = str(
     resolve_relative_path(DEFAULT_CONFIG_PATH + MICRO_DEVICES_SPECIFICATION_FILE_NAME, __file__))
 
-USER_GUIDE_FILE_FRANÇAIS = str(resolve_relative_path('static/user_guide_fr.pdf', __file__))
+USER_GUIDE_FILE_FRANÇAIS = str(resolve_relative_path('static/user_guide_fr.html', __file__))
 if not Path(USER_GUIDE_FILE_FRANÇAIS).exists():
     USER_GUIDE_FILE_FRANÇAIS = str(resolve_relative_path('../user_guide_fr.html', __file__))
 USER_GUIDE_FILE_ENGLISH = str(resolve_relative_path('user_guide_en.html', __file__))
