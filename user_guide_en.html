@@ -330,11 +330,11 @@ Application Marel Widget
 <h2 id="configurations-files">Configurations Files</h2>
 <p>Configurations are created and modified via the application GUI (See section <a href="#configurations">configuration</a>). A configuration is made of two json files that are used to change the controller and measuring board behavior. - <a href="#controller-configuration">controller_configuration</a> - <a href="#device-specification">device_specification</a></p>
 <h3 id="controller-configuration">Controller Configuration</h3>
-<p>Default <code>xt</code> file: <a href="dcs5/default_configs/xt_controller_configuration.json">xt_controller_configuration.json</a></p>
-<p>Default <code>micro</code> file: <a href="dcs5/default_configs/micro_controller_configuration.json">micro_controller_configuration.json</a></p>
+<p>Default <code>xt</code> file: <a href="default_configs/xt_controller_configuration.json">xt_controller_configuration.json</a></p>
+<p>Default <code>micro</code> file: <a href="default_configs/micro_controller_configuration.json">micro_controller_configuration.json</a></p>
 <p>Usage:</p>
 <ul>
-<li><p>client: Connection parameters</p>
+<li><p>client: (Connection parameters)</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb2-1" title="1">  <span class="fu">{</span><span class="dt">&quot;client&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
 <a class="sourceLine" id="cb2-2" title="2">      <span class="dt">&quot;device_name&quot;</span><span class="fu">:</span> <span class="st">&quot;BigFinDCS5-E5FE&quot;</span><span class="fu">,</span></a>
 <a class="sourceLine" id="cb2-3" title="3">      <span class="dt">&quot;mac_address&quot;</span><span class="fu">:</span> <span class="st">&quot;00:06:66:89:E5:FE&quot;</span><span class="fu">,</span></a>
@@ -345,7 +345,7 @@ Application Marel Widget
 <li>mac_address: Bluetooth (mac) address of the measuring board i.e. <strong>00:06:66:89:E5:FE</strong>.</li>
 <li>marel_ip_address: Ip address of the Marel Scale (see <a href="https://github.com/iml-gddaiss/marel_marine_scale_controller">marel_marine_scale_controller</a>).</li>
 </ul></li>
-<li><p>launch_settings: setting used when the app is launched.</p>
+<li><p>launch_settings: (Settings used when the app is launched)</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb3-1" title="1">      <span class="fu">{</span><span class="dt">&quot;launch_settings&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
 <a class="sourceLine" id="cb3-2" title="2">      <span class="dt">&quot;output_mode&quot;</span><span class="fu">:</span> <span class="st">&quot;length&quot;</span><span class="fu">,</span></a>
 <a class="sourceLine" id="cb3-3" title="3">      <span class="dt">&quot;reading_profile&quot;</span><span class="fu">:</span> <span class="st">&quot;measure&quot;</span><span class="fu">,</span></a>
@@ -402,11 +402,11 @@ Application Marel Widget
 </ul></li>
 </ul>
 <h4 id="key-mapping">Key Mapping</h4>
-<p>The names of the keys are set in <a href="dcs5/default_configs/xt_devices_specification.json">devices_specification.json</a>.</p>
+<p>The names of the keys are set in <a href="#device-specification">devices_specification</a> configuration file.</p>
 <p>Mappable commands :</p>
 <ul>
 <li><code>"BACKLIGHT_UP", "BACKLIGHT_DOWN"</code>: Change the control box backlight level.</li>
-<li><code>"CHANGE_STYLUS"</code>: Cycle through the list of stylus defined in the <a href="#device-specification">devices_specifications</a> file.</li>
+<li><code>"CHANGE_STYLUS"</code>: Cycle through the list of stylus defined in the <a href="#device-specification">devices_specifications</a> configuration file.</li>
 <li><code>"UNITS_mm", "UNITS_cm"</code>: Change output units.</li>
 <li><code>"MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"</code>: Change the output mode.</li>
 <li><code>"CHANGE_OUTPUT_MODE"</code>: Cycle through output mode (TOP, LENGTH, BOTTOM).</li>
@@ -442,7 +442,10 @@ Application Marel Widget
 <a class="sourceLine" id="cb6-24" title="24"><span class="st">&#39;up&#39;</span>, <span class="st">&#39;volumedown&#39;</span>, <span class="st">&#39;volumemute&#39;</span>, <span class="st">&#39;volumeup&#39;</span>, <span class="st">&#39;win&#39;</span>, <span class="st">&#39;winleft&#39;</span>, <span class="st">&#39;winright&#39;</span>, <span class="st">&#39;yen&#39;</span>,</a>
 <a class="sourceLine" id="cb6-25" title="25"><span class="st">&#39;command&#39;</span>, <span class="st">&#39;option&#39;</span>, <span class="st">&#39;optionleft&#39;</span>, <span class="st">&#39;optionright&#39;</span>]</a></code></pre></div>
 <h3 id="device-specification">Device Specification</h3>
-<p>Default file: <a href="dcs5/default_configs/xt_devices_specification.json">devices_specification.json</a></p>
+<ul>
+<li><p>Default <code>xt</code> file: <a href="default_configs/xt_devices_specification.json">xt_devices_specification.json</a></p></li>
+<li><p>Default <code>micro</code> file: <a href="default_configs/micro_devices_specification.json">micro_devices_specification.json</a></p></li>
+</ul>
 <p>Usage:</p>
 <ul>
 <li><p>board:</p>
@@ -467,7 +470,7 @@ Application Marel Widget
 <li>control_box:
 <ul>
 <li>model: Model of the control box. Either <strong>xt</strong> or <strong>micro</strong>.</li>
-<li>keys_layout: Mapping of the controller box key builtin id to meaningful name. These names are used to map command in <a href="#controller-configuration">controller_configuration</a>.</li>
+<li>keys_layout: Mapping of the controller box key builtin id to meaningful name. These names are used to map command in <a href="#controller-configuration">controller_configuration</a> file.</li>
 </ul></li>
 <li>stylus_offset: Offset in mm that is added to the value measured by the board.
 <ul>
