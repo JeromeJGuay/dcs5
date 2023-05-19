@@ -299,7 +299,7 @@ Default `micro` file:  [micro_controller_configuration.json](dcs5/default_config
 
 Usage:
 
-+ client: Connection parameters
++ client: (Connection parameters)
 
   ```json
     {"client": {
@@ -312,7 +312,7 @@ Usage:
   - device_name: Name of the device. (Only used to display in the app.)
   - mac_address: Bluetooth (mac) address of the measuring board i.e. **00:06:66:89:E5:FE**.
   - marel_ip_address: Ip address of the Marel Scale (see [marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller)).
-+ launch_settings: setting used when the app is launched.
++ launch_settings: (Settings used when the app is launched)
 
   ```json
         {"launch_settings": {
@@ -379,12 +379,12 @@ Usage:
   
 
 #### Key Mapping
-  The names of the keys are set in [devices_specification.json](dcs5/default_configs/xt_devices_specification.json).
+  The names of the keys are set in [devices_specification](#device-specification) configuration file.
   
   Mappable commands :
 
   + `"BACKLIGHT_UP", "BACKLIGHT_DOWN"`: Change the control box backlight level.
-  + `"CHANGE_STYLUS"`: Cycle through the list of stylus defined in the [devices_specifications](#device-specification) file. 
+  + `"CHANGE_STYLUS"`: Cycle through the list of stylus defined in the [devices_specifications](#device-specification) configuration file. 
   + `"UNITS_mm", "UNITS_cm"`: Change output units.
   + `"MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"`: Change the output mode.
   + `"CHANGE_OUTPUT_MODE"`: Cycle through output mode (TOP, LENGTH, BOTTOM).
@@ -424,7 +424,9 @@ Usage:
   ```
 
 ### Device Specification
-Default file: [devices_specification.json](dcs5/default_configs/xt_devices_specification.json)
++ Default  `xt` file: [xt_devices_specification.json](dcs5/default_configs/xt_devices_specification.json)
+
++ Default `micro` file: [micro_devices_specification.json](dcs5/default_configs/micro_devices_specification.json)
 
 Usage:
 
@@ -450,6 +452,6 @@ Usage:
   *Notes: The two lists (top and bottom) should not contain identical names.*
 + control_box:
   - model: Model of the control box. Either **xt** or **micro**.
-  - keys_layout: Mapping of the controller box key builtin id to meaningful name. These names are used to map command in [controller_configuration](#controller-configuration). 
+  - keys_layout: Mapping of the controller box key builtin id to meaningful name. These names are used to map command in [controller_configuration](#controller-configuration) file. 
 + stylus_offset: Offset in mm that is added to the value measured by the board. 
   - Note: These values will depend on the calibration.

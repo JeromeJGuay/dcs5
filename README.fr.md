@@ -47,7 +47,7 @@ Des commandes peuvent être associées pour basculer vers un mode de sortie spé
 
 De plus, l'affichage de LED par défaut du boîtier de contrôle change en fonction des modes de saisie.
 
--   Voir la section [Affichages LED](#affichages-led).
+-   Voir la section [Affichages DELs](#affichages-dels).
 
 #### Balayer la région
 
@@ -80,7 +80,7 @@ La définition des régions de balayage dans le fichier de configuration est :
 #### Exemple de mesure
 
 Les mesures sont effectuées en plaçant la tête du stylet à plat dans la zone de détection de la planche.
-Vous pouvez modifier les paramètres de mesures dans la [Configuration du contrôleur](#configuration-du-contrôleur).
+Vous pouvez modifier les paramètres de mesures dans la [configuration du contrôleur](#configuration-du-controleur).
 
 <div style="text-align: center;">
 <img src='doc/images/measure_example.png' width='740' alt="Example de mesure sur la planche"/>
@@ -108,7 +108,7 @@ Les seules différences notables entre les modèles de boîtier de contrôle `xt
 <figcaption>Boîtier de contrôle MICRO</figcaption>
 </figure>
 
-### Affichages LED
+### Affichages DELs
 
 Les boîtiers de contrôle utilisent différents affichages de DELs pour donner un retour aux utilisateurs.
 
@@ -157,6 +157,7 @@ L'affichage de DELs clignotera rapidement lorsqu'une mesure est effectuée.
 -   R : Balayage de gauche à droite
 
 #### Étalonnage
+<a id="etalonnage-dels"></a>
 
 En mode d'étalonnage, l'affichage par défaut devient :
 
@@ -213,7 +214,7 @@ Voir la section [Fichiers de configuration](#fichiers-de-configuration) pour plu
 ### Connectez la planche via Bluetooth
 
 Pour se connecter à la planche de mesure Dcs5, l'adresse Mac (bluetooth) de la planche doit être spécifiée dans la Configuration du contrôleur.
-Vous pouvez modifier le fichier via le menu de configuration (voir les sections [Configurations](#configurations) et [Configuration du contrôleur](#configuration-du-contrôleur))
+Vous pouvez modifier le fichier via le menu de configuration (voir les sections [Configurations](#configurations) et [Configuration du contrôleur](#configuration-du-controleur))
 
 Ensuite, vous devez connecter la planche puis activer l'application en appuyant sur le bouton **Connect** et ensuite sur le bouton **Activate**.
 
@@ -232,7 +233,7 @@ lorsque l'application tente de se connecter à la planche, puis en un cercle ver
 
 Le cercle rouge à côté du bouton **Activate** deviendra également vert lorsque l'application et la planche seront prêtes à être utilisées.
 Lors de l'activation de la planche, l'application se synchronisera avec le boîtier de contrôle de la planche.
-(Voir la section [Informations Supplémentaires](#informations-supplémentaires)).
+(Voir la section [Informations Supplémentaires](#informations-supplementaires)).
 L'application et la planche sont synchronisées
 lorsque l'application reçoit les confirmations que les paramètres internes de la planche
 (principalement ceux liés à la détection du stylet) sont les mêmes que ceux spécifiés dans la configuration.
@@ -241,13 +242,14 @@ vous pouvez appuyer sur le bouton **Synchronize** pour réessayer.
 Si cela ne fonctionne toujours pas, essayez de redémarrer la planche et l'application.
 
 ### Étalonnage
+<a id="etalonnage-app"></a>
 
 La planche doit être étalonnée à partir de deux points de référence.
 Bien que l'étalonnage soit linéaire, gardez en tête que le stylet a une épaisseur non uniforme qui compensera,
 dans une certaine mesure, les valeurs mesurées si l'orientation du stylet diffère lors de la mesure par rapport à l'étalonnage.
 Nous vous recommandons d'utiliser la plus petite partie du stylet pour effectuer l'étalonnage puis ajouter décalage `offset` dans la configuration pour chaque stylet.
 
--   Voir la section [Spécification de la planche](#spécification-de-la-planche).
+-   Voir la section [Spécification de la planche](#specification-de-la-planche).
 
 Pour étalonner la planche, cliquez sur le bouton **Set Cal. Pts.**
 
@@ -266,10 +268,11 @@ Dans la fenêtre des points d'étalonnage, définissez les deux points d'étalon
 Appuyez sur le bouton **Calibrate** pour entrer en mode étalonnage, puis suivez les instructions données par l'application.
 Notez qu'un balayage de droite à gauche permet de quitter le mode d'étalonnage.
 Pour chaque point d'étalonnage,
-la progression de l'étalonnage sera indiquée par [l'affichage DELs](#calibration) une fois le stylet déposé.
+la progression de l'étalonnage sera indiquée par [l'affichage DELs](#etalonnage-dels) une fois le stylet déposé.
 Si le stylet est trop levé ou déplacé avant que l'étalonnage ne soit terminé, l'étalonnage du point recommence.
 
 ### Informations Supplémentaires.
+<a id="informations-supplementaires"></a>
 
 #### Onglet DCS5
 
@@ -290,10 +293,11 @@ Si le stylet est trop levé ou déplacé avant que l'étalonnage ne soit termin�
 Les configurations sont créées et modifiées via l'interface graphique de l'application (voir la section [configuration](#configurations)).
 Une configuration est composée de deux fichiers json qui sont utilisés pour modifier le comportement du contrôleur et de la planche de mesure.
 
--   [Configuration du contrôleur](#configuration-du-contrôleur)
--   [Spécification de la planche](#spécification-de-la-planche)
+-   [Configuration du contrôleur](#configuration-du-controleur)
+-   [Spécification de la planche](#specification-de-la-planche)
 
 ### Configuration du contrôleur
+<a id="configuration-du-controleur"></a>
 
 Fichier `xt` par défaut : [xt_controller_configuration.json](dcs5/default_configs/xt_controller_configuration.json)
 
@@ -301,7 +305,7 @@ Fichier `micro` par défaut : [micro_controller_configuration.json](dcs5/default
 
 Usage:
 
--   client: Paramètres de connections.
+-   client: (Paramètres de connections)
 
     ```json
       {"client": {
@@ -315,7 +319,7 @@ Usage:
     -   mac_address : Adresse Bluetooth (mac) de la planche de mesure, c'est-à-dire **00:06:66:89:E5:FE**.
     -   marel_ip_address : Adresse IP de la balance Marel (voir [marel_marine_scale_controller](https://github.com/iml-gddaiss/marel_marine_scale_controller)).
 
--   launch_settings : Paramètres utilisés au lancement de l'application.
+-   launch_settings : (Paramètres utilisés au lancement de l'application)
 
     ```json
           {"launch_settings": {
@@ -334,10 +338,10 @@ Usage:
     -   dynamic_stylus_mode : (true/false) Si vrai(true), les profils de lecture changeront pour chaque mode de saisie.
     -   backlight_level : (0-95) Intensité du rétroéclairage
     -   length_units : Unités des valeurs de mesure soit **cm** ou **mm**
-    -   stylet : Nom du stylet utilisé. Doit être défini dans le fichier de configuration [device_specifications](#device-specification).
+    -   stylet : Nom du stylet utilisé. Doit être défini dans le fichier de [spécification de la planche](#specification-de-la-planche).
     -   auto_enter : Appuie automatiquement sur la touche *enter* après avoir imprimé (à la position du curseur) d'une valeur de longueur ou de poids.
 
--   profiles de saisie :
+-   reading_profiles :
 
     ```json
       {"reading_profiles": {
@@ -352,7 +356,7 @@ Usage:
     -   number_of_reading : Nombre de lectures nécessaires pour une bonne mesure.
     -   max_deviation : (1-100) Écart permis entre chaque lecture. Pour plus d'informations :[Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf](doc/Big-Fin-Scientific-Fish-Board-Integration-Guide-V2_0.pdf)_
 
--   modes de saisie :
+-   output_modes :
 
     ```json
       {"output_modes": {
@@ -372,7 +376,7 @@ Usage:
     -   segments_mode : Le mode de saisie correspondant à chaque segment de balayage.
     -   mode_reading_profiles : Les profils de lecture correspondants pour chaque mode de saisie.
 
--   keys_maps (voir la section [Associations des clés](#kassociations-mapping)):
+-   keys_maps (voir la section [Associations des clés](#associations-des-cles)):
 
     Champs: `control_box`,`control_box_mode`,`board`,`board_mode`
 
@@ -381,13 +385,14 @@ Usage:
     -   Une touche peut avoir deux associations : une par défaut et une alternatif (mode).
 
 #### Associations des clés
+<a id="associations-des-cles"></a>
 
-Les noms des clés sont définis dans [devices_specification.json](dcs5/default_configs/xt_devices_specification.json).
+Les noms des clés sont définis dans le fichier de [spécification de la planche](#specification-de-la-planche).
 
 Commandes associables :
 
 -   `"BACKLIGHT_UP", "BACKLIGHT_DOWN"`: Augmenter ou diminuer le niveau de rétroéclairage du boîtier de contrôle.
--   `"CHANGE_STYLUS"`: Parcourir la liste des stylets définis dans le fichier [device_specifications](#device-specification).
+-   `"CHANGE_STYLUS"`: Parcourir la liste des stylets définis dans le fichier de [spécification de la planche](#specification-de-la-planche).
 -   `"UNITS_mm", "UNITS_cm"`: Modifier les unités de saisie.
 -   `"MODE_TOP", "MODE_LENGTH", "MODE_BOTTOM"`: Passer à un mode de saisie spécifique.
 -   `"CHANGE_OUTPUT_MODE"`: Changer de mode de saisie. Cycle: (TOP, LENGTH, BOTTOM).
@@ -396,7 +401,7 @@ Commandes associables :
 -   `"DELETE_LAST`: Supprimer la dernière valeur imprimée.
 -   `"PRINT <string to print>"]`: Imprimer la valeur `<string to print>`. Exemple: "PRINT Ceci sera imprimé"
     
-Autres associations valides (saisie de clavier) (Source : [Pya Uto manger](https://pyautogui.readthedocs.io/en/latest/)):
+Autres associations valides (saisie de clavier) (Source : [PyautoGui](https://pyautogui.readthedocs.io/en/latest/)):
     ```python
     ['\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'",
     '(', ')', '*', '+', ',', '-', '.', '/', '{', '|', '}', '~',
@@ -426,12 +431,16 @@ Autres associations valides (saisie de clavier) (Source : [Pya Uto manger](https
     ```
 
 ### Spécification de la planche
+<a id="specification-de-la-planche"></a>
 
-Fichier par défaut : [devices_specification.json](dcs5/default_configs/xt_devices_specification.json)
++ Fichier `xt` par défaut : [xt_devices_specification.json](dcs5/default_configs/xt_devices_specification.json)
+
++ Fichier `micro` par défaut : [micro_devices_specification.json](dcs5/default_configs/micro_devices_specification.json).
+
 
 Usage:
 
--   planche:
+- board:
 
     ```json
      {"board": {
@@ -451,8 +460,8 @@ Usage:
         -   bottom: Bas
 
     *Remarques : Les deux listes (top et bottom) ne doivent pas contenir de noms identiques.*
--   boîtier de contrôle:
-    -   modole : Modèle du boîtier de contrôle. Soit **xt** ou **micro**.
-    -   keys_layout : Mappage de l'identifiant intégré des clés du boîtier de contrôleur vers un nom significatif. Ces noms sont utilisées pour associer les commandes aux touches de la planche dans [Configuration du contrôler](#configuration-du-contrôleur).
+-   control_box:
+    -   mode: Modèle du boîtier de contrôle. Soit **xt** ou **micro**.
+    -   keys_layout : Mappage de l'identifiant intégré des clés du boîtier de contrôleur vers un nom significatif. Ces noms sont utilisées pour associer les commandes aux touches de la planche dans le fichier de [configuration du contrôler](#configuration-du-controleur).
 -   stylus_offset : Décalage en mm qui est ajouté à la valeur mesurée par la planche.
     -   Remarque : Ces valeurs devraient dépendre de l'étalonnage.
