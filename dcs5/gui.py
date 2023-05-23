@@ -599,8 +599,13 @@ def _refresh_marel_layout(window: sg.Window, controller: Dcs5Controller):
             window["-MAREL_HOST-"].update(disabled=True)
             window["-MAREL_START-"].update(disabled=True)
             window["-MAREL_STOP-"].update(disabled=False)
-            window["-MAREL_WEIGHT-"].update(f"{controller.marel.get_weight(controller.marel.units)} {controller.marel.units}")
-            window["-MAREL_WEIGHT_DEVICE-"].update(f"{controller.marel.get_weight(controller.marel.units)} {controller.marel.units}")
+            weight = controller.marel.get_weight(controller.marel.units)
+            if weight is not None:
+                weight = f"{weight} {controller.marel.units}"
+            else:
+                weight = "N/A"
+            window["-MAREL_WEIGHT-"].update(weight)
+            window["-MAREL_WEIGHT_DEVICE-"].update(weight)
         else:
             window["-MAREL_HOST-"].update(disabled=False)
             window["-MAREL_START-"].update(disabled=False)

@@ -711,7 +711,8 @@ class Dcs5Controller:
     def marel_get_weight(self):
         if self.marel is not None:
             weight = self.marel.get_weight()
-            if self.marel.weight != "":
+            print(weight)
+            if self.marel.weight is not None:
                 self.to_keyboard(weight)
                 if self.auto_enter is True:
                     self.to_keyboard('enter')
