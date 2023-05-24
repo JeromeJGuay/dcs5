@@ -105,7 +105,7 @@ class Dcs5Controller:
         self.ping_event_check = threading.Event()
 
         self.client = BluetoothClient()
-        self.shouter = KeyboardEmulator()
+        self.keyboard_emulator = KeyboardEmulator()
         self.internal_board_state = InternalBoardState()  # Board Current State
 
         self.socket_listener = SocketListener(self)
@@ -465,8 +465,8 @@ class Dcs5Controller:
 
     def to_keyboard(self, value: Union[int, float, str]):
         if not self.is_muted:
-            logging.debug(f"Shouted value {value}")
-            self.shouter.shout(value)
+            logging.info(f"Printed value {value}")
+            self.keyboard_emulator.write(value)
 
     def backlight_up(self):
         if self.internal_board_state.backlighting_level < self.control_box_parameters.max_backlighting_level:

@@ -727,15 +727,15 @@ def _refresh_controller_layout(window: sg.Window, controller: Dcs5Controller):
         else:
             window["-CAL_LED-"].update(**LED_OFF)
 
-        if 'shift' in controller.shouter.meta_key_combo:
+        if 'shift' in controller.keyboard_emulator.meta_key_combo:
             window["-SHIFT-"].update(**META_ON)
         else:
             window["-SHIFT-"].update(**META_OFF)
-        if 'ctrl' in controller.shouter.meta_key_combo:
+        if 'ctrl' in controller.keyboard_emulator.meta_key_combo:
             window["-CTRL-"].update(**META_ON)
         else:
             window["-CTRL-"].update(**META_OFF)
-        if 'alt' in controller.shouter.meta_key_combo:
+        if 'alt' in controller.keyboard_emulator.meta_key_combo:
             window["-ALT-"].update(**META_ON)
         else:
             window["-ALT-"].update(**META_OFF)
