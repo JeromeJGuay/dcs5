@@ -19,7 +19,7 @@ from dcs5 import VERSION, LOCAL_FILE_PATH, CONFIG_FILES_PATH
 from dcs5.controller import Dcs5Controller
 from dcs5.controller_configurations import ConfigError
 from dcs5.logger import init_logging
-from dcs5.utils import resolve_relative_path, update_json_value
+from dcs5.utils import resolve_relative_path, update_json_value, json2dict
 
 
 # This is a fix for my computer. Should not influence anything.
@@ -55,6 +55,10 @@ if not Path(USER_GUIDE_FILE_FRANÇAIS).exists():
 USER_GUIDE_FILE_ENGLISH = str(resolve_relative_path('user_guide_en.html', __file__))
 if not Path(USER_GUIDE_FILE_ENGLISH).exists():
     USER_GUIDE_FILE_ENGLISH = str(resolve_relative_path('../user_guide_en.html', __file__))
+
+
+# logging settings
+APP_SETTINGS = json2dict(str(resolve_relative_path(DEFAULT_CONFIG_PATH + "app_settings.json", __file__)))
 
 
 if sys.platform in ("linux", "linux2"):
@@ -104,7 +108,8 @@ USER_SETTING_FILE = 'user_settings.json'
 
 def main():
     try:
-        init_logging(stdout_level='INFO', write=True)
+        debug_level = 'DEBUG' if APP_SETTINGS['debug'] is True else 'INFO'
+        init_logging(stdout_level=debug_level, file_level=debug_level, write=True)
         run()
     except Exception as e:
         logging.error(traceback.format_exc(), exc_info=True)
@@ -131,7 +136,7 @@ def init_dcs5_controller():
         logging.debug('Controller initiated.')
         return controller
     except ConfigError:
-        logging.debug('ConfigError while initiating controller.')
+        logging.error('ConfigError while initiating controller.')
         sg.popup_ok(
             'Error in the configurations files.\nConfiguration files not loaded.',
             title='Config Error',
