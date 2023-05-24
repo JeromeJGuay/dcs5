@@ -34,15 +34,25 @@
         - name: Checkout code
           uses: actions/checkout@v2
 
-        - name: Add file to release
+        - name: Add micro eeprom to release
           uses: actions/upload-release-asset@v1
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           with:
             upload_url: ${{ needs.make_release.outputs.upload_url }}
-            asset_path: firmwares/*.eeprom
+            asset_path: firmwares/dcs5-micro-v2-0-0-iml.eeprom
+            asset_name: dcs5-micro-v2-0-0-iml.eeprom
             asset_content_type: application/octet-stream
-#            asset_name: dcs5-micro-v2-0-0-iml.eeprom
+
+        - name: Add xt eeprom to release
+          uses: actions/upload-release-asset@v1
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            upload_url: ${{ needs.make_release.outputs.upload_url }}
+            asset_path: firmwares/dcs5-xt-v2-0-0-iml.eeprom
+            asset_name: dcs5-xt-v2-0-0-iml.eeprom
+            asset_content_type: application/octet-stream
 
 
     build_windows:
