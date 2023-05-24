@@ -942,7 +942,7 @@ def popup_window_config(controller: Dcs5Controller = None) -> Dcs5Controller:
     window = config_window()
 
     while True:
-        event, values = window.read()#timeout=0.1)
+        event, values = window.read()#(timeout=0.1)
 
         if event == '__TIMEOUT__':
             pass
@@ -954,13 +954,23 @@ def popup_window_config(controller: Dcs5Controller = None) -> Dcs5Controller:
 
         if event == 'New':
 
-            modal(window, create_new_config)
+            new_config_name = modal(window, create_new_config)
 
-            window['-CONFIG-'].update(values=list_configs(), set_to_index=[])
+            if new_config_name is not None:
+                window['-CONFIG-'].update(values=list_configs(), set_to_index=[list_configs().index(new_config_name)])
+                # window['Copy'].update(disabled=True)
+                # window['Rename'].update(disabled=True)
+                # window['Load'].update(disabled=True)
+                # window['Delete'].update(disabled=True)
+                # window['-EDIT-'].update(disabled=True)
+                window['Copy'].update(disabled=False)
+                window['Rename'].update(disabled=False)
+                window['Load'].update(disabled=False)
+                window['Delete'].update(disabled=False)
+                window['-EDIT-'].update(disabled=False)
 
         elif values is not None:
             if values['-CONFIG-'] is not None:
-
                 if len(values['-CONFIG-']) != 0:
                     window['Copy'].update(disabled=False)
                     window['Rename'].update(disabled=False)
@@ -973,12 +983,14 @@ def popup_window_config(controller: Dcs5Controller = None) -> Dcs5Controller:
 
                     match event:
                         case 'Copy':
-                            modal(window, popup_window_copy_config, values['-CONFIG-'][0])
-                            window['-CONFIG-'].update(values=list_configs(), set_to_index=[])
-                        case 'Rename':
-                            modal(window, popup_window_rename_config, values['-CONFIG-'][0])
+                            new_config = modal(window, popup_window_copy_config, values['-CONFIG-'][0])
+                            if new_config is not None:
+                                window['-CONFIG-'].update(values=list_configs(), set_to_index=[list_configs().index(new_config)])
 
-                            window['-CONFIG-'].update(values=list_configs(), set_to_index=[])
+                        case 'Rename':
+                            renamed_config = modal(window, popup_window_rename_config, values['-CONFIG-'][0])
+                            if renamed_config is not None:
+                                window['-CONFIG-'].update(values=list_configs(), set_to_index=[list_configs().index(renamed_config)])
 
                         case 'Load':
                             selected_config_path = str(Path(CONFIG_FILES_PATH).joinpath(values['-CONFIG-'][0]))
@@ -1028,6 +1040,9 @@ def popup_window_config(controller: Dcs5Controller = None) -> Dcs5Controller:
                     window['-CONFIGURATION-'].update(current_config)
                 else:
                     window['-CONFIGURATION-'].update('No Config Selected')
+
+
+
     window.close()
 
     return controller
@@ -1063,6 +1078,7 @@ def new_config_window():
 
 def create_new_config():
     """Create new config (GUI)"""
+    new_config_name = None
     window = new_config_window()
     while True:
         event, values = window.read()
@@ -1077,10 +1093,12 @@ def create_new_config():
                              title='Warning', keep_on_top=True) == 'No':
                         break
 
-                make_new_config_from_default(values['-NEW_CONFIG_NAME-'], values['-MODEL-'])
+                new_config_name = values['-NEW_CONFIG_NAME-']
+                make_new_config_from_default(new_config_name, values['-MODEL-'])
 
                 window.close()
     window.close()
+    return new_config_name
 
 
 def copy_config_window(config_name: str):
@@ -1101,6 +1119,7 @@ def copy_config_window(config_name: str):
 
 def popup_window_copy_config(config_name: str):
     """Copy config (GUI)"""
+    new_config_name = None
     window = copy_config_window(config_name=config_name)
 
     while True:
@@ -1115,12 +1134,13 @@ def popup_window_copy_config(config_name: str):
                              'Configuration name already exists. Do you want to overwrite it ?',
                              title='Warning', keep_on_top=True) == 'No':
                         break
-
-                make_new_config_from_existing(new_config_name=values['-NEW_CONFIG_NAME-'],
+                new_config_name = values['-NEW_CONFIG_NAME-']
+                make_new_config_from_existing(new_config_name=new_config_name,
                                               source_config_name=config_name)
 
                 window.close()
     window.close()
+    return new_config_name
 
 
 def rename_config_window(config_name: str):
@@ -1156,9 +1176,10 @@ def popup_window_rename_config(config_name: str) -> Optional[str]:
                              'Configuration name already exists. Do you want to overwrite it ?',
                              title='Warning', keep_on_top=True) == 'No':
                         break
+                new_config_name = values['-NEW_CONFIG_NAME-']
 
                 config_path = str(CONFIG_FILES_PATH.joinpath(config_name))
-                new_config_path = str(CONFIG_FILES_PATH.joinpath(values['-NEW_CONFIG_NAME-']))
+                new_config_path = str(CONFIG_FILES_PATH.joinpath(new_config_name))
 
                 shutil.move(config_path, new_config_path)
 
@@ -1170,6 +1191,7 @@ def popup_window_rename_config(config_name: str) -> Optional[str]:
 
                 window.close()
     window.close()
+    return new_config_name
 
 
 def make_new_config_from_default(new_config_name: str, model: str):

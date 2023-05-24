@@ -391,7 +391,7 @@ class Dcs5Controller:
             if value is True:
                 key = self.find_command_key('MODE')
                 if key is not None:
-                    key -= 1  # led keys are numbered 0-31 in the firmware
+                    key -= 1  # led keys are numbered 0-31 in the firmwares
                     self.user_set_backlight_value = self.internal_board_state.backlighting_level
                     self.c_set_backlighting_level(round(self.control_box_parameters.max_backlighting_level / 3))
                     self.c_set_key_backlighting_level(level=self.control_box_parameters.max_backlighting_level, key=key)
@@ -637,12 +637,12 @@ class Dcs5Controller:
             logging.warning(f"Backlighting level range: (0, {self.control_box_parameters.max_backlighting_level})")
 
     def c_set_backlighting_auto_mode(self, value: bool):  # NOT IMPLEMENTED IN THE CURRENT FIRMWARE FIXME
-        logging.warning('Command not implemented in the current firmware')
+        logging.warning('Command not implemented in the current firmwares')
         # self.command_handler.queue_command(f"&oa,{int(value)}", None)
         # self.internal_board_state.backlighting_auto_mode = {True: 'auto', False: 'manual'}
 
     def c_set_backlighting_sensitivity(self, value: int):  # NOT IMPLEMENTED IN THE CURRENT FIRMWARE FIXME
-        logging.warning('Command not implemented in the current firmware')
+        logging.warning('Command not implemented in the current firmwares')
         # if 0 <= value <= self.control_box_parameters.max_backlighting_sensitivity:
         #     self.command_handler.queue_command(f"&os,{value}", None)
         #     self.internal_board_state.backlighting_sensitivity = value
@@ -859,7 +859,7 @@ class CommandHandler:
 
         elif 'Cal Pt' in received:
             logging.info(received.strip("\r") + " mm")
-            match = re.findall("Cal Pt (\d+) set to: (\d+)", received)  # used to work on firmware v1.07 (I think) of XT.
+            match = re.findall("Cal Pt (\d+) set to: (\d+)", received)  # used to work on firmwares v1.07 (I think) of XT.
             if len(match) > 0:
                 self.controller.internal_board_state.__dict__[f'cal_pt_{match[0][0]}'] = int(match[0][1])
 
