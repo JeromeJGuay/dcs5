@@ -14,8 +14,16 @@ Downloading the Dcs5 Controller App from the latest release.
 2. Unzip `dcs5.zip`
 3. Run `dcs5.exe`
 
+# Requirements
+## Measuring board firmware
+The following `v2-0-0-iml` firmware needs to be installed on the measuring board in order to use this application.
 
-## Requirements to install the python package. (Not required to use the app as a standalone.)
++ micro: [dcs5-micro-v2-0-0-iml.eeprom](https://github.com/iml-gddaiss/dcs5/releases)
++ xt: [dcs5-xt-v2-0-0-iml.eeprom](https://github.com/iml-gddaiss/dcs5/releases)
+
+Contact [Big Fin Scientific](https://bigfinscientific.com/) to learn how to update your measuring boards firmware.
+
+## Python package. (Not required to use the app as a standalone.)
 - python 3.10
 
 # Usage
