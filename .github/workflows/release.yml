@@ -27,6 +27,34 @@
         - id: step_upload_url
           run: echo "::set-output name=upload_url::${{ steps.create_release.outputs.upload_url }}"
 
+    upload_firmwares:
+      needs: make_release
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v2
+
+        - name: Add micro eeprom to release
+          uses: actions/upload-release-asset@v1
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            upload_url: ${{ needs.make_release.outputs.upload_url }}
+            asset_path: firmwares/dcs5-micro-v2-0-0-iml.eeprom
+            asset_name: dcs5-micro-v2-0-0-iml.eeprom
+            asset_content_type: application/octet-stream
+
+        - name: Add xt eeprom to release
+          uses: actions/upload-release-asset@v1
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            upload_url: ${{ needs.make_release.outputs.upload_url }}
+            asset_path: firmwares/dcs5-xt-v2-0-0-iml.eeprom
+            asset_name: dcs5-xt-v2-0-0-iml.eeprom
+            asset_content_type: application/octet-stream
+
+
     build_windows:
       runs-on: windows-latest
       needs: make_release

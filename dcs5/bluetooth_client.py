@@ -49,25 +49,25 @@ class BluetoothClient:
     def connect(self, mac_address: str = None, timeout: int = None):
         self.mac_address = mac_address
         timeout = timeout or self.default_timeout
-        logging.debug(f'Attempting to connect to board. Timeout: {timeout} seconds')
+        logging.info(f'Attempting to connect to board. Timeout: {timeout} seconds')
 
         for port in range(self.min_port, self.max_port + 1):  # check for all available ports
             self.socket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
             self.socket.settimeout(timeout)
             try:
-                logging.debug(f'port: {port}')
+                logging.info(f'port: {port}')
                 self.socket.connect((self.mac_address, port))
                 self.port = port
                 self._is_connected = True
-                logging.debug(f'Connected to port {self.port}')
-                logging.debug(f'Socket name: {self.socket.getsockname()}')
+                logging.info(f'Connected to port {self.port}')
+                logging.info(f'Socket name: {self.socket.getsockname()}')
 
                 if platform.system() == 'Windows':
                     self.start_connection_spam_thread()
                 break
 
             except PermissionError:
-                logging.debug('Client.connect: PermissionError')
+                logging.info('Client.connect: PermissionError')
                 self.error_msg = 'Permission error'
                 pass
             except OSError as err:
@@ -85,7 +85,7 @@ class BluetoothClient:
         try:
             self.socket.sendall(command.encode(BOARD_MSG_ENCODING))
         except OSError as err:
-            logging.debug(f'OSError on sendall')
+            logging.info(f'OSError on sendall')
             self.error_msg = self.errors[self._process_os_error_code(err)]
             self.close()
 

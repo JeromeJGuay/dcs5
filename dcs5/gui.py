@@ -19,8 +19,7 @@ from dcs5 import VERSION, LOCAL_FILE_PATH, CONFIG_FILES_PATH
 from dcs5.controller import Dcs5Controller
 from dcs5.controller_configurations import ConfigError
 from dcs5.logger import init_logging
-from dcs5.utils import resolve_relative_path, update_json_value
-
+from dcs5.utils import resolve_relative_path, update_json_value, json2dict
 
 # This is a fix for my computer. Should not influence anything.
 if os.environ.get('EDITOR') == 'EMACS':
@@ -28,13 +27,13 @@ if os.environ.get('EDITOR') == 'EMACS':
     os.environ.update({'EDITOR': 'pluma'})
 
 # CONFIGS FILENAMES
-CONTROLLER_CONFIGURATION_FILE_NAME = 'controller_configuration.json'
-XT_CONTROLLER_CONFIGURATION_FILE_NAME = 'xt_controller_configuration.json'
-MICRO_CONTROLLER_CONFIGURATION_FILE_NAME = 'micro_controller_configuration.json'
+CONTROLLER_CONFIGURATION_FILE_NAME = 'controller_configuration.json'  # name use in the config
+XT_CONTROLLER_CONFIGURATION_FILE_NAME = 'xt_controller_configuration.json'  # default for xt
+MICRO_CONTROLLER_CONFIGURATION_FILE_NAME = 'micro_controller_configuration.json'  # default for micro
 
-DEVICES_SPECIFICATION_FILE_NAME = 'devices_specification.json'
-XT_DEVICES_SPECIFICATION_FILE_NAME = 'xt_devices_specification.json'
-MICRO_DEVICES_SPECIFICATION_FILE_NAME = 'micro_devices_specification.json'
+DEVICES_SPECIFICATION_FILE_NAME = 'devices_specification.json'  # name use in the config
+XT_DEVICES_SPECIFICATION_FILE_NAME = 'xt_devices_specification.json'  # default for xt
+MICRO_DEVICES_SPECIFICATION_FILE_NAME = 'micro_devices_specification.json'  # default for micro
 
 # PATHS
 DEFAULT_CONFIG_PATH = "default_configs/"
@@ -49,13 +48,16 @@ XT_DEFAULT_DEVICES_SPECIFICATION_FILE = str(
 MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE = str(
     resolve_relative_path(DEFAULT_CONFIG_PATH + MICRO_DEVICES_SPECIFICATION_FILE_NAME, __file__))
 
+# APPLICATION SETTINGS (only debug mode at the moment)
+APP_SETTINGS = json2dict(str(resolve_relative_path(DEFAULT_CONFIG_PATH + "app_settings.json", __file__)))
+
+# USER GUIDE
 USER_GUIDE_FILE_FRANÇAIS = str(resolve_relative_path('user_guide_fr.html', __file__))
 if not Path(USER_GUIDE_FILE_FRANÇAIS).exists():
     USER_GUIDE_FILE_FRANÇAIS = str(resolve_relative_path('../user_guide_fr.html', __file__))
 USER_GUIDE_FILE_ENGLISH = str(resolve_relative_path('user_guide_en.html', __file__))
 if not Path(USER_GUIDE_FILE_ENGLISH).exists():
     USER_GUIDE_FILE_ENGLISH = str(resolve_relative_path('../user_guide_en.html', __file__))
-
 
 if sys.platform in ("linux", "linux2"):
     LOGO_PATH = str(resolve_relative_path('static/bigfin_logo.png', __file__))
@@ -66,7 +68,7 @@ elif sys.platform == "win32":
 
 def scale_font(font_size: int) -> int:
     monitor_width, monitor_height = pag.size()
-    return int(font_size * monitor_height / (1080 * 1.1)) # 1.1 is to scale it down more for windows.
+    return int(font_size * monitor_height / (1080 * 1.1))  # 1.1 is to scale it down more for windows.
 
 
 REFRESH_PERIOD = .1  # was 0.05 but It was increased to give to for the backlight to be updated in the controller
@@ -104,7 +106,8 @@ USER_SETTING_FILE = 'user_settings.json'
 
 def main():
     try:
-        init_logging(stdout_level='INFO', write=True)
+        debug_level = 'DEBUG' if APP_SETTINGS['debug'] is True else 'INFO'
+        init_logging(stdout_level=debug_level, file_level=debug_level, write=True)
         run()
     except Exception as e:
         logging.error(traceback.format_exc(), exc_info=True)
@@ -131,7 +134,7 @@ def init_dcs5_controller():
         logging.debug('Controller initiated.')
         return controller
     except ConfigError:
-        logging.debug('ConfigError while initiating controller.')
+        logging.error('ConfigError while initiating controller.')
         sg.popup_ok(
             'Error in the configurations files.\nConfiguration files not loaded.',
             title='Config Error',
@@ -224,8 +227,9 @@ def make_window():
                 [
                     sg.Push(),
                     sg.Text("Units", pad=(0, 0), font=REG_FONT),
-                    sg.Combo(default_value='kg', values=['kg', 'g', 'lb', 'oz'], key='-MAREL_UNITS-', enable_events=True, size=(5, 1), readonly=True,
-                     pad=(1, 1), font=REG_FONT)
+                    sg.Combo(default_value='kg', values=['kg', 'g', 'lb', 'oz'], key='-MAREL_UNITS-',
+                             enable_events=True, size=(5, 1), readonly=True,
+                             pad=(1, 1), font=REG_FONT)
                 ],
             ],
             font=FRAME_FONT
@@ -301,7 +305,8 @@ def make_window():
 
     ### STYLUS
     _stylus_layout = [
-        [sg.Combo(values=[''], key='-STYLUS-', enable_events=True, size=(10, 1), pad=(1, 1), font=REG_FONT, readonly=True),
+        [sg.Combo(values=[''], key='-STYLUS-', enable_events=True, size=(10, 1), pad=(1, 1), font=REG_FONT,
+                  readonly=True),
          sg.Text('Offset:', font=REG_FONT),
          sg.Text("-", font=REG_FONT_BOLD, background_color='white',
                  size=(3, 1), p=(1, 0), justification='c', key='-STYLUS_OFFSET-')
@@ -372,7 +377,7 @@ def make_window():
     global_layout = [
         [menu_layout],
         [sg.TabGroup([
-            [sg.Tab('Dcs5', controller_tab_layout,  element_justification='center')],
+            [sg.Tab('Dcs5', controller_tab_layout, element_justification='center')],
             [sg.Tab('Marel', marel_tab_layout, element_justification='center')]
         ])],
         [footnote_layout]
@@ -384,12 +389,13 @@ def make_window():
         margins=(0, 0),
         finalize=True,
         grab_anywhere=True,
-     #   resizable=True,
+        modal=True,
+        #   resizable=True,
         keep_on_top=False,
         element_justification='center',
     )
-    #window.set_min_size(tuple(map(lambda x: int(x / 2), window.size)))
-    #window.set_min_size((window.size[0], int(window.size[1]/2)))
+    # window.set_min_size(tuple(map(lambda x: int(x / 2), window.size)))
+    # window.set_min_size((window.size[0], int(window.size[1]/2)))
 
     window['-MAREL_HOST-'].bind("<Return>", "ENTER-")
 
@@ -422,7 +428,7 @@ def run():
         controller = init_dcs5_controller()
     else:
         while sg.user_settings()['configs_path'] is None:
-            controller = modal(window, popup_window_select_config)
+            controller = modal(window, popup_window_config)
 
     init_layout(window, controller)
 
@@ -485,8 +491,9 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
             case "-END_CONNECT-":
                 window.metadata['is_connecting'] = False
                 if not controller.client.is_connected:
-                    modal(window, sg.popup_ok, controller.client.error_msg, title='Failed.', keep_on_top=True, font=REG_FONT,
-                                modal=True)
+                    modal(window, sg.popup_ok, controller.client.error_msg, title='Failed.', keep_on_top=True,
+                          font=REG_FONT,
+                          modal=True)
             case "-ACTIVATE-":
                 window['-ACTIVATED_LED-'].update(**LED_WAIT)
                 window['-ACTIVATE-'].update(disabled=True)
@@ -507,7 +514,7 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
             case "-CALIBRATE-":
                 modal(window, popup_window_calibrate, controller)
             case 'Configuration':
-                controller = modal(window, popup_window_select_config, controller=controller)
+                controller = modal(window, popup_window_config, controller=controller)
                 # MAREL HOST IS UPDATED HERE SINCE THE FIELD IS ALSO AN INPUT
                 window['-MAREL_HOST-'].update(controller.config.client.marel_ip_address)
             case '-STYLUS-':
@@ -564,7 +571,7 @@ def refresh_layout(window: sg.Window, controller: Dcs5Controller):
     else:
         for key in [
             '-MAREL_START-', '-MAREL_STOP-',
-            '-MAREL_HOST-', '-MAREL_UNITS-', #'-MAREL_AUTO_ENTER-',
+            '-MAREL_HOST-', '-MAREL_UNITS-',  # '-MAREL_AUTO_ENTER-',
             '-CONNECT-', '-ACTIVATE-',
             '-DISCONNECT-', '-RESTART-',
             '-MUTE-',
@@ -599,8 +606,13 @@ def _refresh_marel_layout(window: sg.Window, controller: Dcs5Controller):
             window["-MAREL_HOST-"].update(disabled=True)
             window["-MAREL_START-"].update(disabled=True)
             window["-MAREL_STOP-"].update(disabled=False)
-            window["-MAREL_WEIGHT-"].update(f"{controller.marel.get_weight(controller.marel.units)} {controller.marel.units}")
-            window["-MAREL_WEIGHT_DEVICE-"].update(f"{controller.marel.get_weight(controller.marel.units)} {controller.marel.units}")
+            weight = controller.marel.get_weight(controller.marel.units)
+            if weight is not None:
+                weight = f"{weight} {controller.marel.units}"
+            else:
+                weight = "N/A"
+            window["-MAREL_WEIGHT-"].update(weight)
+            window["-MAREL_WEIGHT_DEVICE-"].update(weight)
         else:
             window["-MAREL_HOST-"].update(disabled=False)
             window["-MAREL_START-"].update(disabled=False)
@@ -610,7 +622,7 @@ def _refresh_marel_layout(window: sg.Window, controller: Dcs5Controller):
             window["-MAREL_WEIGHT_DEVICE-"].update("N/A")
     else:
         window["-MAREL_UNITS-"].update(disabled=True)
-        #window["-MAREL_AUTO_ENTER-"].update(disabled=True)
+        # window["-MAREL_AUTO_ENTER-"].update(disabled=True)
         window["-MAREL_START-"].update(disabled=False)
         window["-MAREL_STOP-"].update(disabled=True)
         window["-MAREL_LED-"].update(**LED_OFF)
@@ -679,17 +691,22 @@ def _refresh_controller_layout(window: sg.Window, controller: Dcs5Controller):
             window["-ACTIVATED_LED-"].update(**LED_ON)
             window["-ACTIVATE-"].update(disabled=True)
 
-            window['-MODE-TOP-'].update(disabled=not controller.output_mode != 'top', disabled_button_color=SELECTED_BUTTON_COLOR)
-            window['-MODE-LENGTH-'].update(disabled=not controller.output_mode != 'length', disabled_button_color=SELECTED_BUTTON_COLOR)
-            window['-MODE-BOTTOM-'].update(disabled=not controller.output_mode != 'bottom', disabled_button_color=SELECTED_BUTTON_COLOR)
+            window['-MODE-TOP-'].update(disabled=not controller.output_mode != 'top',
+                                        disabled_button_color=SELECTED_BUTTON_COLOR)
+            window['-MODE-LENGTH-'].update(disabled=not controller.output_mode != 'length',
+                                           disabled_button_color=SELECTED_BUTTON_COLOR)
+            window['-MODE-BOTTOM-'].update(disabled=not controller.output_mode != 'bottom',
+                                           disabled_button_color=SELECTED_BUTTON_COLOR)
 
-            window['-UNITS-MM-'].update(disabled=controller.length_units == 'mm', disabled_button_color=SELECTED_BUTTON_COLOR)
-            window['-UNITS-CM-'].update(disabled=controller.length_units == 'cm', disabled_button_color=SELECTED_BUTTON_COLOR)
+            window['-UNITS-MM-'].update(disabled=controller.length_units == 'mm',
+                                        disabled_button_color=SELECTED_BUTTON_COLOR)
+            window['-UNITS-CM-'].update(disabled=controller.length_units == 'cm',
+                                        disabled_button_color=SELECTED_BUTTON_COLOR)
 
             if controller.internal_board_state.backlighting_level is not None:
                 backlight_level = round(
                     (
-                                controller.internal_board_state.backlighting_level / controller.control_box_parameters.max_backlighting_level) * BACKLIGHT_SLIDER_MAX
+                            controller.internal_board_state.backlighting_level / controller.control_box_parameters.max_backlighting_level) * BACKLIGHT_SLIDER_MAX
                 )
                 window['-BACKLIGHT-'].update(disabled=False,
                                              value=backlight_level)  # or None ? Removed
@@ -722,15 +739,15 @@ def _refresh_controller_layout(window: sg.Window, controller: Dcs5Controller):
         else:
             window["-CAL_LED-"].update(**LED_OFF)
 
-        if 'shift' in controller.shouter.meta_key_combo:
+        if 'shift' in controller.keyboard_emulator.meta_key_combo:
             window["-SHIFT-"].update(**META_ON)
         else:
             window["-SHIFT-"].update(**META_OFF)
-        if 'ctrl' in controller.shouter.meta_key_combo:
+        if 'ctrl' in controller.keyboard_emulator.meta_key_combo:
             window["-CTRL-"].update(**META_ON)
         else:
             window["-CTRL-"].update(**META_OFF)
-        if 'alt' in controller.shouter.meta_key_combo:
+        if 'alt' in controller.keyboard_emulator.meta_key_combo:
             window["-ALT-"].update(**META_ON)
         else:
             window["-ALT-"].update(**META_OFF)
@@ -861,7 +878,7 @@ def popup_window_calibrate(controller: Dcs5Controller):
 
 
 def config_window():
-    if (current_config := get_current_config()) is None:
+    if (current_config := get_current_config_name()) is None:
         current_config = 'No configuration loaded.'
 
     select_layout = [
@@ -878,9 +895,11 @@ def config_window():
             enable_events=True,
         )],
         [
-            button('New', size=(6, 1), button_color=('black', "orange")),
-            ibutton('Load', size=(6, 1), button_color=('white', "dark green"), disabled=True),
-            ibutton('Delete', size=(6, 1), button_color=('white', "red3"), disabled=True)
+            button('New', size=(6, 1), button_color=('black', "orange"), tooltip="Create a new configuration."),
+            ibutton('Copy', size=(6, 1), button_color=('black', "orange"), disabled=True, tooltip="Copy an existing configuration."),
+            ibutton('Rename', size=(6, 1), button_color=('black', "orange"), disabled=True, tooltip="Rename a configuration."),
+            ibutton('Load', size=(6, 1), button_color=('white', "dark green"), disabled=True, tooltip="Load a configuration."),
+            ibutton('Delete', size=(6, 1), button_color=('white', "red3"), disabled=True, tooltip="Delete a configuration.")
         ]
     ]
 
@@ -906,18 +925,24 @@ def config_window():
                sg.Column(edit_layout, vertical_alignment='top')],
               [button('Close', size=(6, 1), button_color=ENABLED_BUTTON_COLOR)]]
 
-    window = sg.Window('Configurations', layout, element_justification='center', modal=True)
+    window = sg.Window(
+        'Configurations',
+        layout,
+        element_justification='center',
+        keep_on_top=True,
+        modal=True
+    )
 
     return window
 
 
-def popup_window_select_config(controller: Dcs5Controller = None) -> Dcs5Controller:
-    current_config = get_current_config()
+def popup_window_config(controller: Dcs5Controller = None) -> Dcs5Controller:
+    current_config = get_current_config_name()
 
     window = config_window()
 
     while True:
-        event, values = window.read(timeout=0.1)
+        event, values = window.read()#(timeout=0.1)
 
         if event == '__TIMEOUT__':
             pass
@@ -928,77 +953,102 @@ def popup_window_select_config(controller: Dcs5Controller = None) -> Dcs5Control
             sg.SetOptions(window_location=get_new_location(window))
 
         if event == 'New':
-            window.DisableClose = True
-            _ = create_new_configs()
-            window.DisableClose = False
 
-            window['-CONFIG-'].update(values=list_configs(), set_to_index=[])
-            window['Load'].update(disabled=True)
-            window['Delete'].update(disabled=True)
-            window['-EDIT-'].update(disabled=True)
-            window['Edit'].update(disabled=True)
+            new_config_name = modal(window, create_new_config)
+
+            if new_config_name is not None:
+                window['-CONFIG-'].update(values=list_configs(), set_to_index=[list_configs().index(new_config_name)])
+                # window['Copy'].update(disabled=True)
+                # window['Rename'].update(disabled=True)
+                # window['Load'].update(disabled=True)
+                # window['Delete'].update(disabled=True)
+                # window['-EDIT-'].update(disabled=True)
+                window['Copy'].update(disabled=False)
+                window['Rename'].update(disabled=False)
+                window['Load'].update(disabled=False)
+                window['Delete'].update(disabled=False)
+                window['-EDIT-'].update(disabled=False)
 
         elif values is not None:
             if values['-CONFIG-'] is not None:
                 if len(values['-CONFIG-']) != 0:
+                    window['Copy'].update(disabled=False)
+                    window['Rename'].update(disabled=False)
                     window['Load'].update(disabled=False)
                     window['Delete'].update(disabled=False)
                     window['-EDIT-'].update(disabled=False)
+
                     if len(values['-EDIT-']) != 0:
                         window['Edit'].update(disabled=False)
 
-                    if event == 'Load':
-                        selected_config_path = str(Path(CONFIG_FILES_PATH).joinpath(values['-CONFIG-'][0]))
+                    match event:
+                        case 'Copy':
+                            new_config = modal(window, popup_window_copy_config, values['-CONFIG-'][0])
+                            if new_config is not None:
+                                window['-CONFIG-'].update(values=list_configs(), set_to_index=[list_configs().index(new_config)])
 
-                        sg.user_settings()['previous_configs_path'] = sg.user_settings()['configs_path']
-                        sg.user_settings()['configs_path'] = selected_config_path
+                        case 'Rename':
+                            renamed_config = modal(window, popup_window_rename_config, values['-CONFIG-'][0])
+                            if renamed_config is not None:
+                                window['-CONFIG-'].update(values=list_configs(), set_to_index=[list_configs().index(renamed_config)])
 
-                        if controller is None:
-                            controller = modal(window, init_dcs5_controller)
-                        else:
-                            modal(window, reload_controller_config, controller)
+                        case 'Load':
+                            selected_config_path = str(Path(CONFIG_FILES_PATH).joinpath(values['-CONFIG-'][0]))
 
-                        current_config = get_current_config()
+                            sg.user_settings()['previous_configs_path'] = sg.user_settings()['configs_path']
+                            sg.user_settings()['configs_path'] = selected_config_path
 
-                    if event == 'Delete':
-                        if values['-CONFIG-'][0] == current_config:
-                            modal(window, sg.popup_ok, 'Cannot delete the configuration currently in use.',
-                                        title='Deletion error', keep_on_top=True, modal=True)
-                        elif modal(window, sg.popup_yes_no, f"Are you sure you want to delete `{values['-CONFIG-'][0]}`",
-                                             keep_on_top=True, modal=True) == 'Yes':
-                            shutil.rmtree(str(Path(CONFIG_FILES_PATH).joinpath(values['-CONFIG-'][0])))
-
-                            window['-CONFIG-'].update(list_configs(), set_to_index=[])
-                            window['Load'].update(disabled=True)
-                            window['Delete'].update(disabled=True)
-                            window['-EDIT-'].update(disabled=True)
-                            window['Edit'].update(disabled=True)
-
-                    if event == 'Edit':
-                        config_path = Path(CONFIG_FILES_PATH).joinpath(values['-CONFIG-'][0])
-                        match values['-EDIT-'][0]:
-                            case 'Controller Configuration':
-                                click.edit(filename=str(config_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME)))
-                            case 'Devices Specification':
-                                click.edit(filename=str(config_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME)))
-
-                        if values['-CONFIG-'][0] == current_config:
-                            sg.user_settings()['previous_configs_path'] = current_config + '*'
-                            if modal(window, sg.popup_yes_no, 'Do you want to reload the configuration ?', keep_on_top=True,
-                                               modal=True) == 'Yes':
+                            if controller is None:
+                                controller = modal(window, init_dcs5_controller)
+                            else:
                                 modal(window, reload_controller_config, controller)
 
-                if (current_config := get_current_config()) is not None:
+                        case 'Delete':
+                            if values['-CONFIG-'][0] == current_config:
+                                modal(window, sg.popup_ok, 'Cannot delete the configuration currently in use.',
+                                      title='Deletion error', keep_on_top=True, modal=True)
+                            elif modal(window, sg.popup_yes_no,
+                                       f"Are you sure you want to delete `{values['-CONFIG-'][0]}`",
+                                       keep_on_top=True, modal=True) == 'Yes':
+                                shutil.rmtree(str(Path(CONFIG_FILES_PATH).joinpath(values['-CONFIG-'][0])))
+
+                                window['-CONFIG-'].update(list_configs(), set_to_index=[])
+
+                        case 'Edit':
+                            config_path = Path(CONFIG_FILES_PATH).joinpath(values['-CONFIG-'][0])
+                            match values['-EDIT-'][0]:
+                                case 'Controller Configuration':
+                                    _filename = str(config_path.joinpath(CONTROLLER_CONFIGURATION_FILE_NAME))
+                                case 'Devices Specification':
+                                    _filename = str(config_path.joinpath(DEVICES_SPECIFICATION_FILE_NAME))
+                                case _:
+                                    raise ValueError('Invalid file name for edit. (Never suppose to happen)')
+
+                            modal(window, click.edit, filename=_filename)
+
+                            if values['-CONFIG-'][0] == current_config:
+                                sg.user_settings()['previous_configs_path'] = current_config + '*'
+                                if modal(window, sg.popup_yes_no, 'Do you want to reload the configuration ?',
+                                         keep_on_top=True,
+                                         modal=True) == 'Yes':
+                                    modal(window, reload_controller_config, controller)
+
+                        case _:
+                            pass
+
+                if (current_config := get_current_config_name()) is not None:
                     window['-CONFIGURATION-'].update(current_config)
                 else:
                     window['-CONFIGURATION-'].update('No Config Selected')
-        window.bring_to_front()
+
+
+
     window.close()
 
     return controller
 
 
-def get_current_config():
+def get_current_config_name():
     return Path(sg.user_settings()['configs_path']).name if sg.user_settings()['configs_path'] is not None else None
 
 
@@ -1008,10 +1058,12 @@ def list_configs():
 
 def new_config_window():
     model_layout = [[sg.Text('Model: ', font=REG_FONT),
-                     sg.DropDown(['xt', 'micro'], default_value='xt', size=(20, 4), enable_events=False, font=REG_FONT, readonly=True,
-                                  key='-MODEL-')]]
+                     sg.DropDown(['xt', 'micro'], default_value='xt', size=(20, 4), enable_events=False, font=REG_FONT,
+                                 readonly=True,
+                                 key='-MODEL-')]]
     path_layout = [
-        [sg.Text('Name:  ', font=REG_FONT), sg.InputText(key='-PATH-', font=REG_FONT, size=[20, 1], default_text=None)]]
+        [sg.Text('Name:  ', font=REG_FONT),
+         sg.InputText(key='-NEW_CONFIG_NAME-', font=REG_FONT, size=[30, 1], default_text=None)]]
     submit_layout = [[
         button('Create', size=(6, 1), button_color=('black', "orange")),
         button('Close', size=(6, 1), button_color=ENABLED_BUTTON_COLOR)
@@ -1024,7 +1076,9 @@ def new_config_window():
     return window
 
 
-def create_new_configs():
+def create_new_config():
+    """Create new config (GUI)"""
+    new_config_name = None
     window = new_config_window()
     while True:
         event, values = window.read()
@@ -1032,44 +1086,151 @@ def create_new_configs():
             break
 
         if event is None or event == 'Create':
-            if values['-PATH-']:
-                if Path(values['-PATH-']).name in list_configs():
-                    window.keep_on_top_clear()
+            if values['-NEW_CONFIG_NAME-']:
+                if Path(values['-NEW_CONFIG_NAME-']).name in list_configs():
                     if modal(window, sg.popup_yes_no,
                              'Configuration name already exists. Do you want to overwrite it ?',
                              title='Warning', keep_on_top=True) == 'No':
                         break
-                    window.keep_on_top_set()
 
-                new_config_path = copy_config_files(values['-PATH-'], values['-MODEL-'])
+                new_config_name = values['-NEW_CONFIG_NAME-']
+                make_new_config_from_default(new_config_name, values['-MODEL-'])
 
                 window.close()
-                return new_config_path
     window.close()
-    return None
+    return new_config_name
 
 
-def copy_config_files(dest_path: str, model: str):
-    new_config_path = CONFIG_FILES_PATH.joinpath(dest_path)
-    new_config_path.mkdir(parents=True, exist_ok=True)
+def copy_config_window(config_name: str):
+    path_layout = [
+        [sg.Text('Name:  ', font=REG_FONT),
+         sg.InputText(default_text=f"{config_name}_copy", key='-NEW_CONFIG_NAME-', font=REG_FONT, size=[30, 1])]]
+    submit_layout = [[
+        button('Create', size=(6, 1), button_color=('black', "orange")),
+        button('Close', size=(6, 1), button_color=ENABLED_BUTTON_COLOR)
+    ]]
 
+    global_layout = [path_layout, submit_layout]
+
+    window = sg.Window('Configurations', global_layout, element_justification='center', keep_on_top=True, modal=True)
+
+    return window
+
+
+def popup_window_copy_config(config_name: str):
+    """Copy config (GUI)"""
+    new_config_name = None
+    window = copy_config_window(config_name=config_name)
+
+    while True:
+        event, values = window.read()
+        if event in ['Close', sg.WIN_CLOSED]:
+            break
+
+        if event is None or event == 'Create':
+            if values['-NEW_CONFIG_NAME-']:
+                if Path(values['-NEW_CONFIG_NAME-']).name in list_configs():
+                    if modal(window, sg.popup_yes_no,
+                             'Configuration name already exists. Do you want to overwrite it ?',
+                             title='Warning', keep_on_top=True) == 'No':
+                        break
+                new_config_name = values['-NEW_CONFIG_NAME-']
+                make_new_config_from_existing(new_config_name=new_config_name,
+                                              source_config_name=config_name)
+
+                window.close()
+    window.close()
+    return new_config_name
+
+
+def rename_config_window(config_name: str):
+    path_layout = [
+        [sg.Text('Name:  ', font=REG_FONT),
+         sg.InputText(default_text=f"{config_name}", key='-NEW_CONFIG_NAME-', font=REG_FONT, size=[30, 1])]]
+    submit_layout = [[
+        button('Rename', size=(6, 1), button_color=('black', "orange")),
+        button('Close', size=(6, 1), button_color=ENABLED_BUTTON_COLOR)
+    ]]
+
+    global_layout = [path_layout, submit_layout]
+
+    window = sg.Window('Configurations', global_layout, element_justification='center', keep_on_top=True, modal=True)
+
+    return window
+
+
+def popup_window_rename_config(config_name: str) -> Optional[str]:
+    """Rename config (GUI)"""
+    new_config_name = None
+    window = rename_config_window(config_name=config_name)
+
+    while True:
+        event, values = window.read()
+        if event in ['Close', sg.WIN_CLOSED]:
+            break
+
+        if event is None or event == 'Rename':
+            if values['-NEW_CONFIG_NAME-']:
+                if Path(values['-NEW_CONFIG_NAME-']).name in list_configs():
+                    if modal(window, sg.popup_yes_no,
+                             'Configuration name already exists. Do you want to overwrite it ?',
+                             title='Warning', keep_on_top=True) == 'No':
+                        break
+                new_config_name = values['-NEW_CONFIG_NAME-']
+
+                config_path = str(CONFIG_FILES_PATH.joinpath(config_name))
+                new_config_path = str(CONFIG_FILES_PATH.joinpath(new_config_name))
+
+                shutil.move(config_path, new_config_path)
+
+                if config_path == sg.user_settings()['configs_path']:
+                    sg.user_settings()['configs_path'] = new_config_path
+
+                if config_path == sg.user_settings()['previous_configs_path']:
+                    sg.user_settings()['previous_configs_path'] = new_config_path
+
+                window.close()
+    window.close()
+    return new_config_name
+
+
+def make_new_config_from_default(new_config_name: str, model: str):
+    """Make the new config directory and copy the default config files."""
     if model == 'xt':
         default_files = [XT_DEFAULT_CONTROLLER_CONFIGURATION_FILE, XT_DEFAULT_DEVICES_SPECIFICATION_FILE]
     else:
-        default_files = [MICRO_DEFAULT_CONTROLLER_CONFIGURATION_FILE,
-                         MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE]
+        default_files = [MICRO_DEFAULT_CONTROLLER_CONFIGURATION_FILE, MICRO_DEFAULT_DEVICES_SPECIFICATION_FILE]
 
-    local_files = [new_config_path.joinpath(fn) for fn in
-                   (CONTROLLER_CONFIGURATION_FILE_NAME, DEVICES_SPECIFICATION_FILE_NAME)]
+    _make_new_config(new_config_name=new_config_name, default_files=default_files)
 
-    for lf, df in zip(local_files, default_files):
+
+def make_new_config_from_existing(new_config_name: str, source_config_name: str):
+    """Make the new config directory and copy existing config files."""
+    source_config_path = CONFIG_FILES_PATH.joinpath(source_config_name)
+
+    source_config_files = [source_config_path.joinpath(fn) for fn in
+                           (CONTROLLER_CONFIGURATION_FILE_NAME, DEVICES_SPECIFICATION_FILE_NAME)]
+    _make_new_config(new_config_name=new_config_name, default_files=source_config_files)
+
+
+def _make_new_config(new_config_name: str, default_files: List[str]):
+    new_config_path = CONFIG_FILES_PATH.joinpath(new_config_name)
+
+    new_config_path.mkdir(parents=True, exist_ok=True)
+
+    new_config_files = [new_config_path.joinpath(fn) for fn in
+                        (CONTROLLER_CONFIGURATION_FILE_NAME, DEVICES_SPECIFICATION_FILE_NAME)]
+
+    _copy_files(dest_files=new_config_files, source_files=default_files)
+
+
+def _copy_files(dest_files: List[str], source_files: List[str]):
+    for lf, df in zip(dest_files, source_files):
         if not Path(lf).exists():
             shutil.copyfile(df, lf)
         else:
             shutil.copyfile(df, lf)
             logging.debug(f'Writing file: {lf}')
-
-    return new_config_path
 
 
 def reload_controller_config(controller: Dcs5Controller):
@@ -1121,7 +1282,7 @@ def led(key=None):
 def ibutton(label, size, key=None,
             button_color=ENABLED_BUTTON_COLOR,
             disabled_button_color=DISABLED_BUTTON_COLOR,
-            disabled=False):
+            disabled=False, tooltip=None):
     return sg.Button(label, size=size,
                      font=REG_FONT,
                      pad=(1, 1),
@@ -1130,10 +1291,11 @@ def ibutton(label, size, key=None,
                      disabled_button_color=disabled_button_color,
                      key=key or label,
                      disabled=disabled,
+                     tooltip=tooltip
                      )
 
 
-def button(label, button_color, size, key=None):
+def button(label, button_color, size, key=None, tooltip=None):
     return sg.Button(label,
                      size=size,
                      font=REG_FONT,
@@ -1142,6 +1304,7 @@ def button(label, button_color, size, key=None):
                      border_width=1,
                      disabled_button_color=DISABLED_BUTTON_COLOR,
                      key=key,
+                     tooltip=tooltip
                      )
 
 
@@ -1150,7 +1313,7 @@ def col(cols_layout):
 
 
 def modal(window: sg.Window, func: callable, *args, **kwargs) -> Any:
-    """Disable the current window `Close` action while `func` is running.
+    """Disable the current window `Close` action while `func` is running and temporarily disable the keep_on_top.
 
     Used for popup window.
 
@@ -1164,9 +1327,22 @@ def modal(window: sg.Window, func: callable, *args, **kwargs) -> Any:
 
 
     """
+    keep_on_top = window.KeepOnTop
+    window.keep_on_top_clear()
     window.DisableClose = True
+    window.refresh()
+
     out = func(*args, **kwargs)
     window.DisableClose = False
+
+    if keep_on_top:
+        window.keep_on_top_set()
+
+    window.refresh()
+    window.bring_to_front()
+
+    window.read(.01) # quick fix: to discard input made on a window that was supposed to be disabled...
+
     return out
 
 

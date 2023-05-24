@@ -11,7 +11,7 @@ class KeyboardEmulator:
         self.last_msg_length = 1
         self.meta_key_combo = []
 
-    def shout(self, value: str):
+    def write(self, value: str):
         if value in self.valid_meta_keys:
             self.handle_key_hold(value)
         else:
