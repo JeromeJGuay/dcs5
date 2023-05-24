@@ -389,6 +389,7 @@ def make_window():
         margins=(0, 0),
         finalize=True,
         grab_anywhere=True,
+        modal=True,
         #   resizable=True,
         keep_on_top=False,
         element_justification='center',
@@ -894,11 +895,11 @@ def config_window():
             enable_events=True,
         )],
         [
-            button('New', size=(6, 1), button_color=('black', "orange")),
-            ibutton('Copy', size=(6, 1), button_color=('white', "orange"), disabled=True),
-            ibutton('Rename', size=(6, 1), button_color=('white', "orange"), disabled=True),
-            ibutton('Load', size=(6, 1), button_color=('white', "dark green"), disabled=True),
-            ibutton('Delete', size=(6, 1), button_color=('white', "red3"), disabled=True)
+            button('New', size=(6, 1), button_color=('black', "orange"), tooltip="Create a new configuration."),
+            ibutton('Copy', size=(6, 1), button_color=('black', "orange"), disabled=True, tooltip="Copy an existing configuration."),
+            ibutton('Rename', size=(6, 1), button_color=('black', "orange"), disabled=True, tooltip="Rename a configuration."),
+            ibutton('Load', size=(6, 1), button_color=('white', "dark green"), disabled=True, tooltip="Load a configuration."),
+            ibutton('Delete', size=(6, 1), button_color=('white', "red3"), disabled=True, tooltip="Delete a configuration.")
         ]
     ]
 
@@ -1047,7 +1048,7 @@ def new_config_window():
                                  key='-MODEL-')]]
     path_layout = [
         [sg.Text('Name:  ', font=REG_FONT),
-         sg.InputText(key='-NEW_CONFIG_NAME-', font=REG_FONT, size=[20, 1], default_text=None)]]
+         sg.InputText(key='-NEW_CONFIG_NAME-', font=REG_FONT, size=[30, 1], default_text=None)]]
     submit_layout = [[
         button('Create', size=(6, 1), button_color=('black', "orange")),
         button('Close', size=(6, 1), button_color=ENABLED_BUTTON_COLOR)
@@ -1085,7 +1086,7 @@ def create_new_config():
 def copy_config_window(config_name: str):
     path_layout = [
         [sg.Text('Name:  ', font=REG_FONT),
-         sg.InputText(default_text=f"{config_name}_copy", key='-NEW_CONFIG_NAME-', font=REG_FONT, size=[20, 1])]]
+         sg.InputText(default_text=f"{config_name}_copy", key='-NEW_CONFIG_NAME-', font=REG_FONT, size=[30, 1])]]
     submit_layout = [[
         button('Create', size=(6, 1), button_color=('black', "orange")),
         button('Close', size=(6, 1), button_color=ENABLED_BUTTON_COLOR)
@@ -1125,7 +1126,7 @@ def popup_window_copy_config(config_name: str):
 def rename_config_window(config_name: str):
     path_layout = [
         [sg.Text('Name:  ', font=REG_FONT),
-         sg.InputText(default_text=f"{config_name}", key='-NEW_CONFIG_NAME-', font=REG_FONT, size=[20, 1])]]
+         sg.InputText(default_text=f"{config_name}", key='-NEW_CONFIG_NAME-', font=REG_FONT, size=[30, 1])]]
     submit_layout = [[
         button('Rename', size=(6, 1), button_color=('black', "orange")),
         button('Close', size=(6, 1), button_color=ENABLED_BUTTON_COLOR)
@@ -1259,7 +1260,7 @@ def led(key=None):
 def ibutton(label, size, key=None,
             button_color=ENABLED_BUTTON_COLOR,
             disabled_button_color=DISABLED_BUTTON_COLOR,
-            disabled=False):
+            disabled=False, tooltip=None):
     return sg.Button(label, size=size,
                      font=REG_FONT,
                      pad=(1, 1),
@@ -1268,10 +1269,11 @@ def ibutton(label, size, key=None,
                      disabled_button_color=disabled_button_color,
                      key=key or label,
                      disabled=disabled,
+                     tooltip=tooltip
                      )
 
 
-def button(label, button_color, size, key=None):
+def button(label, button_color, size, key=None, tooltip=None):
     return sg.Button(label,
                      size=size,
                      font=REG_FONT,
@@ -1280,6 +1282,7 @@ def button(label, button_color, size, key=None):
                      border_width=1,
                      disabled_button_color=DISABLED_BUTTON_COLOR,
                      key=key,
+                     tooltip=tooltip
                      )
 
 
@@ -1315,6 +1318,8 @@ def modal(window: sg.Window, func: callable, *args, **kwargs) -> Any:
 
     window.refresh()
     window.bring_to_front()
+
+    window.read(.01) # quick fix: to discard input made on a window that was supposed to be disabled...
 
     return out
 
