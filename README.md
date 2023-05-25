@@ -12,7 +12,13 @@ Downloading the Dcs5 Controller App from the latest release.
 
 1. Download `dcs5.zip` from the last version [here](https://github.com/iml-gddaiss/dcs5/releases).
 2. Unzip `dcs5.zip`
-3. Run `dcs5.exe`
+3. Run `dcs5\dcs5.exe`
+
+The application will generate a local files upon its initial launch at:
++ Windows: `%localappdata%\dcs5\`
++ Linux: `~/.dcs5/`
+
+Where it will also save the different configurations and log files.
 
 # Requirements
 ## Measuring board firmware
