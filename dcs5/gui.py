@@ -73,7 +73,7 @@ def scale_font(font_size: int) -> int:
 
 REFRESH_PERIOD = .1  # was 0.05 but It was increased to give to for the backlight to be updated in the controller
 
-BACKLIGHT_SLIDER_MAX = 100
+BACKLIGHT_SLIDER_MAX = 10
 
 DEVICE_LAYOUT_PADDING = 16
 
@@ -107,6 +107,7 @@ USER_SETTING_FILE = 'user_settings.json'
 def main():
     try:
         debug_level = 'DEBUG' if APP_SETTINGS['debug'] is True else 'INFO'
+        debug_level = 'DEBUG'
         init_logging(stdout_level=debug_level, file_level=debug_level, write=True)
         run()
     except Exception as e:
@@ -485,7 +486,9 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 window.refresh()
             case "-CONNECT-":
                 window.metadata['is_connecting'] = True
-                window.perform_long_operation(controller.start_client, end_key='-END_CONNECT-')
+                # window.perform_long_operation(controller.start_client, end_key='-END_CONNECT-')
+                window.perform_long_operation(controller.start_client_and_start_listening, end_key='-END_CONNECT-')
+
             case "-DISCONNECT-":
                 controller.close_client()
             case "-END_CONNECT-":
@@ -522,8 +525,7 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
             case '-BACKLIGHT-':
                 controller.c_set_backlighting_level(
                     int(
-                        (values[
-                             '-BACKLIGHT-'] / BACKLIGHT_SLIDER_MAX) * controller.control_box_parameters.max_backlighting_level
+                        (values['-BACKLIGHT-'] / BACKLIGHT_SLIDER_MAX) * controller.control_box_parameters.max_backlighting_level
                     )
                 )
             case '-UNITS-MM-':
@@ -703,10 +705,10 @@ def _refresh_controller_layout(window: sg.Window, controller: Dcs5Controller):
             window['-UNITS-CM-'].update(disabled=controller.length_units == 'cm',
                                         disabled_button_color=SELECTED_BUTTON_COLOR)
 
-            if controller.internal_board_state.backlighting_level is not None:
+            if controller.persistent_backlight_level is not None:
                 backlight_level = round(
                     (
-                            controller.internal_board_state.backlighting_level / controller.control_box_parameters.max_backlighting_level) * BACKLIGHT_SLIDER_MAX
+                            controller.persistent_backlight_level / controller.control_box_parameters.max_backlighting_level) * BACKLIGHT_SLIDER_MAX
                 )
                 window['-BACKLIGHT-'].update(disabled=False,
                                              value=backlight_level)  # or None ? Removed
@@ -958,11 +960,6 @@ def popup_window_config(controller: Dcs5Controller = None) -> Dcs5Controller:
 
             if new_config_name is not None:
                 window['-CONFIG-'].update(values=list_configs(), set_to_index=[list_configs().index(new_config_name)])
-                # window['Copy'].update(disabled=True)
-                # window['Rename'].update(disabled=True)
-                # window['Load'].update(disabled=True)
-                # window['Delete'].update(disabled=True)
-                # window['-EDIT-'].update(disabled=True)
                 window['Copy'].update(disabled=False)
                 window['Rename'].update(disabled=False)
                 window['Load'].update(disabled=False)
@@ -1239,8 +1236,11 @@ def reload_controller_config(controller: Dcs5Controller):
         controller.reload_configs()
         logging.debug('Controller reloaded.')
         if controller.client.is_connected:
-            if sg.popup_yes_no('Do you want to synchronize board ?', keep_on_top=True) == "yes":
+            do_sync = sg.popup_yes_no('Do you want to synchronize board ?', keep_on_top=True)
+            logging.debug(f'Asking if the user wants to synchronize. Answer: {do_sync}')
+            if do_sync == "Yes":
                 controller.init_controller_and_board()
+
         sg.user_settings()['configs_path'] = sg.user_settings()['configs_path'].strip('*')
 
     except ConfigError as err:
