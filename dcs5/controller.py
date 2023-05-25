@@ -37,7 +37,7 @@ pag.FAILSAFE = False
 
 BOARD_STATE_MONITORING_SLEEP = 5
 
-AFTER_SENT_SLEEP = 0.005 # was 0.01
+AFTER_SENT_SLEEP = 0.01  # lower value might send message too quickly.
 
 HANDLER_SLEEP = 0.01
 
