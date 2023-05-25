@@ -2,6 +2,7 @@ import logging
 
 import pyautogui as pag
 
+pag.PAUSE = 0.01
 
 class KeyboardEmulator:
     """Emulate keyboard presses."""

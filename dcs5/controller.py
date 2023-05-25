@@ -37,7 +37,7 @@ pag.FAILSAFE = False
 
 BOARD_STATE_MONITORING_SLEEP = 5
 
-AFTER_SENT_SLEEP = 0.01
+AFTER_SENT_SLEEP = 0.01  # lower value might send message too quickly.
 
 HANDLER_SLEEP = 0.01
 
@@ -115,7 +115,7 @@ class Dcs5Controller:
         self.is_listening = False  # listening to the keyboard on the connected socket.
         self.is_muted = False  # Message are processed but keyboard input are suppress.
 
-        self.user_set_backlight_value: int = None # Used to save backlight value when MODE key is lit.
+        self.persistent_backlight_level: int = None # Used to save backlight value when MODE key is lit.
 
         self._set_board_settings()
 
@@ -178,6 +178,11 @@ class Dcs5Controller:
         self.auto_enter = self.config.launch_settings.auto_enter
         self.stylus_offset = self.devices_specifications.stylus_offset[self.stylus]
         self.stylus_cyclical_list = cycle(list(self.devices_specifications.stylus_offset.keys()))
+
+    def start_client_and_start_listening(self, mac_address: str = None):
+        self.start_client(mac_address=mac_address)
+        self.init_controller_and_board()
+        self.start_listening()
 
     def start_client(self, mac_address: str = None):
         """Create a socket and tries to connect with the board."""
@@ -330,13 +335,14 @@ class Dcs5Controller:
         self.c_check_calibration_state()
         self.c_get_board_stats()
 
-        if self.wait_for_ping(timeout=5) is True:
+        if self.wait_for_initialization_ping(timeout=5) is True:
             if (
                     self.internal_board_state.board_interface == "Dcs5LinkStream" and
                     self.internal_board_state.stylus_status_msg == "disable" and
                     self.internal_board_state.stylus_settling_delay == reading_profile.settling_delay and
                     self.internal_board_state.stylus_max_deviation == reading_profile.max_deviation and
-                    self.internal_board_state.number_of_reading == reading_profile.number_of_reading
+                    self.internal_board_state.number_of_reading == reading_profile.number_of_reading and
+                    self.internal_board_state.backlighting_level == self.persistent_backlight_level
             ):
                 self.is_sync = True
                 logging.info("Board initialization succeeded.")
@@ -347,7 +353,8 @@ class Dcs5Controller:
                     self.internal_board_state.stylus_status_msg,
                     (self.internal_board_state.stylus_settling_delay, reading_profile.settling_delay),
                     (self.internal_board_state.stylus_max_deviation, reading_profile.max_deviation),
-                    (self.internal_board_state.number_of_reading, reading_profile.number_of_reading)]
+                    (self.internal_board_state.number_of_reading, reading_profile.number_of_reading),
+                    (self.internal_board_state.backlighting_level, self.persistent_backlight_level)]
                 logging.debug(f"Board state after initialization: {state}")
         else:
             logging.info("Ping was not received. Board initialization failed.")
@@ -355,14 +362,14 @@ class Dcs5Controller:
         if not was_listening:
             self.stop_listening()
 
-    def wait_for_ping(self, timeout=2):
+    def wait_for_initialization_ping(self, timeout=2):
         self.c_ping()
         self.ping_event_check.clear()
         logging.info('Waiting for ping event.')
         if self.ping_event_check.wait(timeout):
-            logging.info('Ping received.')
+            logging.info('Initializing Ping received.')
             return True
-        logging.info('Ping not received.')
+        logging.info('Initializing Ping not received.')
         return False
 
     def change_length_units_mm(self, flash=True):
@@ -392,11 +399,10 @@ class Dcs5Controller:
                 key = self.find_command_key('MODE')
                 if key is not None:
                     key -= 1  # led keys are numbered 0-31 in the firmwares
-                    self.user_set_backlight_value = self.internal_board_state.backlighting_level
-                    self.c_set_backlighting_level(round(self.control_box_parameters.max_backlighting_level / 3))
+                    self.c_set_backlighting_level(round(self.control_box_parameters.max_backlighting_level / 3), persistent=False)
                     self.c_set_key_backlighting_level(level=self.control_box_parameters.max_backlighting_level, key=key)
             else:
-                self.c_set_backlighting_level(self.user_set_backlight_value)
+                self.c_set_backlighting_level(self.persistent_backlight_level, persistent=True)
 
     def find_command_key(self, command: str):
         """Return the XT controller box internal key value for a given command. (reverse mapping)."""
@@ -468,20 +474,20 @@ class Dcs5Controller:
             self.keyboard_emulator.write(value)
 
     def backlight_up(self):
-        if self.internal_board_state.backlighting_level < self.control_box_parameters.max_backlighting_level:
-            self.internal_board_state.backlighting_level += 25
-            if self.internal_board_state.backlighting_level > self.control_box_parameters.max_backlighting_level:
-                self.internal_board_state.backlighting_level = self.control_box_parameters.max_backlighting_level
-            self.c_set_backlighting_level(self.internal_board_state.backlighting_level)
+        if self.persistent_backlight_level < self.control_box_parameters.max_backlighting_level:
+            self.persistent_backlight_level += 25
+            if self.persistent_backlight_level > self.control_box_parameters.max_backlighting_level:
+                self.persistent_backlight_level = self.control_box_parameters.max_backlighting_level
+            self.c_set_backlighting_level(self.persistent_backlight_level)
         else:
             logging.info("Backlighting is already at maximum.")
 
     def backlight_down(self):
-        if self.internal_board_state.backlighting_level > 0:
-            self.internal_board_state.backlighting_level += -25
-            if self.internal_board_state.backlighting_level < 0:
-                self.internal_board_state.backlighting_level = 0
-            self.c_set_backlighting_level(self.internal_board_state.backlighting_level)
+        if self.persistent_backlight_level > 0:
+            self.persistent_backlight_level += -25
+            if self.persistent_backlight_level < 0:
+                self.persistent_backlight_level = 0
+            self.c_set_backlighting_level(self.persistent_backlight_level)
         else:
             logging.info("Backlighting is already at minimum.")
 
@@ -618,13 +624,14 @@ class Dcs5Controller:
                 f"&lt,{delay},{value},{','.join(color)}#", f"%lt,{delay},{value},{','.join(color)}#\r"
             )
 
-    def c_set_backlighting_level(self, level: int):
+    def c_set_backlighting_level(self, level: int, persistent=True):
         if level is None:
             level = self.control_box_parameters.max_backlighting_level
+
         if 0 <= level <= self.control_box_parameters.max_backlighting_level:
-            # if self.devices_specifications.control_box.model == "micro":
-            #     level = int(level * (255/95))
             self.command_handler.queue_command(f'&la,{level}#', f"%la,{level}#\r")
+            if persistent is True:
+                self.persistent_backlight_level = level
         else:
             logging.warning(f"Backlighting level range: (0, {self.control_box_parameters.max_backlighting_level})")
 
@@ -638,17 +645,9 @@ class Dcs5Controller:
 
     def c_set_backlighting_auto_mode(self, value: bool):  # NOT IMPLEMENTED IN THE CURRENT FIRMWARE FIXME
         logging.warning('Command not implemented in the current firmwares')
-        # self.command_handler.queue_command(f"&oa,{int(value)}", None)
-        # self.internal_board_state.backlighting_auto_mode = {True: 'auto', False: 'manual'}
 
     def c_set_backlighting_sensitivity(self, value: int):  # NOT IMPLEMENTED IN THE CURRENT FIRMWARE FIXME
         logging.warning('Command not implemented in the current firmwares')
-        # if 0 <= value <= self.control_box_parameters.max_backlighting_sensitivity:
-        #     self.command_handler.queue_command(f"&os,{value}", None)
-        #     self.internal_board_state.backlighting_sensitivity = value
-        # else:
-        #     logging.warning(
-        #         f"Backlighting sensitivity range: (0, {self.control_box_parameters.max_backlighting_sensitivity})")
 
     def c_set_stylus_detection_message(self, value: bool):
         """
@@ -741,6 +740,7 @@ class CommandHandler:
 
     def processes_queues(self):
         self.clear_queues()
+        logging.debug('listener_handler_sync_barrier set.')
         self.controller.listener_handler_sync_barrier.wait()
         logging.info('Command Handling Started')
         while self.controller.is_listening:
@@ -753,8 +753,8 @@ class CommandHandler:
                 time.sleep(AFTER_SENT_SLEEP)
 
             time.sleep(HANDLER_SLEEP)
-        barrier_value = self.controller.listening_stopped_barrier.wait()
-        logging.info(f"Wait Called. Wait value: {barrier_value}.")
+        logging.debug('listener_handler stop barrier set.')
+        self.controller.listening_stopped_barrier.wait()
         logging.info('Command Handling Stopped')
 
     def _process_commands(self):
@@ -764,7 +764,7 @@ class CommandHandler:
 
         if "%a#" in received:
             self.controller.ping_event_check.set()
-            logging.info('Ping is set.')
+            logging.info('Ping command was received. Ping event is set.')
 
         elif "%pl," in received:
             match = re.findall(f"%pl,(\d)#\r", received)
@@ -852,8 +852,6 @@ class CommandHandler:
             match = re.findall("%la,(\d+)#", received)
             if len(match) > 0:
                 level = int(match[0])
-                # if self.controller.devices_specifications.control_box.model == "micro":
-                #     level = int(level * (95 / 255))
                 self.controller.internal_board_state.backlighting_level = level
                 logging.info(f'Backlight level set to {level}')
 
@@ -919,6 +917,7 @@ class SocketListener:
     def listen(self):
         self.reset()
         logging.info("Listener Queue and Client Buffers Cleared.")
+        logging.debug('listener_handler_sync_barrier set.')
         self.controller.listener_handler_sync_barrier.wait()
 
         logging.info('Listening started')
@@ -930,8 +929,8 @@ class SocketListener:
                 self._process_board_message()
             time.sleep(LISTENER_SLEEP)
 
-        barrier_value = self.controller.listening_stopped_barrier.wait()
-        logging.info(f"Wait Called. Wait value: {barrier_value}.")
+        logging.debug('listener_handler_sync_ stop barrier set.')
+        self.controller.listening_stopped_barrier.wait()
         logging.info('Listening stopped')
 
     def _split_board_message(self):
