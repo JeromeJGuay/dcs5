@@ -112,7 +112,7 @@ def main():
         run()
     except Exception as e:
         logging.error(traceback.format_exc(), exc_info=True)
-        sg.popup_error(f'CRITICAL ERROR. SHUTTING DOWN', title='CRITICAL ERROR', keep_on_top=True)
+        sg.popup_error(f'CRITICAL ERROR. SHUTTING DOWN', title='CRITICAL ERROR', keep_on_top=True, modal=True)
     finally:
         # sys.exit()
         pass
@@ -140,6 +140,7 @@ def init_dcs5_controller():
             'Error in the configurations files.\nConfiguration files not loaded.',
             title='Config Error',
             keep_on_top=True,
+            modal=True
         )
         sg.user_settings()['configs_path'] = None
         return None
@@ -152,12 +153,12 @@ def check_config_integrity(
     if not controller_config_path.exists():
         sg.popup_ok(
             f'`controller_config.json` was missing from the directory: {controller_config_path.parent}. One was created. (default model: xt)',
-            title='Missing file', keep_on_top=True)
+            title='Missing file', keep_on_top=True, modal=True)
         shutil.copyfile(XT_DEFAULT_CONTROLLER_CONFIGURATION_FILE, controller_config_path)
     if not devices_specifications_path.exists():
         sg.popup_ok(
             '`devices_specifications.json` was missing from the directory. One was created (default model: xt).',
-            title='Missing file', keep_on_top=True)
+            title='Missing file', keep_on_top=True, modal=True)
         shutil.copyfile(XT_DEFAULT_DEVICES_SPECIFICATION_FILE, devices_specifications_path)
 
 
@@ -512,10 +513,12 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 window['-SYNC-'].update(disabled=True)
                 window.refresh()
                 controller.init_controller_and_board()
+
             case "-CALPTS-":
                 modal(window, popup_window_set_calibration_pt, controller)
             case "-CALIBRATE-":
                 modal(window, popup_window_calibrate, controller)
+
             case 'Configuration':
                 controller = modal(window, popup_window_config, controller=controller)
                 # MAREL HOST IS UPDATED HERE SINCE THE FIELD IS ALSO AN INPUT
@@ -807,25 +810,30 @@ def popup_window_set_calibration_pt(controller: Dcs5Controller):
          sg.InputText(default_text=controller.internal_board_state.cal_pt_2, key='cal_pt_2', size=(4, 1),
                       justification='c', font=FRAME_FONT),
          sg.Text('mm', size=(3, 1), font=FRAME_FONT)],
-        [sg.Submit(), sg.Cancel()]
+        [sg.Submit(bind_return_key=True), sg.Cancel()]
     ]
 
-    window = sg.Window('Calibration points', layout, element_justification='center', keep_on_top=True,
-                       enable_close_attempted_event=True)
+    window = sg.Window('Calibration points', layout,
+                       element_justification='center',
+                       keep_on_top=True,
+                       modal=True,
+                       enable_close_attempted_event=True
+   )
 
     while True:
-        event, values = window.read(timeout=0.5)
-        window['cal_pt_1'].bind("<Return>", "_Enter")
+        event, values = window.read()#timeout=0.5)
+
         if event is None:
             break
 
         if event in '__TIMEOUT__':
             pass
         else:
-            print(event, values)
+            logging.debug(f'{event}, {values}')
 
         if event in ["Cancel", "-WINDOW CLOSE ATTEMPTED-"]:
             window.close()
+
             break
 
         if event == "cal_pt_1_Enter":
@@ -839,7 +847,7 @@ def popup_window_set_calibration_pt(controller: Dcs5Controller):
                 break
             else:
                 window.keep_on_top_clear()
-                sg.popup_error('Invalid values.', title='Error', keep_on_top=True, non_blocking=False)
+                sg.popup_error('Invalid values.', title='Error', keep_on_top=True, non_blocking=False, modal=True)
                 window.keep_on_top_set()
         else:
             sg.SetOptions(window_location=get_new_location(window))
@@ -855,14 +863,15 @@ def popup_window_calibrate(controller: Dcs5Controller):
             [sg.Text(f'Set Stylus down for calibration point {i}: {cal_pt_values[i]} mm', pad=(5, 5), font=FRAME_FONT)],
         ]
         window = sg.Window(f'Calibrate point {i}', layout, finalize=True, element_justification='center',
-                           keep_on_top=True)
+                           keep_on_top=True, modal=True)
         window.perform_long_operation(lambda: controller.calibrate(i), end_key=f'-cal_pt_{i}-')
 
         while True:
             event, values = window.read(timeout=0.1)
-
             if event == '__TIMEOUT__':
                 pass
+            else:
+                logging.debug(f'{event}, {values}')
 
             if event == "Cancel":
                 window.close()
@@ -874,9 +883,9 @@ def popup_window_calibrate(controller: Dcs5Controller):
         window.close()
 
         if values[0] == 1:
-            sg.popup_ok('Calibration successful.', keep_on_top=True)
+            sg.popup_ok('Calibration successful.', keep_on_top=True, modal=True)
         else:
-            sg.popup_ok('Calibration failed.', keep_on_top=True)
+            sg.popup_ok('Calibration failed.', keep_on_top=True, modal=True)
 
 
 def config_window():
@@ -948,6 +957,8 @@ def popup_window_config(controller: Dcs5Controller = None) -> Dcs5Controller:
 
         if event == '__TIMEOUT__':
             pass
+        else:
+            logging.debug(f'{event}, {values}')
 
         if event in ['Close', sg.WIN_CLOSED]:
             break
@@ -1079,6 +1090,7 @@ def create_new_config():
     window = new_config_window()
     while True:
         event, values = window.read()
+        logging.debug(f'{event}, {values}')
         if event in ['Close', sg.WIN_CLOSED]:
             break
 
@@ -1087,7 +1099,7 @@ def create_new_config():
                 if Path(values['-NEW_CONFIG_NAME-']).name in list_configs():
                     if modal(window, sg.popup_yes_no,
                              'Configuration name already exists. Do you want to overwrite it ?',
-                             title='Warning', keep_on_top=True) == 'No':
+                             title='Warning', keep_on_top=True, modal=True) == 'No':
                         break
 
                 new_config_name = values['-NEW_CONFIG_NAME-']
@@ -1121,6 +1133,7 @@ def popup_window_copy_config(config_name: str):
 
     while True:
         event, values = window.read()
+        logging.debug(f'{event}, {values}')
         if event in ['Close', sg.WIN_CLOSED]:
             break
 
@@ -1129,7 +1142,7 @@ def popup_window_copy_config(config_name: str):
                 if Path(values['-NEW_CONFIG_NAME-']).name in list_configs():
                     if modal(window, sg.popup_yes_no,
                              'Configuration name already exists. Do you want to overwrite it ?',
-                             title='Warning', keep_on_top=True) == 'No':
+                             title='Warning', keep_on_top=True, modal=True) == 'No':
                         break
                 new_config_name = values['-NEW_CONFIG_NAME-']
                 make_new_config_from_existing(new_config_name=new_config_name,
@@ -1163,6 +1176,7 @@ def popup_window_rename_config(config_name: str) -> Optional[str]:
 
     while True:
         event, values = window.read()
+        logging.debug(f'{event}, {values}')
         if event in ['Close', sg.WIN_CLOSED]:
             break
 
@@ -1171,7 +1185,7 @@ def popup_window_rename_config(config_name: str) -> Optional[str]:
                 if Path(values['-NEW_CONFIG_NAME-']).name in list_configs():
                     if modal(window, sg.popup_yes_no,
                              'Configuration name already exists. Do you want to overwrite it ?',
-                             title='Warning', keep_on_top=True) == 'No':
+                             title='Warning', keep_on_top=True, modal=True) == 'No':
                         break
                 new_config_name = values['-NEW_CONFIG_NAME-']
 
@@ -1236,7 +1250,7 @@ def reload_controller_config(controller: Dcs5Controller):
         controller.reload_configs()
         logging.debug('Controller reloaded.')
         if controller.client.is_connected:
-            do_sync = sg.popup_yes_no('Do you want to synchronize board ?', keep_on_top=True)
+            do_sync = sg.popup_yes_no('Do you want to synchronize board ?', keep_on_top=True, modal=True)
             logging.debug(f'Asking if the user wants to synchronize. Answer: {do_sync}')
             if do_sync == "Yes":
                 controller.init_controller_and_board()
@@ -1247,7 +1261,7 @@ def reload_controller_config(controller: Dcs5Controller):
         logging.debug(f'ConfigError while loading config files.\n {err}')
         sg.popup_ok('Could not load the configuration files.\n'
                     ' Error in the configurations files. \n'
-                    f'{err}', keep_on_top=True)
+                    f'{err}', keep_on_top=True, modal=True)
         sg.user_settings().update({'configs_path': sg.user_settings()['previous_configs_path']})
 
 
