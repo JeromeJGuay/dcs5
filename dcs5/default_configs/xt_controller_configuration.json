@@ -97,7 +97,7 @@
             ".": ".",
             "skip": "pagedown",
             "enter": "enter",
-            "del": ["home", "shift", "end", "delete"],
+            "del": ["ctrl", "z", "right"],
             "up": "up",
             "down": "down",
             "left": "left",
