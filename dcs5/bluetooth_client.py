@@ -70,6 +70,7 @@ class BluetoothClient:
                 logging.info('Client.connect: PermissionError')
                 self.error_msg = 'Permission error'
                 pass
+
             except OSError as err:
                 if (err_code := self._process_os_error_code(err)) == 1:
                     if port == self.max_port:

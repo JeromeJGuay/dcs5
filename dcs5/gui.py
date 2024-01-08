@@ -107,14 +107,13 @@ USER_SETTING_FILE = 'user_settings.json'
 def main():
     try:
         debug_level = 'DEBUG' if APP_SETTINGS['debug'] is True else 'INFO'
-        debug_level = 'DEBUG'
         init_logging(stdout_level=debug_level, file_level=debug_level, write=True)
         run()
     except Exception as e:
         logging.error(traceback.format_exc(), exc_info=True)
         sg.popup_error(f'CRITICAL ERROR. SHUTTING DOWN', title='CRITICAL ERROR', keep_on_top=True, modal=True)
     finally:
-        # sys.exit()
+        sys.exit()
         pass
 
 
@@ -238,44 +237,42 @@ def make_window():
         )
     ]]
 
-    ### STATUS
-    connection_layout = [
+    # STATUS
+    status_layout_col_1 = [
         [sg.Text(' Connected', font=REG_FONT), led(key='-CONNECTED_LED-')],
-        [ibutton('Connect', size=(11, 1), key='-CONNECT-')]]
-    activate_layout = [
-        [sg.Text(' Activated', font=REG_FONT), led(key='-ACTIVATED_LED-')],
-        [ibutton('Activate', size=(11, 1), key='-ACTIVATE-')]]
-    mute_layout = [
+        [ibutton('Connect', size=(11, 1), key='-CONNECT-')],
+        [ibutton('Disconnect', size=(11, 1), key='-DISCONNECT-', button_color='orange')]
+    ]
+    status_layout_col_2 = [
         [sg.Text('  Muted', font=REG_FONT), led(key='-MUTED_LED-')],
-        [ibutton('Mute', size=(11, 1), key='-MUTE-')]]
+        [ibutton('Mute', size=(11, 1), key='-MUTE-')],
+        [sg.Button('Restart', size=(11, 1),
+                  font=REG_FONT,
+                  pad=(1, 1),
+                  button_color=('white', 'red3'),
+                  border_width=1,
+                  disabled_button_color=DISABLED_BUTTON_COLOR,
+                  key='-RESTART-')]
+    ]
 
-    restart_layout = [ibutton('Disconnect', size=(11, 1), key='-DISCONNECT-', button_color='orange'),
-                      sg.Push(),
-                      sg.Button('Restart', size=(11, 1),
-                                font=REG_FONT,
-                                pad=(1, 1),
-                                button_color=('white', 'red3'),
-                                border_width=1,
-                                disabled_button_color=DISABLED_BUTTON_COLOR,
-                                key='-RESTART-',
-                                )]
-    _status_layout = col([connection_layout, activate_layout, mute_layout])
-    status_layout = [[sg.Frame('Status', [_status_layout, restart_layout], font=FRAME_FONT, expand_x=True)]]
+    _status_layout = col([status_layout_col_1, status_layout_col_2])
 
-    ### SYNC
+    status_layout = [[sg.Frame('Status', [_status_layout], font=FRAME_FONT, expand_x=True)]]
+
+    # SYNC
     _sync_layout = [
         [sg.Text('Synchronized', font=REG_FONT), led(key='-SYNC_LED-')],
         [ibutton('Synchronize', size=(15, 1), key='-SYNC-'), ]]
     sync_layout = [[sg.Frame('Synchronize', _sync_layout, font=FRAME_FONT)]]
 
-    ### CALIBRATION
+    # CALIBRATION
     _calibration_layout = [
         [sg.Text('Calibrated', font=REG_FONT), led(key='-CAL_LED-')],
         [ibutton('Calibrate', size=(15, 1), key='-CALIBRATE-'),
-         ibutton('Set Cal. Pts.', size=(15, 1), key='-CALPTS-')]]  # TODO
+         ibutton('Set Cal. Pts.', size=(15, 1), key='-CALPTS-')]]
     calibration_layout = [[sg.Frame('Calibration', _calibration_layout, font=FRAME_FONT)]]
 
-    ### READING PROFILE
+    # READING PROFILE
     _reading_profile_layout = [[sg.Text(dotted('Settling delay', 19), font=REG_FONT),
                                 sg.Text("---", font=REG_FONT_BOLD, background_color='white',
                                         size=(3, 1), p=(1, 0), justification='c', key='-SETTLING-DELAY-')],
@@ -287,7 +284,7 @@ def make_window():
                                         size=(3, 1), p=(1, 0), justification='c', key='-MAX-DEVIATION-')]]
     reading_profile_layout = [[sg.Frame('Reading Profile', _reading_profile_layout, font=FRAME_FONT)]]
 
-    ### LAST COMMAND
+    # LAST COMMAND
     _last_command_layout = [[sg.Text('Key'), sg.Text("", font=REG_FONT_BOLD, size=(10, 1), p=(1, 1), relief='solid',
                                                      border_width=2, justification='c', background_color='white',
                                                      key="-LAST_KEY-"),
@@ -296,16 +293,16 @@ def make_window():
                                                          key="-LAST_COMMAND-")]]
     last_command_layout = [[sg.Frame('Last Inputs', _last_command_layout, font=FRAME_FONT)]]
 
-    ### BACKLIGHT
+    # BACKLIGHT
     _backlight_layout = [sg.Slider(orientation='h', key='-BACKLIGHT-', font=SMALL_FONT, enable_events=True)]
     backlight_layout = [[sg.Frame('Backlight level', [_backlight_layout], font=REG_FONT)]]
 
-    ### UNITS
+    # UNITS
     _units_layout = [[ibutton('mm', size=(5, 1), key='-UNITS-MM-', disabled_button_color=SELECTED_BUTTON_COLOR),
                       ibutton('cm', size=(5, 1), key='-UNITS-CM-', disabled_button_color=SELECTED_BUTTON_COLOR)]]
     units_layout = [[sg.Frame('Units', _units_layout, font=FRAME_FONT)]]
 
-    ### STYLUS
+    # STYLUS
     _stylus_layout = [
         [sg.Combo(values=[''], key='-STYLUS-', enable_events=True, size=(10, 1), pad=(1, 1), font=REG_FONT,
                   readonly=True),
@@ -315,12 +312,12 @@ def make_window():
          ]]
     stylus_layout = [[sg.Frame('Stylus', _stylus_layout, font=FRAME_FONT)]]
 
-    ### MODE
+    # MODE
     _mode_layout = [[ibutton('Top', size=(8, 1), key='-MODE-TOP-', disabled_button_color=SELECTED_BUTTON_COLOR),
                      ibutton('Length', size=(8, 1), key='-MODE-LENGTH-', disabled_button_color=SELECTED_BUTTON_COLOR),
                      ibutton('Bottom', size=(8, 1), key='-MODE-BOTTOM-', disabled_button_color=SELECTED_BUTTON_COLOR)]]
     mode_layout = [[sg.Frame('Mode', _mode_layout, font=FRAME_FONT)]]
-    ### Auto_enter
+    # Auto_enter
 
     _auto_enter_layout = [[
         sg.Text(" Auto-enter:", pad=(0, 0), font=REG_FONT),
@@ -329,7 +326,7 @@ def make_window():
 
     auto_enter_layout = [[sg.Frame('Misc', _auto_enter_layout, font=FRAME_FONT)]]
 
-    ### META key
+    # META key
     _meta_layout = [[sg.Text('Mode', font=REG_FONT_BOLD, border_width=2, relief='solid', **META_OFF, size=(6, 1),
                              justification='center', pad=(1, 1), key='-META-'),
                      sg.Text('Shift', font=REG_FONT_BOLD, border_width=2, relief='solid', **META_OFF, size=(6, 1),
@@ -340,7 +337,7 @@ def make_window():
                              justification='center', pad=(1, 1), key='-ALT-')]]
     meta_layout = [[sg.Frame('Meta Key', _meta_layout, font=FRAME_FONT)]]
 
-    ### TABS LAYOUTS ###
+    # TABS LAYOUTS
 
     marel_tab_layout = [
         col([marel_layout])
@@ -487,9 +484,7 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                 window.refresh()
             case "-CONNECT-":
                 window.metadata['is_connecting'] = True
-                # window.perform_long_operation(controller.start_client, end_key='-END_CONNECT-')
-                window.perform_long_operation(controller.start_client_and_start_listening, end_key='-END_CONNECT-')
-
+                window.perform_long_operation(controller.connect, end_key='-END_CONNECT-')
             case "-DISCONNECT-":
                 controller.close_client()
             case "-END_CONNECT-":
@@ -498,16 +493,9 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
                     modal(window, sg.popup_ok, controller.client.error_msg, title='Failed.', keep_on_top=True,
                           font=REG_FONT,
                           modal=True)
-            case "-ACTIVATE-":
-                window['-ACTIVATED_LED-'].update(**LED_WAIT)
-                window['-ACTIVATE-'].update(disabled=True)
-                window.refresh()
-                if not controller.is_sync:
-                    controller.init_controller_and_board()
-                controller.start_listening()
             case "-RESTART-":
                 window.metadata['is_connecting'] = True
-                window.perform_long_operation(controller.restart_client, end_key='-END_CONNECT-')
+                window.perform_long_operation(controller.restart, end_key='-END_CONNECT-')
             case '-SYNC-':
                 window['-SYNC_LED-'].update(**LED_WAIT)
                 window['-SYNC-'].update(disabled=True)
@@ -528,7 +516,8 @@ def loop_run(window: sg.Window, controller: Dcs5Controller):
             case '-BACKLIGHT-':
                 controller.c_set_backlighting_level(
                     int(
-                        (values['-BACKLIGHT-'] / BACKLIGHT_SLIDER_MAX) * controller.control_box_parameters.max_backlighting_level
+                        (values[
+                             '-BACKLIGHT-'] / BACKLIGHT_SLIDER_MAX) * controller.control_box_parameters.max_backlighting_level
                     )
                 )
             case '-UNITS-MM-':
@@ -577,8 +566,7 @@ def refresh_layout(window: sg.Window, controller: Dcs5Controller):
         for key in [
             '-MAREL_START-', '-MAREL_STOP-',
             '-MAREL_HOST-', '-MAREL_UNITS-',  # '-MAREL_AUTO_ENTER-',
-            '-CONNECT-', '-ACTIVATE-',
-            '-DISCONNECT-', '-RESTART-',
+            '-CONNECT-', '-DISCONNECT-', '-RESTART-',
             '-MUTE-',
             '-SYNC-', '-CALIBRATE-',
             '-CALPTS-', '-BACKLIGHT-',
@@ -587,7 +575,7 @@ def refresh_layout(window: sg.Window, controller: Dcs5Controller):
             '-MODE-LENGTH-'
         ]:
             window[key].update(disabled=True)
-        for key in ['-CONNECTED_LED-', '-ACTIVATED_LED-', '-SYNC_LED-', '-MUTED_LED-', '-CAL_LED-', '-MAREL_LED-']:
+        for key in ['-CONNECTED_LED-', '-SYNC_LED-', '-MUTED_LED-', '-CAL_LED-', '-MAREL_LED-']:
             window[key].update(**LED_OFF)
 
 
@@ -693,9 +681,6 @@ def _refresh_controller_layout(window: sg.Window, controller: Dcs5Controller):
 
             window['-CALPTS-'].update(disabled=False)
 
-            window["-ACTIVATED_LED-"].update(**LED_ON)
-            window["-ACTIVATE-"].update(disabled=True)
-
             window['-MODE-TOP-'].update(disabled=not controller.output_mode != 'top',
                                         disabled_button_color=SELECTED_BUTTON_COLOR)
             window['-MODE-LENGTH-'].update(disabled=not controller.output_mode != 'length',
@@ -723,9 +708,6 @@ def _refresh_controller_layout(window: sg.Window, controller: Dcs5Controller):
                 window['-LAST_COMMAND-'].update('-')
 
         else:
-            window["-ACTIVATED_LED-"].update(**LED_OFF)
-            window["-ACTIVATE-"].update(disabled=False)
-
             window['-BACKLIGHT-'].update(disabled=True, value=None)
 
             window['-MODE-TOP-'].update(disabled=True)
@@ -770,6 +752,7 @@ def _refresh_controller_layout(window: sg.Window, controller: Dcs5Controller):
         window['-UNITS-CM-'].update(disabled=True, disabled_button_color=DISABLED_BUTTON_COLOR)
 
         window["-DISCONNECT-"].update(disabled=True)
+        window["-RESTART-"].update(disabled=True)
         window['-BACKLIGHT-'].update(disabled=True, value=None)
 
         window["-SYNC_LED-"].update(**LED_OFF)
@@ -778,9 +761,6 @@ def _refresh_controller_layout(window: sg.Window, controller: Dcs5Controller):
         window["-CAL_LED-"].update(**LED_OFF)
         window['-CALIBRATE-'].update(disabled=True)
         window['-CALPTS-'].update(disabled=True)
-
-        window['-ACTIVATE-'].update(disabled=True)
-        window['-ACTIVATED_LED-'].update(**LED_OFF)
 
         window['-LAST_KEY-'].update('-')
         window['-LAST_COMMAND-'].update('-')
@@ -796,7 +776,6 @@ def _refresh_controller_layout(window: sg.Window, controller: Dcs5Controller):
         else:
             window["-CONNECTED_LED-"].update(**LED_OFF)
             window["-CONNECT-"].update(disabled=False)
-            window["-RESTART-"].update(disabled=False)
 
 
 def popup_window_set_calibration_pt(controller: Dcs5Controller):
@@ -817,11 +796,10 @@ def popup_window_set_calibration_pt(controller: Dcs5Controller):
                        element_justification='center',
                        keep_on_top=True,
                        modal=True,
-                       enable_close_attempted_event=True
-   )
+                       enable_close_attempted_event=True)
 
     while True:
-        event, values = window.read()#timeout=0.5)
+        event, values = window.read()  # timeout=0.5)
 
         if event is None:
             break
@@ -907,10 +885,14 @@ def config_window():
         )],
         [
             button('New', size=(6, 1), button_color=('black', "orange"), tooltip="Create a new configuration."),
-            ibutton('Copy', size=(6, 1), button_color=('black', "orange"), disabled=True, tooltip="Copy an existing configuration."),
-            ibutton('Rename', size=(6, 1), button_color=('black', "orange"), disabled=True, tooltip="Rename a configuration."),
-            ibutton('Load', size=(6, 1), button_color=('white', "dark green"), disabled=True, tooltip="Load a configuration."),
-            ibutton('Delete', size=(6, 1), button_color=('white', "red3"), disabled=True, tooltip="Delete a configuration.")
+            ibutton('Copy', size=(6, 1), button_color=('black', "orange"), disabled=True,
+                    tooltip="Copy an existing configuration."),
+            ibutton('Rename', size=(6, 1), button_color=('black', "orange"), disabled=True,
+                    tooltip="Rename a configuration."),
+            ibutton('Load', size=(6, 1), button_color=('white', "dark green"), disabled=True,
+                    tooltip="Load a configuration."),
+            ibutton('Delete', size=(6, 1), button_color=('white', "red3"), disabled=True,
+                    tooltip="Delete a configuration.")
         ]
     ]
 
@@ -953,7 +935,7 @@ def popup_window_config(controller: Dcs5Controller = None) -> Dcs5Controller:
     window = config_window()
 
     while True:
-        event, values = window.read()#(timeout=0.1)
+        event, values = window.read()  # (timeout=0.1)
 
         if event == '__TIMEOUT__':
             pass
@@ -993,12 +975,14 @@ def popup_window_config(controller: Dcs5Controller = None) -> Dcs5Controller:
                         case 'Copy':
                             new_config = modal(window, popup_window_copy_config, values['-CONFIG-'][0])
                             if new_config is not None:
-                                window['-CONFIG-'].update(values=list_configs(), set_to_index=[list_configs().index(new_config)])
+                                window['-CONFIG-'].update(values=list_configs(),
+                                                          set_to_index=[list_configs().index(new_config)])
 
                         case 'Rename':
                             renamed_config = modal(window, popup_window_rename_config, values['-CONFIG-'][0])
                             if renamed_config is not None:
-                                window['-CONFIG-'].update(values=list_configs(), set_to_index=[list_configs().index(renamed_config)])
+                                window['-CONFIG-'].update(values=list_configs(),
+                                                          set_to_index=[list_configs().index(renamed_config)])
 
                         case 'Load':
                             selected_config_path = str(Path(CONFIG_FILES_PATH).joinpath(values['-CONFIG-'][0]))
@@ -1048,8 +1032,6 @@ def popup_window_config(controller: Dcs5Controller = None) -> Dcs5Controller:
                     window['-CONFIGURATION-'].update(current_config)
                 else:
                     window['-CONFIGURATION-'].update('No Config Selected')
-
-
 
     window.close()
 
@@ -1272,7 +1254,7 @@ def update_controller_config_paths(controller: Dcs5Controller):
     logging.debug('Config files path updated.')
 
 
-### gui functions ###
+# gui functions
 
 def get_new_location(window: sg.Window) -> Tuple[int, int]:
     x, y = window.current_location(more_accurate=True)
@@ -1282,6 +1264,7 @@ def get_new_location(window: sg.Window) -> Tuple[int, int]:
 
 
 def dotted(value, length=50, justification='left'):
+    """Pad string with Dots"""
     ndots = length - len(value)
     if justification == 'left':
         return value + ' ' + '.' * ndots
@@ -1355,7 +1338,7 @@ def modal(window: sg.Window, func: callable, *args, **kwargs) -> Any:
     window.refresh()
     window.bring_to_front()
 
-    window.read(.01) # quick fix: to discard input made on a window that was supposed to be disabled...
+    window.read(.01)  # quick fix: to discard input made on a window that was supposed to be disabled...
 
     return out
 
@@ -1369,5 +1352,3 @@ def update_marel_host(controller: Dcs5Controller, value):
 
 if __name__ == "__main__":
     main()
-#    c.start_client()
-# c.start_listening()

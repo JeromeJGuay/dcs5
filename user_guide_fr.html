@@ -277,21 +277,14 @@ Fenêtre de nouvelles Configurations
 <p>Voir la section <a href="#fichiers-de-configuration">Fichiers de configuration</a> pour plus d’informations sur les différents paramètres de configuration.</p>
 <h3 id="connectez-la-planche-via-bluetooth">Connectez la planche via Bluetooth</h3>
 <p>Pour se connecter à la planche de mesure Dcs5, l’adresse Mac (bluetooth) de la planche doit être spécifiée dans la Configuration du contrôleur. Vous pouvez modifier le fichier via le menu de configuration (voir les sections <a href="#configurations">Configurations</a> et <a href="#configuration-du-controleur">Configuration du contrôleur</a>)</p>
-<p>Ensuite, vous devez connecter la planche puis activer l’application en appuyant sur le bouton <strong>Connect</strong> et ensuite sur le bouton <strong>Activate</strong>.</p>
+<p>Ensuite, vous devez connecter la planche en appuyant sur le bouton <strong>Connect</strong>.</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_connect.png' width='365' alt="Connect Widget"/>
 <figcaption>
 Widget Connect
 </figcaption>
 </figure>
-<p>Le cercle rouge à côté du bouton <strong>Connect</strong> se transformera en triangle jaune lorsque l’application tente de se connecter à la planche, puis en un cercle vert lorsqu’elle est connectée.</p>
-<figure style="text-align: center;">
-<img src='doc/images/dcs5_gui_activate.png' width='371' alt="Activate Widget"/>
-<figcaption>
-Widget Activate
-</figcaption>
-</figure>
-<p>Le cercle rouge à côté du bouton <strong>Activate</strong> deviendra également vert lorsque l’application et la planche seront prêtes à être utilisées. Lors de l’activation de la planche, l’application se synchronisera avec le boîtier de contrôle de la planche. (Voir la section <a href="#informations-supplementaires">Informations Supplémentaires</a>). L’application et la planche sont synchronisées lorsque l’application reçoit les confirmations que les paramètres internes de la planche (principalement ceux liés à la détection du stylet) sont les mêmes que ceux spécifiés dans la configuration. Si la synchronisation échoue (indiqué par un cercle rouge à côté du bouton <strong>Synchronize</strong>) vous pouvez appuyer sur le bouton <strong>Synchronize</strong> pour réessayer. Si cela ne fonctionne toujours pas, essayez de redémarrer la planche et l’application.</p>
+<p>Le cercle rouge à côté du bouton <strong>Connect</strong> se transformera en triangle jaune lorsque l’application tente de se connecter à la planche, puis en un cercle vert lorsqu’elle est connectée. Lors de la connection, l’application se synchronisera avec le boîtier de contrôle de la planche. (Voir la section <a href="#informations-supplementaires">Informations Supplémentaires</a>). L’application et la planche sont synchronisées lorsque l’application reçoit les confirmations que les paramètres internes de la planche (principalement ceux liés à la détection du stylet) sont les mêmes que ceux spécifiés dans la configuration. Si la synchronisation échoue (indiqué par un cercle rouge à côté du bouton <strong>Synchronize</strong>) vous pouvez appuyer sur le bouton <strong>Synchronize</strong> pour réessayer. Si cela ne fonctionne toujours pas, essayez de redémarrer la planche et l’application.</p>
 <h3 id="étalonnage-1">Étalonnage</h3>
 <p><a id="etalonnage-app"></a></p>
 <p>La planche doit être étalonnée à partir de deux points de référence. Bien que l’étalonnage soit linéaire, gardez en tête que le stylet a une épaisseur non uniforme qui compensera, dans une certaine mesure, les valeurs mesurées si l’orientation du stylet diffère lors de la mesure par rapport à l’étalonnage. Nous vous recommandons d’utiliser la plus petite partie du stylet pour effectuer l’étalonnage puis ajouter décalage <code>offset</code> dans la configuration pour chaque stylet.</p>
@@ -337,8 +330,8 @@ Onglet Marel
 </ul>
 <h3 id="configuration-du-contrôleur">Configuration du contrôleur</h3>
 <p><a id="configuration-du-controleur"></a></p>
-<p>Fichier <code>xt</code> par défaut : <a href="default_configs/xt_controller_configuration.json">xt_controller_configuration.json</a></p>
-<p>Fichier <code>micro</code> par défaut : <a href="default_configs/micro_controller_configuration.json">micro_controller_configuration.json</a></p>
+<p>Fichier <code>xt</code> par défaut : <a href="dcs5/default_configs/xt_controller_configuration.json">xt_controller_configuration.json</a></p>
+<p>Fichier <code>micro</code> par défaut : <a href="dcs5/default_configs/micro_controller_configuration.json">micro_controller_configuration.json</a></p>
 <p>Usage:</p>
 <ul>
 <li><p>client: (Paramètres de connections)</p>
@@ -427,8 +420,8 @@ Onglet Marel
 <h3 id="spécification-de-la-planche">Spécification de la planche</h3>
 <p><a id="specification-de-la-planche"></a></p>
 <ul>
-<li><p>Fichier <code>xt</code> par défaut : <a href="default_configs/xt_devices_specification.json">xt_devices_specification.json</a></p></li>
-<li><p>Fichier <code>micro</code> par défaut : <a href="default_configs/micro_devices_specification.json">micro_devices_specification.json</a>.</p></li>
+<li><p>Fichier <code>xt</code> par défaut : <a href="dcs5/default_configs/xt_devices_specification.json">xt_devices_specification.json</a></p></li>
+<li><p>Fichier <code>micro</code> par défaut : <a href="dcs5/default_configs/micro_devices_specification.json">micro_devices_specification.json</a>.</p></li>
 </ul>
 <p>Usage:</p>
 <ul>
