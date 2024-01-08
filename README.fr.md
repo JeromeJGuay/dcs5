@@ -216,7 +216,7 @@ Voir la section [Fichiers de configuration](#fichiers-de-configuration) pour plu
 Pour se connecter à la planche de mesure Dcs5, l'adresse Mac (bluetooth) de la planche doit être spécifiée dans la Configuration du contrôleur.
 Vous pouvez modifier le fichier via le menu de configuration (voir les sections [Configurations](#configurations) et [Configuration du contrôleur](#configuration-du-controleur))
 
-Ensuite, vous devez connecter la planche puis activer l'application en appuyant sur le bouton **Connect** et ensuite sur le bouton **Activate**.
+Ensuite, vous devez connecter la planche en appuyant sur le bouton **Connect**.
 
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_connect.png' width='365' alt="Connect Widget"/>
@@ -225,14 +225,7 @@ Ensuite, vous devez connecter la planche puis activer l'application en appuyant 
 
 Le cercle rouge à côté du bouton **Connect** se transformera en triangle jaune
 lorsque l'application tente de se connecter à la planche, puis en un cercle vert lorsqu'elle est connectée.
-
-<figure style="text-align: center;">
-<img src='doc/images/dcs5_gui_activate.png' width='371' alt="Activate Widget"/>
-<figcaption>Widget Activate</figcaption>
-</figure>
-
-Le cercle rouge à côté du bouton **Activate** deviendra également vert lorsque l'application et la planche seront prêtes à être utilisées.
-Lors de l'activation de la planche, l'application se synchronisera avec le boîtier de contrôle de la planche.
+Lors de la connection, l'application se synchronisera avec le boîtier de contrôle de la planche.
 (Voir la section [Informations Supplémentaires](#informations-supplementaires)).
 L'application et la planche sont synchronisées
 lorsque l'application reçoit les confirmations que les paramètres internes de la planche

@@ -84,8 +84,10 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 <nav id="TOC">
 <ul>
 <li><a href="#dcs5-controller-application">Dcs5 Controller Application</a></li>
-<li><a href="#download-from-releases">Download from releases</a><ul>
-<li><a href="#requirements-to-install-the-python-package.-not-required-to-use-the-app-as-a-standalone.">Requirements to install the python package. (Not required to use the app as a standalone.)</a></li>
+<li><a href="#download-from-releases">Download from releases</a></li>
+<li><a href="#requirements">Requirements</a><ul>
+<li><a href="#measuring-board-firmware">Measuring board firmware</a></li>
+<li><a href="#python-package.-not-required-to-use-the-app-as-a-standalone.">Python package. (Not required to use the app as a standalone.)</a></li>
 </ul></li>
 <li><a href="#usage">Usage</a><ul>
 <li><a href="#guide-dutilisation-en-français-pour-le-modèle-xt-user_guide_fr.">Guide d’utilisation en français pour le modèle XT : <span>user_guide_fr</span>.</a></li>
@@ -115,9 +117,19 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 <ol type="1">
 <li>Download <code>dcs5.zip</code> from the last version <a href="https://github.com/iml-gddaiss/dcs5/releases">here</a>.</li>
 <li>Unzip <code>dcs5.zip</code></li>
-<li>Run <code>dcs5.exe</code></li>
+<li>Run <code>dcs5\dcs5.exe</code></li>
 </ol>
-<h2 id="requirements-to-install-the-python-package.-not-required-to-use-the-app-as-a-standalone.">Requirements to install the python package. (Not required to use the app as a standalone.)</h2>
+<p>The application will generate a local files upon its initial launch at: + Windows: <code>%localappdata%\dcs5\</code> + Linux: <code>~/.dcs5/</code></p>
+<p>Where it will also save the different configurations and log files.</p>
+<h1 id="requirements">Requirements</h1>
+<h2 id="measuring-board-firmware">Measuring board firmware</h2>
+<p>The following <code>v2-0-0-iml</code> firmware needs to be installed on the measuring board in order to use this application.</p>
+<ul>
+<li>micro: <a href="https://github.com/iml-gddaiss/dcs5/releases">dcs5-micro-v2-0-0-iml.eeprom</a></li>
+<li>xt: <a href="https://github.com/iml-gddaiss/dcs5/releases">dcs5-xt-v2-0-0-iml.eeprom</a></li>
+</ul>
+<p>Contact <a href="https://bigfinscientific.com/">Big Fin Scientific</a> to learn how to update your measuring boards firmware.</p>
+<h2 id="python-package.-not-required-to-use-the-app-as-a-standalone.">Python package. (Not required to use the app as a standalone.)</h2>
 <ul>
 <li>python 3.10</li>
 </ul>
@@ -277,21 +289,14 @@ New Config Window
 <p>See section <a href="#configurations-files">Configuration files</a> for more information on the different configuration parameters.</p>
 <h3 id="connect-the-board-via-bluetooth">Connect the board via Bluetooth</h3>
 <p>To connect to the Dcs5 measuring board, the Board Mac (bluetooth) address needs to be specified in the <em>Controller Configuration</em> file. You can edit the file via the configuration menu (see sections <a href="#configurations">Configurations</a> and <a href="#controller-configuration">Controller Configuration</a>)</p>
-<p>Then you need to connect and then activate the board by pressing the <strong>Connect</strong> and <strong>Activate</strong> button.</p>
+<p>Then connect the board by pressing the <strong>Connect</strong> button.</p>
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_connect.png' width='365' alt="Connect Widget"/>
 <figcaption>
 Connect Widget
 </figcaption>
 </figure>
-<p>The red circle next to the <strong>Connect</strong> button will turn into a yellow triangle while the application is attempting to connect to the board and then into a green when connected.</p>
-<figure style="text-align: center;">
-<img src='doc/images/dcs5_gui_activate.png' width='371' alt="Activate Widget"/>
-<figcaption>
-Activate Widget
-</figcaption>
-</figure>
-<p>The red circles next to the <strong>Activate</strong> button will also turn green when the application and board are ready to use. When activating the board, the application will synchronize with the board control box. (See the section <a href="#additional-information">Additional GUI features</a>). The application and the board are synchronized when the application receives confirmations that the board internal parameters (mainly those related to stylus detection) are the same as those specified in the configuration files. If the synchronization failed, indicated by a red circle next to the <strong>Synchronize</strong> button, you can press the <strong>Synchronize</strong> button to try again. If it still doesn’t work, try to restart the board and the application.</p>
+<p>The red circle next to the <strong>Connect</strong> button will turn into a yellow triangle while the application is attempting to connect to the board and then into a green when connected. When connecting the board, the application will synchronize with the board control box. (See the section <a href="#additional-information">Additional GUI features</a>). The application and the board are synchronized when the application receives confirmations that the board internal parameters (mainly those related to stylus detection) are the same as those specified in the configuration files. If the synchronization failed, indicated by a red circle next to the <strong>Synchronize</strong> button, you can press the <strong>Synchronize</strong> button to try again. If it still doesn’t work, try to restart the board and the application.</p>
 <h3 id="calibration-1">Calibration</h3>
 <p>The board needs to be calibrated using two calibration points. Although the calibration is linear, keep in mind that the stylus has some non-uniform thickness which will offset, to some extent, the measured values if the stylus’s orientation differs when measuring versus when calibrating. We recommend using the tiniest part of the stylus to make the calibration and then add <code>offset</code> in the calibration files for each stylus.</p>
 <ul>
@@ -330,8 +335,8 @@ Application Marel Widget
 <h2 id="configurations-files">Configurations Files</h2>
 <p>Configurations are created and modified via the application GUI (See section <a href="#configurations">configuration</a>). A configuration is made of two json files that are used to change the controller and measuring board behavior. - <a href="#controller-configuration">controller_configuration</a> - <a href="#device-specification">device_specification</a></p>
 <h3 id="controller-configuration">Controller Configuration</h3>
-<p>Default <code>xt</code> file: <a href="default_configs/xt_controller_configuration.json">xt_controller_configuration.json</a></p>
-<p>Default <code>micro</code> file: <a href="default_configs/micro_controller_configuration.json">micro_controller_configuration.json</a></p>
+<p>Default <code>xt</code> file: <a href="dcs5/default_configs/xt_controller_configuration.json">xt_controller_configuration.json</a></p>
+<p>Default <code>micro</code> file: <a href="dcs5/default_configs/micro_controller_configuration.json">micro_controller_configuration.json</a></p>
 <p>Usage:</p>
 <ul>
 <li><p>client: (Connection parameters)</p>
@@ -443,8 +448,8 @@ Application Marel Widget
 <a class="sourceLine" id="cb6-25" title="25"><span class="st">&#39;command&#39;</span>, <span class="st">&#39;option&#39;</span>, <span class="st">&#39;optionleft&#39;</span>, <span class="st">&#39;optionright&#39;</span>]</a></code></pre></div>
 <h3 id="device-specification">Device Specification</h3>
 <ul>
-<li><p>Default <code>xt</code> file: <a href="default_configs/xt_devices_specification.json">xt_devices_specification.json</a></p></li>
-<li><p>Default <code>micro</code> file: <a href="default_configs/micro_devices_specification.json">micro_devices_specification.json</a></p></li>
+<li><p>Default <code>xt</code> file: <a href="dcs5/default_configs/xt_devices_specification.json">xt_devices_specification.json</a></p></li>
+<li><p>Default <code>micro</code> file: <a href="dcs5/default_configs/micro_devices_specification.json">micro_devices_specification.json</a></p></li>
 </ul>
 <p>Usage:</p>
 <ul>
