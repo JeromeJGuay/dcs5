@@ -834,14 +834,21 @@ def popup_window_set_calibration_pt(controller: Dcs5Controller):
 
 
 def popup_window_calibrate(controller: Dcs5Controller):
-    """Test closing on perform_long_operation"""
+    """
+    Window closing needs to be disabled to prevent crashes. The only way to exit at the moment is to
+    swipe left and the board.
+
+    If such command is available in the firmware, it could be sent via the cancel_calibration method of dcs5.
+
+    """
     cal_pt_values = {1: controller.internal_board_state.cal_pt_1, 2: {controller.internal_board_state.cal_pt_2}}
     for i in [1, 2]:
         layout = [
             [sg.Text(f'Set Stylus down for calibration point {i}: {cal_pt_values[i]} mm', pad=(5, 5), font=FRAME_FONT)],
+            [sg.Text(f'Make a long swipe (right to left) to Cancel', pad=(5, 5), font=FRAME_FONT)]
         ]
         window = sg.Window(f'Calibrate point {i}', layout, finalize=True, element_justification='center',
-                           keep_on_top=True, modal=True)
+                           keep_on_top=True, modal=True, enable_close_attempted_event=True)
         window.perform_long_operation(lambda: controller.calibrate(i), end_key=f'-cal_pt_{i}-')
 
         while True:
@@ -851,16 +858,19 @@ def popup_window_calibrate(controller: Dcs5Controller):
             else:
                 logging.debug(f'{event}, {values}')
 
-            if event == "Cancel":
-                window.close()
-                break
-            elif event == f"-cal_pt_{i}-":
+            # This would require a way to send a command to the board to exit the calibration mode.
+            # I don't think it's implemented in the software at the moment.
+            # if event == sg.WINDOW_CLOSE_ATTEMPTED_EVENT:
+            #     controller.cancel_calibration()
+            #     break
+            if event == f"-cal_pt_{i}-":
                 break
             else:
                 sg.SetOptions(window_location=get_new_location(window))
+
         window.close()
 
-        if values[0] == 1:
+        if values and values[0] == 1:
             sg.popup_ok('Calibration successful.', keep_on_top=True, modal=True)
         else:
             sg.popup_ok('Calibration failed.', keep_on_top=True, modal=True)
