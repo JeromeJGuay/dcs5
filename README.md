@@ -224,7 +224,7 @@ See section [Configuration files](#configurations-files) for more information on
 To connect to the Dcs5 measuring board, the Board Mac (bluetooth) address needs to be specified in the *Controller Configuration* file. You can edit the file via the configuration menu (see sections [Configurations](#configurations) and [Controller Configuration](#controller-configuration)) 
 
 
-Then you need to connect and then activate the board by pressing the **Connect** and **Activate** button. 
+Then connect the board by pressing the **Connect** button. 
 
 <figure style="text-align: center;">
 <img src='doc/images/dcs5_gui_connect.png' width='365' alt="Connect Widget"/>
@@ -233,14 +233,7 @@ Then you need to connect and then activate the board by pressing the **Connect**
 
 The red circle next to the **Connect** button will turn into a yellow triangle
 while the application is attempting to connect to the board and then into a green when connected.
-
-<figure style="text-align: center;">
-<img src='doc/images/dcs5_gui_activate.png' width='371' alt="Activate Widget"/>
-<figcaption>Activate Widget</figcaption>
-</figure>
-
-The red circles next to the **Activate** button will also turn green when the application and board are ready to use.
-When activating the board, the application will synchronize with the board control box.
+When connecting the board, the application will synchronize with the board control box.
 (See the section [Additional GUI features](#additional-information)).
 The application and the board are synchronized
 when the application receives confirmations that the board internal parameters

@@ -43,6 +43,8 @@ HANDLER_SLEEP = 0.01
 
 LISTENER_SLEEP = 0.005
 
+CONNECTION_MONITOR_SLEEP = 1
+
 
 @dataclass
 class InternalBoardState:
@@ -179,19 +181,25 @@ class Dcs5Controller:
         self.stylus_offset = self.devices_specifications.stylus_offset[self.stylus]
         self.stylus_cyclical_list = cycle(list(self.devices_specifications.stylus_offset.keys()))
 
-    def start_client_and_start_listening(self, mac_address: str = None):
-        self.start_client(mac_address=mac_address)
+    def connect(self):
+        """Start Client, initialize and start listening"""
+        self.start_client()
         self.init_controller_and_board()
         self.start_listening()
 
-    def start_client(self, mac_address: str = None):
+    def restart(self):
+        """Close Client and Connect"""
+        self.close_client()
+        time.sleep(0.5)
+        self.connect()
+
+    def start_client(self):
         """Create a socket and tries to connect with the board."""
         if self.client.is_connected:
             logging.info("Client Already Connected.")
         else:
-            self.is_sync = False  # If the board is Deconnected. Set sync flag to False.
-            mac_address = mac_address or self.config.client.mac_address
-            self.client.connect(mac_address, timeout=30)
+            self.is_sync = False  # If the board is Disconnected. Set sync flag to False.
+            self.client.connect(self.config.client.mac_address, timeout=30)
 
             if self.client.is_connected:
                 self.start_auto_reconnect_thread()
@@ -206,11 +214,6 @@ class Dcs5Controller:
         else:
             logging.info('Client Already Closed')
 
-    def restart_client(self):
-        self.close_client()
-        time.sleep(0.5)
-        self.start_client()
-
     def start_auto_reconnect_thread(self):
         self.auto_reconnect = True
         self.auto_reconnect_thread = threading.Thread(target=self.monitor_connection,
@@ -221,7 +224,7 @@ class Dcs5Controller:
     def monitor_connection(self):
         while self.auto_reconnect is True:
             while self.client.is_connected:
-                time.sleep(1) #FIXME Make into a global variables
+                time.sleep(CONNECTION_MONITOR_SLEEP)
             was_listening = self.is_listening
             self.stop_listening()
 
