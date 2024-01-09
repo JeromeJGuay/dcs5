@@ -117,6 +117,8 @@ class Dcs5Controller:
         self.is_listening = False  # listening to the keyboard on the connected socket.
         self.is_muted = False  # Message are processed but keyboard input are suppress.
 
+        self._cancel_calibration = False # Used to exit the calibration loops
+
         self.persistent_backlight_level: int = None # Used to save backlight value when MODE key is lit.
 
         self._set_board_settings()
@@ -538,7 +540,8 @@ class Dcs5Controller:
             if f"&{pt}r#\r" in msg:
                 pt_value = self.internal_board_state.__dict__[f"cal_pt_{pt}"]
                 logging.info(f"Calibration for point {pt}. Set stylus down at {pt_value} mm ...")
-                while True:
+                self._cancel_calibration = False
+                while not self._cancel_calibration:
                     if f'&{pt}c' in msg:
                         logging.info(f'Point {pt} calibrated.')
                         return 1
@@ -546,6 +549,8 @@ class Dcs5Controller:
                         logging.info(f'Point {pt} calibration exited.')
                         return 0
                     msg += self.client.receive()
+                return 0
+
             else:
                 return 0
         except KeyError:
@@ -555,6 +560,11 @@ class Dcs5Controller:
             self.client.socket.settimeout(self.client.default_timeout)
             if was_listening:
                 self.start_listening()
+
+    def cancel_calibration(self):
+        """NOT USED AT THE MOMENT. THERE IS NO WAY TO SEND A COMMAND TO THE BOARD THE CANCEL"""
+        #self._cancel_calibration = True
+        pass
 
     def c_ping(self):
         self.command_handler.queue_command("&a#", "%a#\r")

@@ -5,7 +5,7 @@ from pathlib import Path
 
 from dcs5.utils import resolve_relative_path
 
-VERSION = "1.0.0"
+VERSION = "1.1.1"
 
 logging.getLogger(__name__)
 
